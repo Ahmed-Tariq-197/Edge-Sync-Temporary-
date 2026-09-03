@@ -1,0 +1,24 @@
+graph TD
+    Root["fleet/"]
+
+    Root --> Disc["discovery/heartbeat<br/>QoS 0, retained"]
+
+    Root --> Rid["&lt;robot_id&gt;/"]
+    Rid --> Tel["telemetry/"]
+    Tel --> TelPose["pose (QoS 0)"]
+    Tel --> TelBatt["battery (QoS 0)"]
+    Tel --> TelStat["status (QoS 0)"]
+
+    Rid --> Vis["vision/tracks/&lt;track_id&gt;<br/>QoS 1"]
+
+    Root2["handoff/"] --> Tid["&lt;track_id&gt;/"]
+    Tid --> Ann["announce (QoS 1)"]
+    Tid --> Bid["bid (QoS 1)"]
+    Tid --> Awd["award (QoS 2, retained)"]
+    Tid --> Ack["ack (QoS 1)"]
+
+    style Root fill:#2b6cb0,color:#fff
+    style Root2 fill:#2b6cb0,color:#fff
+    style Awd fill:#c53030,color:#fff
+    style Bid fill:#d69e2e,color:#fff
+    style Ann fill:#d69e2e,color:#fff
