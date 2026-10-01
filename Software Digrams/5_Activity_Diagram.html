@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activity Diagram — EdgeSync: Perception-to-Handoff Pipeline</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #e2e8f0;
+      --accent: #38bdf8;
+      --accent2: #818cf8;
+      --line: #334155;
+      --soft: #1e3a5f;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      padding: 30px;
+    }
+
+    .page-title {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .page-title h1 {
+      font-size: 28px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.5px;
+    }
+
+    .page-title p {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    .badge-bar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #38bdf8;
+    }
+
+    .diagram-container {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 30px;
+      margin: 20px auto;
+      max-width: 1400px;
+      overflow-x: auto;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .footer {
+      text-align: center;
+      color: #64748b;
+      font-size: 12px;
+      margin-top: 30px;
+    }
+
+    .print-btn {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 28px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      color: #0f172a;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+    }
+
+    .print-btn:hover {
+      opacity: .88;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        color: #000;
+      }
+
+      .diagram-container {
+        border-color: #ccc;
+        background: #fff;
+        box-shadow: none;
+      }
+
+      .page-title h1 {
+        -webkit-text-fill-color: #173b57;
+      }
+
+      .print-btn {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="page-title">
+    <h1>5. Activity Diagram — Perception-to-Handoff Pipeline</h1>
+    <p>Complete Algorithmic Execution Pipeline & Decision Logic · SAD v2.3, SRS v1.3 & Math v2.3</p>
+    <div class="badge-bar">
+      <span class="badge">RGB-D 2D-to-3D Deprojection</span>
+      <span class="badge">Ego-Motion Uncertainty Propagation</span>
+      <span class="badge">T_TTO^safe Bound (k_τ = 2)</span>
+      <span class="badge">Hard Gate G(j) & Feasibility</span>
+    </div>
+  </div>
+
+  <div class="diagram-container">
+    <pre class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize':'12px','primaryColor':'#1e3a5f','primaryTextColor':'#e2e8f0','primaryBorderColor':'#38bdf8','lineColor':'#64748b'}, 'flowchart': {'htmlLabels': true, 'curve': 'basis', 'rankSpacing': 45, 'nodeSpacing': 35}}}%%
+
+graph TD
+    START((🟢 Camera Frame<br/>30Hz))
+
+    subgraph PERCEPTION["📷 C-01: PerceptionSERVICE (Visual Perception)"]
+        A1["Acquire Timestamped RGB Frame"]
+        A2["YOLO TensorRT 2D Inference<br/>Output bounding box (u_min, v_min, u_max, v_max)"]
+        A3{"Target<br/>detected?"}
+        A4["Register aligned Depth Map<br/>Extract central 50% valid depth median &rarr; Z_c"]
+        A5["2D-to-3D Deprojection (Pinhole Optical Frame):<br/>X_c = (u - c_x)*Z_c/f_x,  Y_c = (v - c_y)*Z_c/f_y"]
+    end
+
+    subgraph ESTIMATION["📐 C-02: EstimationSERVICE (Spatial Kinematics)"]
+        B1["Transform [X_c, Y_c, Z_c]^T to 'map' frame via tf2<br/>using robot pose interpolated at image timestamp"]
+        B2["Measurement Uncertainty Propagation:<br/>R_total = J_c·R_cam·J_c^T + J_ξ·Σ_ξ·J_ξ^T<br/>(Ego-motion placed in measurement, not process noise)"]
+        B3["6-DoF Constant Velocity Kalman Filter:<br/>Update state s(k) and covariance Σ(k) in 'map'"]
+    end
+
+    subgraph PREDICTION["🔮 C-03: PredictionSERVICE (Motion & TTO)"]
+        C1["Predict future trajectory: s(k+τ) = F(τ)·s(k)"]
+        C2["Compute 3D Frustum V_fov & ray trace obstacles"]
+        C3["Calculate raw TTO: τ at frustum exit or occlusion"]
+        C4["Compute uncertainty lower bound:<br/><b>T_TTO^safe = max(0, T̂_TTO - 2·σ_TTO)</b>"]
+    end
+
+    subgraph DECISION["⚡ C-04: DecisionSERVICE (Analytical Feasibility)"]
+        D1{"TTO Regime<br/>Zone Check"}
+        D2["🟢 Zone 1: T_TTO^safe > 2.50s<br/>Steady tracking &rarr; Network silence"]
+        D3["🟡 Zone 2: 1.23s ≤ T_TTO^safe ≤ 2.50s<br/>Proactive Trigger &rarr; Evaluate candidates"]
+        D4["🔴 Zone 3: T_TTO^safe < 1.23s<br/>No NEW handoff allowed (Math v2.3 §2.1)<br/>Continue existing transaction or solo tracking"]
+        D5["Query C-05: Hard Eligibility Gate G(j):<br/>CPU ≤ 90% AND Battery ≥ 15% AND Nav OK"]
+        D6{"G(j) == 1 &<br/>Feasible?"}
+        D7["Compute Utility:<br/>U_j = G(j)·Feasible·[0.5·Φ_feas + 0.3·Φ_FOV + 0.2·Φ_net]"]
+        D8{"U_j > 0?"}
+    end
+
+    subgraph HANDOFF["🤝 C-09 & C-06: Coordination & Ownership"]
+        E1["Emit HANDOFF_RECOMMENDED<br/>Generate transaction_id"]
+        E1B["Fetch pre-computed Re-ID signature from C-07 (I-09)<br/>Smoothed 512-dim embedding always ready"]
+        E2["Send HANDOFF_REQUEST (FastDDS Binary CDR)<br/>Include map coordinates, covariance, Re-ID embedding"]
+        E3{"Peer<br/>Response?"}
+        E4["Enter COMMITTED (Owner Retained!)<br/>ARM 10Hz Watchdog (300ms) & Hard Cutoff (700ms)"]
+        E5["Receiver slews & searches with 10Hz heartbeats<br/>Target locked & Resident OSNet Re-ID verified"]
+        E6{"Verification<br/>Succeeded?"}
+        E7["<b>Acknowledged Ownership Handshake:</b><br/>Receive HANDOFF_CONFIRM(epoch e)<br/>Reply HANDOFF_CONFIRM_ACK(epoch e+1)<br/>Transfer exclusive tracking ownership!"]
+        E8["❌ Transaction Aborted / Cancelled<br/>Enter RECOVERY &rarr; Owner resumes solo tracking"]
+    end
+
+    LOOP_BACK["🔄 Return to Perception Loop"]
+    TERMINAL(("⛔ TERMINAL FAILURE<br/>Safe-Stop Engaged"))
+
+    START --> A1
+    A1 --> A2
+    A2 --> A3
+    A3 -->|"No target"| LOOP_BACK
+    A3 -->|"Target found"| A4
+    A4 --> A5
+    A5 --> B1
+    B1 --> B2
+    B2 --> B3
+    B3 --> C1
+    C1 --> C2
+    C2 --> C3
+    C3 --> C4
+    C4 --> D1
+
+    D1 -->|"T_TTO^safe > 2.50s"| D2
+    D1 -->|"1.23s ≤ TTO ≤ 2.50s"| D3
+    D1 -->|"T_TTO^safe < 1.23s"| D4
+
+    D2 --> LOOP_BACK
+    D4 --> LOOP_BACK
+
+    D3 --> D5
+    D5 --> D6
+    D6 -->|"No"| LOOP_BACK
+    D6 -->|"Yes"| D7
+    D7 --> D8
+    D8 -->|"U_j == 0"| LOOP_BACK
+    D8 -->|"U_j > 0"| E1
+
+    E1 --> E1B
+    E1B --> E2
+    E2 --> E3
+    E3 -->|"REJECT / TIMEOUT (60ms)"| E8
+    E3 -->|"ACCEPT"| E4
+    E4 --> E5
+    E5 --> E6
+    E6 -->|"Re-ID Mismatch / Watchdog Dead"| E8
+    E6 -->|"Match confirmed"| E7
+
+    E7 --> LOOP_BACK
+    E8 --> LOOP_BACK
+    LOOP_BACK --> A1
+
+    style START fill:#059669,stroke:#34d399,color:#fff
+    style TERMINAL fill:#991b1b,stroke:#f87171,color:#fff
+    style LOOP_BACK fill:#1e293b,stroke:#64748b,color:#cbd5e1
+</pre>
+  </div>
+
+  <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  <div class="footer">EdgeSync · Activity Diagram · Aligned with SAD v2.3, SRS v1.3 & Math v2.3 · Graduation Project 2026</div>
+
+  <script>mermaid.initialize({ startOnLoad: true, securityLevel: 'loose' });</script>
+</body>
+
+</html>

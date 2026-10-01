@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sequence Diagram (Failure & Watchdog) — EdgeSync</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #e2e8f0;
+      --accent: #38bdf8;
+      --accent2: #818cf8;
+      --line: #334155;
+      --soft: #1e3a5f;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      padding: 30px;
+    }
+
+    .page-title {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .page-title h1 {
+      font-size: 28px;
+      background: linear-gradient(135deg, #f87171, #fb923c);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.5px;
+    }
+
+    .page-title p {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    .badge-bar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f87171;
+    }
+
+    .diagram-container {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 30px;
+      margin: 20px auto;
+      max-width: 1400px;
+      overflow-x: auto;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .section-label {
+      max-width: 1400px;
+      margin: 30px auto 10px;
+      font-size: 18px;
+      font-weight: 600;
+      color: #f87171;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .scenario-desc {
+      max-width: 1400px;
+      margin: 0 auto 15px;
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .footer {
+      text-align: center;
+      color: #64748b;
+      font-size: 12px;
+      margin-top: 30px;
+    }
+
+    .print-btn {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 28px;
+      background: linear-gradient(135deg, #f87171, #fb923c);
+      color: #0f172a;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(248, 113, 113, 0.25);
+    }
+
+    .print-btn:hover {
+      opacity: .88;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        color: #000;
+      }
+
+      .diagram-container {
+        border-color: #ccc;
+        background: #fff;
+        box-shadow: none;
+      }
+
+      .page-title h1 {
+        -webkit-text-fill-color: #991b1b;
+      }
+
+      .print-btn {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="page-title">
+    <h1>4. Sequence Diagrams — Failure & Watchdog Protections</h1>
+    <p>Failure Handling, Anti-Deadlock Liveness & Bounded Recovery · SAD v2.3, SRS v1.3 & Math v2.3</p>
+    <div class="badge-bar">
+      <span class="badge">10Hz Heartbeat Watchdog (τ_hb = 300ms)</span>
+      <span class="badge">≤ 700ms Hard Timeout Bypass</span>
+      <span class="badge">Re-ID Mismatch Rejection</span>
+      <span class="badge">Two-UGV Bounded Recovery (FR-56)</span>
+    </div>
+  </div>
+
+  <!-- Scenario 1: Receiver Hardware Crash / 10Hz Watchdog -->
+  <div class="section-label">🚨 Scenario A: Receiver Crash & 10Hz Anti-Deadlock Watchdog</div>
+  <p class="scenario-desc">Demonstrates how the 10 Hz ACQ_STATUS heartbeat aborts a doomed transaction in ≈ 300 ms (saving > 400 ms over waiting for the 700 ms acquisition timeout) when the receiver experiences power/compute failure.</p>
+  <div class="diagram-container">
+    <pre class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize':'13px','actorTextColor':'#e2e8f0','actorBorder':'#f87171','actorBkg':'#3b1111','signalColor':'#94a3b8','signalTextColor':'#e2e8f0','noteBkgColor':'#2a1215','noteTextColor':'#fca5a5','activationBorderColor':'#f87171','activationBkgColor':'#3b1111'}, 'sequence': {'showSequenceNumbers': true, 'mirrorActors': false}}}%%
+
+sequenceDiagram
+    autonumber
+
+    participant C09A as C-09 Ownership (Robot A)
+    participant C06A as C-06 Negotiation (Robot A)
+    participant DDS as FastDDS Middleware
+    participant C08B as C-08 Acquisition (Robot B)
+    participant C11A as C-11 Monitoring (Robot A)
+
+    Note over C09A,C08B: State: COMMITTED - Robot A is exclusive owner
+
+    rect rgb(59, 17, 17)
+        activate C09A
+        C09A ->> C09A: ARM 10Hz Watchdog (tau_hb = 300ms)
+        C08B -->> DDS: Heartbeat 1: ACQ_STATUS = SLEWING (10Hz)
+        DDS -->> C09A: Heartbeat 1 received - Reset watchdog
+        Note over C08B: HARDWARE FAILURE / KERNEL PANIC
+        Note over C09A: 3 CONSECUTIVE MISSES (300ms elapsed)
+        C09A ->> C09A: WATCHDOG TIMEOUT: ERR_CANDIDATE_DEAD
+        C09A ->> C06A: Send HANDOFF_CANCEL (reason=CANDIDATE_DEAD)
+        activate C06A
+        C06A -->> DDS: HANDOFF_CANCEL (best-effort)
+        deactivate C06A
+        C09A ->> C11A: Log: HANDOFF_ABORTED (latency=300ms)
+    end
+
+    Note over C09A: Bounded Recovery Phase (FR-56)
+    rect rgb(30, 27, 75)
+        C09A ->> C09A: State: COMMITTED to RECOVERY
+        alt Remaining T_TTO safe >= 1.23s AND Rank-2 exists
+            C09A ->> C09A: State: RECOVERY to HANDOFF_CANDIDATE
+        else Two-UGV baseline: No other robot available
+            C09A ->> C09A: State: RECOVERY to TRACKING (Owner Retained)
+        else T_TTO safe < 1.23s (Zone 3 reached)
+            C09A ->> C09A: State: RECOVERY to TERMINAL_FAILURE
+        end
+        deactivate C09A
+    end
+</pre>
+  </div>
+
+  <!-- Scenario 2: Re-ID Rejection -->
+  <div class="section-label">🔍 Scenario B: Identity Verification Failure (Re-ID Mismatch)</div>
+  <p class="scenario-desc">Demonstrates rejection when Robot B acquires a visual candidate whose appearance or spatial signature does not match Robot A's target, preventing false identity handoff.</p>
+  <div class="diagram-container">
+    <pre class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize':'13px','actorTextColor':'#e2e8f0','actorBorder':'#fbbf24','actorBkg':'#3b2f0b','signalColor':'#94a3b8','signalTextColor':'#e2e8f0','noteBkgColor':'#2e2410','noteTextColor':'#fde68a','activationBorderColor':'#fbbf24','activationBkgColor':'#3b2f0b'}, 'sequence': {'showSequenceNumbers': true, 'mirrorActors': false}}}%%
+
+sequenceDiagram
+    autonumber
+
+    participant C09A as C-09 Ownership (Robot A)
+    participant C06A as C-06 Negotiation (Robot A)
+    participant DDS as FastDDS Middleware
+    participant C06B as C-06 Negotiation (Robot B)
+    participant C08B as C-08 Acquisition (Robot B)
+    participant C07B as C-07 Identity (Robot B)
+    participant C09B as C-09 Ownership (Robot B)
+
+    Note over C09A,C09B: Robot B is in SEARCHING phase - Heartbeats at 10Hz
+
+    rect rgb(69, 26, 3)
+        activate C08B
+        C08B ->> C08B: Target candidate detected in frustum
+        C08B ->> C07B: I-10: Verify candidate vs received embedding
+        activate C07B
+
+        C07B ->> C07B: Resident OSNet inference - Extract feature vector
+        C07B ->> C07B: Cosine similarity = 0.41 (Threshold = 0.70)
+        C07B ->> C07B: IDENTITY_MISMATCH: Wrong person or severe occlusion
+
+        C07B ->> C08B: I-10: IDENTITY_REJECT (similarity below threshold)
+        deactivate C07B
+
+        C08B ->> C09B: I-11: Acquisition FAILED (REID_MISMATCH)
+        deactivate C08B
+        activate C09B
+
+        C09B ->> C09B: State: SEARCHING to IDLE
+        Note over C09B: Receiver reports failure via liveness channel
+        C09B ->> C06B: Report failure to owner via ACQ_STATUS
+        deactivate C09B
+        activate C06B
+
+        C06B -->> DDS: ACQ_STATUS = FAILED (BEST_EFFORT)
+        deactivate C06B
+        DDS -->> C09A: Failure notification received by owner watchdog
+
+        activate C09A
+        Note over C09A: C-09 OwnershipSERVICE is sole lifecycle authority (SAD v2.3)
+        C09A ->> C09A: Disarm Watchdog and Cutoff
+        C09A ->> C06A: Issue HANDOFF_CANCEL (reason=REID_MISMATCH)
+        activate C06A
+        C06A ->> DDS: HANDOFF_CANCEL (RELIABLE)
+        deactivate C06A
+        C09A ->> C09A: State: COMMITTED to RECOVERY
+        C09A ->> C09A: Solo tracking continues - Wrong target avoided
+        deactivate C09A
+    end
+</pre>
+  </div>
+
+  <!-- Scenario 3: Negotiation Timeout -->
+  <div class="section-label">⏱️ Scenario C: Negotiation Timeout (Unreachable Candidate)</div>
+  <p class="scenario-desc">Demonstrates deadline enforcement when a candidate receiver does not respond to HANDOFF_REQUEST within the allocated 60 ms budget.</p>
+  <div class="diagram-container">
+    <pre class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize':'13px','actorTextColor':'#e2e8f0','actorBorder':'#94a3b8','actorBkg':'#1e293b','signalColor':'#94a3b8','signalTextColor':'#e2e8f0','noteBkgColor':'#1e293b','noteTextColor':'#cbd5e1','activationBorderColor':'#94a3b8','activationBkgColor':'#1e293b'}, 'sequence': {'showSequenceNumbers': true, 'mirrorActors': false}}}%%
+
+sequenceDiagram
+    autonumber
+
+    participant C04A as C-04 Decision (Robot A)
+    participant C09A as C-09 Ownership (Robot A)
+    participant C06A as C-06 Negotiation (Robot A)
+    participant DDS as FastDDS Middleware
+    participant C06B as C-06 Negotiation (Robot B)
+    participant C11A as C-11 Monitoring (Robot A)
+
+    Note over C04A,C09A: Zone 2 Triggered (T_TTO safe = 1.80s)
+
+    rect rgb(20, 30, 45)
+        activate C09A
+        C09A ->> C06A: I-07: Initiate negotiation with Robot B
+        activate C06A
+
+        C06A ->> C06A: Start Negotiation Timer (delta_t_neg = 60ms)
+        C06A ->> DDS: HANDOFF_REQUEST (RELIABLE)
+        Note over DDS: Wi-Fi packet dropped / Robot B off-channel
+
+        Note over C06A: 60ms elapsed... No response received!
+
+        C06A ->> C06A: NEGOTIATION_TIMEOUT (delta_t_neg exceeded)
+        C06A ->> C09A: I-08: Negotiation FAILED (TIMEOUT)
+        deactivate C06A
+
+        C09A ->> C11A: Log: NEGOTIATION_TIMEOUT (latency=60ms)
+        C09A ->> C09A: State: NEGOTIATING to RECOVERY
+        C09A ->> C09A: Resume tracking owner duties and evaluate alternative
+        deactivate C09A
+    end
+</pre>
+  </div>
+
+  <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  <div class="footer">EdgeSync · Sequence Diagrams (Failure Scenarios) · Aligned with SAD v2.3, SRS v1.3 & Math v2.3 · Graduation Project 2026</div>
+
+  <script>mermaid.initialize({ startOnLoad: true, securityLevel: 'loose' });</script>
+</body>
+
+</html>

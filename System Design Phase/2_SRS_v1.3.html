@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Software Requirements Specification — Proactive UGV Target Handoff</title>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--text:#1f2937;--muted:#64748b;--accent:#173b57;--accent2:#2f6f95;--line:#dbe3ea;--soft:#eef4f8;--warn:#fff7e6;--green:#edf8f1}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;line-height:1.6}
+.container{max-width:1180px;margin:auto;padding:36px 24px 70px}.cover{background:linear-gradient(135deg,#173b57,#2f6f95);color:white;border-radius:18px;padding:52px 48px;margin-bottom:28px;box-shadow:0 12px 35px rgba(0,0,0,.12)}
+.cover .label{font-size:13px;letter-spacing:2px;text-transform:uppercase;opacity:.82}.cover h1{font-size:40px;line-height:1.15;margin:14px 0 18px}.cover p{font-size:18px;max-width:900px;opacity:.94}.meta{display:flex;gap:28px;flex-wrap:wrap;margin-top:28px;font-size:14px}
+nav,section{background:var(--card);border:1px solid var(--line);border-radius:14px}nav{padding:24px 28px;margin-bottom:26px}nav h2{margin-top:0;color:var(--accent)}nav a{color:var(--accent2);text-decoration:none}nav ol{columns:2;margin-bottom:0}
+section{padding:30px 32px;margin:22px 0}h2{color:var(--accent);font-size:27px;border-bottom:2px solid var(--line);padding-bottom:9px}h3{color:var(--accent2);margin-top:26px}h4{margin-bottom:7px;color:#334155}
+p{margin:9px 0}ul,ol{padding-left:25px}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px}th,td{border:1px solid var(--line);padding:11px 12px;text-align:left;vertical-align:top}th{background:var(--soft);color:var(--accent)}
+.req{border-left:5px solid var(--accent2);background:#fafcfd;padding:13px 16px;margin:12px 0;border-radius:5px}.req strong{color:var(--accent)}
+.note{background:var(--warn);border-left:5px solid #d99a1d;padding:15px 17px;border-radius:5px;margin:18px 0}.success{background:var(--green);border-left:5px solid #3b8b5a;padding:15px 17px;border-radius:5px;margin:18px 0}
+.flow{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:22px;margin:18px 0;text-align:center}.node{display:inline-block;background:white;border:2px solid var(--accent2);border-radius:9px;padding:10px 14px;margin:5px;font-weight:bold}.arrow{font-size:20px;color:var(--accent2)}
+.footer{color:var(--muted);text-align:center;margin-top:35px;font-size:13px}@media(max-width:800px){nav ol{columns:1}.cover{padding:35px 25px}.cover h1{font-size:31px}section{padding:23px 20px}}@media print{body{background:white}.container{max-width:none}.cover{box-shadow:none}section,nav{break-inside:auto;box-shadow:none}}
+</style>
+</head>
+<body>
+<div class="container">
+<header class="cover">
+<div class="label">Software Requirements Specification · Version 1.3</div>
+<h1>Proactive Time-to-Occlusion-Driven Decentralized Target Handoff for Edge UGVs</h1>
+<p>Formal Software Requirements Specification for a decentralized multi-UGV system that maintains target identity and tracking continuity through predictive, deadline-aware handoff between moving edge robots.</p>
+<div class="meta"><span><strong>Version:</strong> 1.3 - Hardware-Grounded Baseline</span><span><strong>Date:</strong> October 2026</span><span><strong>Status:</strong> Final Requirements Baseline</span></div>
+</header>
+
+<nav id="toc"><h2>Document Contents</h2><ol>
+<li><a href="#intro">Introduction</a></li><li><a href="#motivation">System Motivation</a></li><li><a href="#scope">Scope</a></li><li><a href="#context">System Context</a></li><li><a href="#objectives">System Objectives</a></li><li><a href="#actors">Actors</a></li><li><a href="#functional">Functional Requirements</a></li><li><a href="#nonfunctional">Non-Functional Requirements</a></li><li><a href="#data">Data Requirements</a></li><li><a href="#logging">Logging &amp; Observability</a></li><li><a href="#evaluation">Evaluation-Oriented Requirements</a></li><li><a href="#success">System-Level Success Criteria</a></li><li><a href="#research-reqs">Research-Derived Requirements</a></li><li><a href="#traceability">Requirements Traceability</a></li><li><a href="#priority">Requirements Prioritization</a></li><li><a href="#constraints">Constraints &amp; Assumptions</a></li><li><a href="#risks">Risks</a></li><li><a href="#definition">Final System Definition</a></li>
+</ol></nav>
+
+<section id="intro"><h2>1. Introduction</h2>
+<h3>1.1 Purpose</h3>
+<p>This document defines the functional and non-functional requirements for a decentralized cooperative target-tracking and handoff system composed of multiple Unmanned Ground Vehicles (UGVs).</p>
+<p>The system shall enable a UGV that currently owns a target track to proactively transfer tracking responsibility to another UGV before the target becomes unavailable, while preserving target identity and operating under edge-computing and communication constraints.</p>
+<p>This SRS defines <strong>what the system shall do</strong>. Specific algorithms, mathematical formulations, model selections, middleware choices, and implementation details shall be finalized in the subsequent System Design / Technical Design Report, bounded by the hardware constraints established in this version.</p><div class="note"><strong>Hardware grounding:</strong> The baseline explicitly targets the NVIDIA Jetson Orin Nano as the physical edge platform. Exact runtime limits, power mode, thermal behavior, and application-level performance shall be established by Tier 2 benchmarking rather than assumed from vendor peak specifications.</div>
+</section>
+
+<section id="motivation"><h2>2. System Motivation</h2>
+<p>The completed Literature Review established that the principal technologies required by the proposed system have substantial prior work: real-time detection and tracking, appearance-based Re-ID, cross-camera identity transfer, edge perception, compact metadata communication, proactive handoff, trajectory and time-to-event prediction, decentralized coordination, and physical multi-robot tracking.</p>
+<p>The identified research opportunity is therefore not the invention of an isolated detector, tracker, or Re-ID model. The central problem is the integration of predictive timing, identity continuity, deadline-aware handoff feasibility, lightweight edge computation, discrete decentralized coordination, and physical validation on moving UGVs.</p>
+<div class="success"><strong>Core research problem:</strong> determine whether a target handoff can be completed successfully before the current tracking agent loses the target, while preserving target identity and respecting real-world timing and communication constraints.</div>
+</section>
+
+<section id="scope"><h2>3. Scope</h2>
+<h3>3.1 In Scope</h3><ul>
+<li>Onboard visual perception.</li><li>Target detection and multi-object tracking support.</li><li>Target state estimation.</li><li>Short-horizon target motion prediction.</li><li>Visibility-loss and Time-to-Occlusion estimation.</li><li>Proactive handoff triggering.</li><li>Handoff feasibility assessment.</li><li>Decentralized robot-to-robot coordination.</li><li>Receiver selection and handoff negotiation.</li><li>Cross-robot target identity transfer.</li><li>Target acquisition by the receiving UGV.</li><li>Re-identification and identity verification.</li><li>Handoff confirmation and ownership transfer.</li><li>Failure detection and recovery.</li><li>Logging and performance measurement.</li><li>Physical validation on moving UGVs.</li>
+</ul>
+<h3>3.2 Out of Scope</h3><ul>
+<li>Development of a novel object detector from first principles.</li><li>Development of a novel Re-ID architecture from first principles.</li><li>General-purpose swarm-scale task allocation.</li><li>Centralized cloud perception as the primary operating mode.</li><li>Continuous raw-video exchange as the primary cooperation mechanism.</li><li>Guaranteeing performance across arbitrary environments and conditions.</li><li>Simulation-only validation as the final evidence of system effectiveness.</li>
+</ul></section>
+
+<section id="context"><h2>4. System Context</h2>
+<p>The primary validation scenario contains at least two UGVs. Robot A currently owns the target track; Robot B is a candidate receiving robot.</p>
+<div class="flow"><span class="node">Target</span><span class="arrow">→</span><span class="node">Robot A<br><small>Current Tracking Owner</small></span><span class="arrow">→</span><span class="node">Handoff Decision</span><span class="arrow">→</span><span class="node">Handoff Metadata</span><span class="arrow">→</span><span class="node">Robot B<br><small>Receiving Agent</small></span><span class="arrow">→</span><span class="node">Acquisition + Re-ID</span><span class="arrow">→</span><span class="node">Confirmed Tracking</span></div>
+<h3>4.1 Robot A — Current Tracking Agent</h3><p>Robot A is responsible for the active target track and initiates handoff when continued tracking is predicted to become unreliable or unavailable.</p>
+<h3>4.2 Robot B — Candidate Receiving Agent</h3><p>Robot B evaluates whether it can acquire and verify the target within the available handoff time.</p>
+</section>
+
+<section id="objectives"><h2>5. System Objectives</h2><table><tr><th>ID</th><th>Objective</th></tr>
+<tr><td>O-01</td><td><strong>Continuous Target Tracking:</strong> preserve target tracking continuity across changes in coverage and tracking ownership.</td></tr>
+<tr><td>O-02</td><td><strong>Proactive Handoff:</strong> initiate handoff before target loss rather than waiting for complete tracking failure.</td></tr>
+<tr><td>O-03</td><td><strong>Time-Aware Decision Making:</strong> incorporate the remaining time before target unavailability into handoff decisions.</td></tr>
+<tr><td>O-04</td><td><strong>Identity Preservation:</strong> preserve the identity of the target across robot ownership transfer.</td></tr>
+<tr><td>O-05</td><td><strong>Edge Feasibility:</strong> execute core perception and decision functions on onboard/edge resources.</td></tr>
+<tr><td>O-06</td><td><strong>Communication Efficiency:</strong> use compact target-related metadata rather than continuous raw-video streaming.</td></tr>
+<tr><td>O-07</td><td><strong>Decentralized Coordination:</strong> perform core handoff coordination without requiring a central decision maker.</td></tr>
+<tr><td>O-08</td><td><strong>Physical Validation:</strong> validate the handoff process on moving physical UGVs.</td></tr>
+</table></section>
+
+<section id="actors"><h2>6. Actors</h2><table><tr><th>Actor</th><th>Responsibility</th></tr>
+<tr><td>Target</td><td>Physical entity whose identity and trajectory are being tracked.</td></tr>
+<tr><td>Tracking UGV</td><td>Maintains the current target track and initiates handoff when required.</td></tr>
+<tr><td>Receiving UGV</td><td>Evaluates handoff feasibility, acquires the target, and verifies identity.</td></tr>
+<tr><td>Other UGVs</td><td>Potential future receiving agents in multi-robot extensions.</td></tr>
+<tr><td>Operator</td><td>Configures experiments, monitors the system, and controls test scenarios.</td></tr>
+<tr><td>Evaluation System</td><td>Collects timestamps, events, resource measurements, and experiment outcomes.</td></tr>
+</table></section>
+
+<section id="functional"><h2>7. Functional Requirements</h2>
+<h3>7.1 Visual Perception</h3>
+<div class="req"><strong>FR-01 — Frame Acquisition.</strong> Each UGV shall acquire timestamped visual frames from its onboard camera.</div>
+<div class="req"><strong>FR-02 — Target Detection.</strong> The system shall detect target candidates and produce, at minimum, a bounding box, confidence value, class/category information, and timestamp.</div>
+<div class="req"><strong>FR-03 — Target Tracking.</strong> The system shall associate detections across consecutive frames and maintain a target track while sufficient visual evidence is available.</div>
+<div class="req"><strong>FR-04 — Tracking Confidence.</strong> The system shall maintain a confidence representation for the current target track and make it available to downstream decision functions.</div>
+<h3>7.2 Target State</h3>
+<div class="req"><strong>FR-05 — Target State Representation.</strong> The system shall maintain a state representation containing, at minimum, target position, velocity, timestamp, and confidence. Additional state variables may be defined by the Technical Design Report.</div>
+<div class="req"><strong>FR-06 — Temporal Consistency.</strong> The system shall maintain a temporally ordered short history of target observations sufficient to support state estimation and prediction.</div>
+<h3>7.3 Prediction</h3>
+<div class="req"><strong>FR-07 — Short-Horizon Prediction.</strong> The system shall estimate the target's future motion over a short prediction horizon appropriate to the handoff scenario.</div>
+<div class="req"><strong>FR-08 — Prediction Uncertainty.</strong> The system shall provide a representation of prediction uncertainty suitable for downstream handoff decision making.</div>
+<div class="req"><strong>FR-09 — Edge-Aware Prediction.</strong> The prediction function shall be deployable within the computational constraints of the NVIDIA Jetson Orin Nano edge platform.</div>
+<h3>7.4 Visibility and Time-to-Occlusion</h3>
+<div class="req"><strong>FR-10 — Visibility Boundary Estimation.</strong> The system shall identify a visibility-loss condition under which the current UGV is expected to lose reliable visual tracking of the target, including physical occlusion and target exit from the effective camera field of view (FOV).</div>
+<div class="req"><strong>FR-11 — Time-to-Occlusion (TTO) Estimation.</strong> The system shall estimate the expected remaining time before the target reaches the defined visibility-loss boundary. For this project, TTO is an operational time-to-visibility-loss quantity and shall include both physical occlusion and target exit from the effective camera FOV when either condition defines impending loss of reliable tracking.</div>
+<div class="req"><strong>FR-12 — TTO Update.</strong> TTO shall be updated as target state, robot motion, visibility, and prediction information change.</div>
+<div class="req"><strong>FR-13 — Uncertainty-Aware TTO.</strong> The system shall support representation of uncertainty in the TTO estimate.</div>
+<h3>7.5 Handoff Decision</h3>
+<div class="req"><strong>FR-14 — Proactive Handoff Trigger.</strong> Robot A shall be able to create a handoff candidate event before complete target loss.</div>
+<div class="req"><strong>FR-15 — Deadline Awareness.</strong> Handoff decisions shall consider the available time before target unavailability.</div>
+<div class="req"><strong>FR-16 — Handoff Feasibility.</strong> The system shall determine whether the expected handoff process can be completed within the available time budget, considering communication, decision, receiver motion constraints (position, velocity, navigation availability), target acquisition, identity verification, and safety requirements as applicable. The feasibility decision shall explicitly account for predicted TTO and expected end-to-end handoff completion time, including a defined safety margin.</div>
+<div class="req"><strong>FR-17 — Handoff Cancellation.</strong> Robot A shall be able to cancel or invalidate a pending handoff when its assumptions become invalid, including target trajectory change, receiver unavailability, communication timeout, or restored tracking conditions.</div>
+<h3>7.6 Receiving Robot</h3>
+<div class="req"><strong>FR-18 — Receiver Discovery.</strong> The system shall identify or maintain knowledge of eligible neighboring UGVs that may act as receiving candidates.</div>
+<div class="req"><strong>FR-19 — Receiver State.</strong> A candidate receiver shall expose sufficient state information to evaluate its handoff capability, including availability and relevant acquisition/communication status.</div>
+<div class="req"><strong>FR-20 — Receiver Selection.</strong> The primary two-UGV validation scenario shall identify Robot B as the designated candidate receiver. The architecture shall nevertheless represent receiver eligibility and selection explicitly so that additional UGVs can be introduced later without changing ownership-transfer semantics.</div>
+<h3>7.7 Decentralized Negotiation</h3>
+<div class="req"><strong>FR-21 — Peer-to-Peer Coordination.</strong> Core handoff coordination shall operate between UGV agents without requiring a central decision maker.</div>
+<div class="req"><strong>FR-22 — Handoff Request.</strong> Robot A shall transmit a handoff request containing sufficient metadata for Robot B to evaluate the request.</div>
+<div class="req"><strong>FR-23 — Receiver Response.</strong> Robot B shall return an explicit response indicating acceptance, rejection, unavailability, or timeout/failure.</div>
+<div class="req"><strong>FR-24 — Deadline-Constrained Negotiation.</strong> Negotiation shall be bounded so that coordination overhead does not consume the handoff time budget. In the primary two-UGV protocol, the handoff transaction shall use a bounded request/response exchange and shall not enter an unbounded negotiation loop.</div>
+<div class="req"><strong>FR-25 — Event-Triggered Communication.</strong> Handoff communication shall be triggered by meaningful state/events rather than requiring continuous negotiation traffic.</div>
+<h3>7.8 Communication</h3>
+<div class="req"><strong>FR-26 — Metadata-Based Communication.</strong> The primary inter-robot cooperation mechanism shall use compact target and handoff metadata rather than continuous raw-video streaming.</div>
+<div class="req"><strong>FR-27 — Message Timestamping.</strong> Every handoff-related message shall contain a timestamp.</div>
+<div class="req"><strong>FR-28 — Sender Identification.</strong> Every inter-robot message shall identify its sending robot.</div>
+<div class="req"><strong>FR-29 — Target Identification.</strong> Handoff messages shall contain information sufficient to associate the message with the intended target.</div>
+<div class="req"><strong>FR-30 — Message Validity.</strong> The receiving agent shall detect stale, duplicated, malformed, or unexpected handoff messages.</div>
+<div class="req"><strong>FR-31 — Communication Failure.</strong> Temporary packet loss, delay, disconnection, or receiver timeout shall not be interpreted as successful ownership transfer.</div>
+<h3>7.9 Identity and Re-Identification</h3>
+<div class="req"><strong>FR-32 — Identity Representation.</strong> The system shall maintain an identity representation that permits target comparison across observations from different UGVs.</div>
+<div class="req"><strong>FR-33 — Cross-Robot Re-ID.</strong> Robot B shall verify whether the acquired target corresponds to the target previously tracked by Robot A.</div>
+<div class="req"><strong>FR-34 — Multi-Cue Identity Verification.</strong> The design shall permit identity verification to use appearance together with other available evidence such as spatial, temporal, or predicted-state consistency.</div>
+<div class="req"><strong>FR-35 — Re-ID Rejection.</strong> Robot B shall be able to reject acquisition when identity confidence does not satisfy the defined acceptance condition.</div>
+<h3>7.10 Target Acquisition</h3>
+<div class="req"><strong>FR-36 — Receiver Acquisition.</strong> Following an accepted handoff, Robot B shall attempt to acquire the target using its onboard perception.</div>
+<div class="req"><strong>FR-37 — Acquisition Timeout.</strong> Target acquisition shall be subject to a bounded acquisition interval.</div>
+<div class="req"><strong>FR-38 — Acquisition Verification.</strong> Visual detection alone shall not constitute successful ownership transfer; acquisition shall be followed by identity verification and track establishment.</div>
+<h3>7.11 Handoff Confirmation and Ownership</h3>
+<div class="req"><strong>FR-39 — Handoff Confirmation.</strong> The system shall declare handoff successful only after target acquisition, identity verification, track establishment, and ownership-transfer conditions are satisfied.</div>
+<div class="req"><strong>FR-40 — Ownership Transfer.</strong> After successful confirmation, Robot B shall become the active tracking owner of the target.</div>
+<div class="req"><strong>FR-41 — Previous Owner State.</strong> Robot A shall transition out of exclusive target ownership after confirmed handoff and enter the state defined for post-handoff operation.</div>
+<h3>7.12 Failure and Recovery</h3>
+<div class="req"><strong>FR-42 — Failed Negotiation.</strong> Failed negotiation shall not result in ownership transfer.</div>
+<div class="req"><strong>FR-43 — Failed Acquisition.</strong> Failure to acquire the target within the allowed interval shall invalidate the handoff unless a defined recovery condition is met.</div>
+<div class="req"><strong>FR-44 — Re-ID Failure.</strong> Failed identity verification shall invalidate the ownership transfer.</div>
+<div class="req"><strong>FR-45 — Communication Failure.</strong> Communication failure during handoff shall cause the system to enter an appropriate recovery state.</div>
+<div class="req"><strong>FR-46 — Stale State Protection.</strong> The system shall detect and avoid unqualified use of stale target or receiver state.</div>
+<div class="req"><strong>FR-47 — Duplicate Ownership Prevention.</strong> The system shall prevent an inconsistent state in which multiple UGVs simultaneously claim exclusive ownership of the same target without a defined transitional handoff state.</div>
+<h3>7.13 State Management</h3>
+<div class="req"><strong>FR-48 — Handoff State Machine.</strong> The system shall maintain explicit handoff states covering tracking, candidate generation, negotiation, commitment, acquisition, identity verification, confirmation, and failure/recovery.</div>
+<div class="flow"><span class="node">TRACKING</span><span class="arrow">→</span><span class="node">HANDOFF CANDIDATE</span><span class="arrow">→</span><span class="node">NEGOTIATING</span><span class="arrow">→</span><span class="node">COMMITTED</span><span class="arrow">→</span><span class="node">ACQUISITION</span><span class="arrow">→</span><span class="node">IDENTITY VERIFICATION</span><span class="arrow">→</span><span class="node">CONFIRMED</span><br><br><span class="node">FAILED / TIMEOUT / INVALID</span><span class="arrow">→</span><span class="node">RECOVERY</span><span class="arrow">→</span><span class="node">TRACKING OR TERMINAL FAILURE</span></div>
+<div class="note"><strong>Important:</strong> Commitment does not constitute ownership transfer. Ownership changes only after successful acquisition, identity verification, track establishment, and explicit handoff confirmation.</div>
+<h3>7.14 Physical Robot Operation</h3>
+<div class="req"><strong>FR-49 — Onboard Perception.</strong> Core perception functions shall be deployable on the NVIDIA Jetson Orin Nano edge computing platform.</div>
+<div class="req"><strong>FR-50 — Moving-Robot Operation.</strong> The system shall support target tracking while the UGV carrying the active camera is moving.</div>
+<div class="req"><strong>FR-51 — Robot-to-Robot Handoff.</strong> The validated handoff scenario shall represent transfer of target tracking ownership between physical UGVs.</div>
+<div class="req"><strong>FR-52 — Physical Validation.</strong> The integrated handoff process shall be evaluated on physical moving UGVs as the mandatory primary validation tier. Simulation and edge benchmarking shall support development and diagnosis but shall not replace the physical validation requirement.</div>
+<h3>7.15 Cross-Robot Consistency and Liveness</h3>
+<div class="req"><strong>FR-53 — Shared Reference Frame.</strong> All target state exchanged between UGVs shall be expressed in an explicitly identified shared reference frame (frame identifier carried in every message that contains spatial data), together with the sender's pose uncertainty. The receiver shall inflate the transferred target uncertainty by the combined sender/receiver localization uncertainty before using it for acquisition or identity gating.</div>
+<div class="req"><strong>FR-54 — Confirmation Acknowledgement and Ownership Epoch.</strong> Handoff confirmation shall be acknowledged by the previous owner. Every ownership-related message shall carry a monotonically increasing ownership epoch; messages carrying a stale epoch shall be rejected. The previous owner shall retain exclusive tracking responsibility until the acknowledgement exchange completes or a defined bounded timeout rule resolves it.</div>
+<div class="req"><strong>FR-55 — Liveness Monitoring.</strong> While a handoff is in the COMMITTED or ACQUISITION states, the receiver shall emit periodic liveness/status messages and the owner shall monitor them. Loss of liveness beyond a configured bound shall abort the transaction and trigger recovery without waiting for the full acquisition timeout.</div>
+<div class="req"><strong>FR-56 — Bounded Failover.</strong> In the two-UGV baseline, a failed or aborted handoff shall enter RECOVERY (continued best-effort tracking by the owner). Re-attempting with another candidate shall be permitted only when another eligible candidate exists and the remaining TTO still exceeds the end-to-end handoff budget.</div>
+</section>
+
+<section id="nonfunctional"><h2>8. Non-Functional Requirements</h2><table><tr><th>ID</th><th>Requirement</th><th>Verification</th></tr>
+<tr><td>NFR-01</td><td><strong>Real-Time Performance.</strong> The system shall operate within real-time constraints appropriate to target tracking and handoff.</td><td>Measured latency/FPS during experiments.</td></tr>
+<tr><td>NFR-02</td><td><strong>Handoff Latency.</strong> The system shall minimize the elapsed time from handoff trigger to confirmed transfer.</td><td>Timestamp-based end-to-end measurement.</td></tr>
+<tr><td>NFR-03</td><td><strong>Computational Efficiency.</strong> The core functions shall remain within the computational and memory capacity of the NVIDIA Jetson Orin Nano used by the physical UGV platform.</td><td>CPU/GPU/RAM/inference latency measurements on the Jetson Orin Nano.</td></tr>
+<tr><td>NFR-04</td><td><strong>Communication Efficiency.</strong> Inter-robot communication overhead shall remain bounded and measurable.</td><td>Bytes, messages, latency, and loss experiments.</td></tr>
+<tr><td>NFR-05</td><td><strong>Reliability.</strong> Ownership transfer shall require explicit confirmation and shall not be inferred from communication alone.</td><td>Failure-injection tests.</td></tr>
+<tr><td>NFR-06</td><td><strong>Robustness.</strong> The system shall tolerate representative occlusion, viewpoint change, robot motion, target-speed variation, and communication impairment.</td><td>Controlled scenario testing.</td></tr>
+<tr><td>NFR-07</td><td><strong>Scalability.</strong> The architecture shall permit future extension to additional UGVs without changing the core ownership-transfer concept.</td><td>Architecture inspection and limited multi-agent tests where feasible.</td></tr>
+<tr><td>NFR-08</td><td><strong>Modularity.</strong> Detection, tracking, prediction, TTO, decision, communication, Re-ID, acquisition, and confirmation functions shall be separable for testing.</td><td>Module-level testing.</td></tr>
+<tr><td>NFR-09</td><td><strong>Observability.</strong> Major perception, prediction, communication, and handoff events shall be timestamped and logged.</td><td>Log completeness inspection.</td></tr>
+<tr><td>NFR-10</td><td><strong>Temporal Data Quality.</strong> System observations and messages shall retain timestamps sufficient for latency and synchronization analysis.</td><td>Log and message inspection.</td></tr>
+<tr><td>NFR-11</td><td><strong>Data Freshness.</strong> Stale state shall be identifiable before use in time-critical handoff decisions.</td><td>Artificial delay/staleness tests.</td></tr>
+<tr><td>NFR-12</td><td><strong>Privacy-Oriented Communication.</strong> The normal handoff protocol shall not require raw video exchange between UGVs.</td><td>Network traffic inspection.</td></tr>
+<tr><td>NFR-13</td><td><strong>Ground-Truth Instrumentation.</strong> Physical experiments shall be instrumented with an independent, time-synchronized ground-truth source for target pose, robot pose, occluder geometry and handoff events, so that true time-to-loss and true ownership timing can be computed.</td><td>Instrumentation accuracy and synchronization report.</td></tr>
+<tr><td>NFR-14</td><td><strong>Experiment Safety.</strong> Physical experiments shall include a hardware emergency stop, bounded robot speeds, and an autonomous safe-stop of the chassis when compute or communication is lost; failure-injection tests shall not rely on software alone.</td><td>Safety checklist and pre-run dry tests.</td></tr>
+<tr><td>NFR-15</td><td><strong>Human-Subject Data Protection.</strong> Recording of people for the custom dataset shall be conducted under informed consent and institutional ethics approval, with defined retention and sharing rules.</td><td>Consent and approval records.</td></tr>
+<tr><td>NFR-16</td><td><strong>Parameter Provenance.</strong> Numeric thresholds and time budgets in downstream documents shall be labeled as planning values until confirmed by Tier 2 measurements on the target hardware, and shall be recalculated from measured distributions.</td><td>Traceability from each budget value to a Tier 2 measurement.</td></tr>
+
+</table></section>
+
+<section id="data"><h2>9. Data Requirements</h2><table><tr><th>Data Object</th><th>Producer</th><th>Consumer</th><th>Purpose</th></tr>
+<tr><td>Camera Frame</td><td>Camera</td><td>Detector</td><td>Visual perception.</td></tr><tr><td>Detection</td><td>Detector</td><td>Tracker</td><td>Object localization.</td></tr><tr><td>Track State</td><td>Tracker</td><td>Prediction / Decision</td><td>Current target state.</td></tr><tr><td>Prediction State</td><td>Predictor</td><td>TTO / Handoff</td><td>Future target motion.</td></tr><tr><td>TTO Estimate</td><td>TTO module</td><td>Handoff Decision</td><td>Remaining visibility time.</td></tr><tr><td>Handoff Request</td><td>Robot A</td><td>Robot B</td><td>Initiate transfer.</td></tr><tr><td>Target Metadata</td><td>Robot A</td><td>Robot B</td><td>Support target acquisition and verification.</td></tr><tr><td>Identity Representation</td><td>Robot A/B</td><td>Re-ID</td><td>Cross-robot identity verification.</td></tr><tr><td>Receiver State</td><td>Robot B</td><td>Decision</td><td>Assess receiver capability.</td></tr><tr><td>ACK / Response</td><td>Robot B</td><td>Robot A</td><td>Negotiation result.</td></tr><tr><td>Handoff Confirmation</td><td>Robot B</td><td>Robot A / Logger</td><td>Confirm ownership transfer.</td></tr>
+</table>
+<h3>9.1 Required Message Properties</h3><ul><li>Sender identity.</li><li>Target association.</li><li><strong>Transaction identity separate from target identity.</strong></li><li>Timestamp.</li><li>Message/event type.</li><li>Required target state or handoff metadata.</li><li>Validity/freshness information where required.</li><li>Protocol/state information sufficient to reject stale or out-of-sequence messages.</li></ul>
+<h3>9.2 Ownership and Transaction Semantics</h3><div class="note"><strong>Ownership invariant:</strong> A handoff transaction, acceptance/commit message, or communication acknowledgment shall never by itself constitute ownership transfer. Ownership shall change only after receiver acquisition, identity verification, track establishment, and explicit handoff confirmation. <strong>target_id</strong> identifies the tracked entity; <strong>transaction_id</strong> identifies the specific handoff attempt.</div>
+<p>The exact message schema and transport protocol are design decisions to be specified in the Technical Design Report.</p>
+</section>
+
+<section id="logging"><h2>10. Logging and Observability Requirements</h2><p>The system shall record sufficient information to reconstruct the timing and outcome of each handoff attempt.</p><ul>
+<li>Camera/frame timestamps.</li><li>Detection and tracking states.</li><li>Target state and prediction outputs.</li><li>TTO estimates.</li><li>Handoff candidate creation.</li><li>Handoff request and response timestamps.</li><li>Communication latency and timeout events.</li><li>Acquisition start and completion.</li><li>Identity verification result.</li><li>Ownership-transfer confirmation.</li><li>Failure and recovery reason.</li><li>Computational resource measurements when available.</li>
+</ul></section>
+
+<section id="evaluation"><h2>11. Evaluation-Oriented Requirements</h2><p>The SRS establishes the observables that the later Experimental Design shall measure. The final experimental protocol, datasets, baselines, and statistical analysis will be defined after the Technical Design Report.</p>
+<h3>11.1 Tracking</h3><ul><li>HOTA</li><li>IDF1</li><li>MOTA where applicable</li><li>ID switches</li></ul>
+<h3>11.2 Re-ID</h3><ul><li>Rank-1 accuracy</li><li>mAP</li><li>Identity verification accuracy / error</li></ul>
+<h3>11.3 Prediction</h3><ul><li>Trajectory prediction error</li><li>TTO estimation error</li><li>Prediction latency</li><li>Trajectory error (ADE/FDE) and TTO calibration (interval coverage)</li></ul>
+<h3>11.4 Handoff</h3><ul><li>Handoff Success Rate</li><li>Handoff Failure Rate</li><li>End-to-End Handoff Latency</li><li>Target Loss Rate</li><li>False Handoff Rate</li><li>Identity Transfer Success Rate</li><li>Handoff success as a function of available TTO margin</li><li>Cross-robot identity false-match rate</li><li>Watchdog detection latency</li><li>Dual-ownership violations (target: zero)</li></ul>
+<h3>11.5 Edge Resources</h3><ul><li>FPS</li><li>Inference latency</li><li>CPU utilization</li><li>GPU utilization where applicable</li><li>Memory consumption</li><li>Power mode, temperature and thermal-throttling events</li></ul>
+<h3>11.6 Communication</h3><ul><li>Bytes transmitted per handoff</li><li>Messages per handoff</li><li>Communication latency</li><li>Packet-loss and delay sensitivity (injected impairments)</li></ul>
+<h3>11.7 Multi-Tier Evaluation Structure</h3>
+<table><tr><th>Tier</th><th>Purpose</th><th>Status</th></tr>
+<tr><td>Tier 1</td><td>Functional / simulation verification</td><td>Required</td></tr>
+<tr><td>Tier 2</td><td>Jetson Orin Nano edge benchmarking</td><td>Required</td></tr>
+<tr><td>Tier 3</td><td>Physical moving UGV validation</td><td>Mandatory primary validation</td></tr>
+</table>
+</section>
+
+<section id="success"><h2>12. System-Level Success Criteria</h2><div class="success"><strong>Primary success criterion:</strong> The integrated system shall demonstrate, on physical moving UGVs, that a tracking UGV can predict impending target unavailability, determine whether a receiver can complete the handoff within the available time and safety margin, coordinate the transfer without centralized control, enable the receiver to acquire and verify the target identity, establish a valid target track, and confirm ownership transfer before or at the defined target-loss boundary under the tested physical conditions. A communication acknowledgment or commitment without verified acquisition and identity continuity shall not count as a successful handoff.</div>
+<p>Component accuracy alone shall not be considered sufficient evidence of success. The evaluation shall connect prediction, TTO estimation, feasibility assessment, negotiation, acquisition, Re-ID, and confirmed ownership transfer.</p>
+</section>
+
+<section id="research-reqs"><h2>13. Research-Derived Requirements</h2>
+<p>The following research-derived requirements (RR) are design drivers extracted from the Literature Review. They define conditions and risks that the system shall explicitly address; they are not, by themselves, claims that the proposed system will outperform every prior method.</p>
+<ul>
+<li><strong>RR-01:</strong> Proactive handoff can preserve continuity better than waiting for loss.</li>
+<li><strong>RR-02:</strong> Visibility loss creates a limited decision window.</li>
+<li><strong>RR-03:</strong> Handoff must fit within available time.</li>
+<li><strong>RR-04:</strong> Appearance-only identity transfer is vulnerable to viewpoint and occlusion changes.</li>
+<li><strong>RR-05:</strong> General negotiation may consume time in a short handoff window.</li>
+<li><strong>RR-06:</strong> Edge computation is constrained.</li>
+<li><strong>RR-07:</strong> Raw video exchange is communication-heavy.</li>
+<li><strong>RR-08:</strong> Simulation may hide physical timing and communication issues.</li>
+<li><strong>RR-09:</strong> Independently moving robots drift in separate odometry frames; transferred target state is only usable in an explicit shared frame with known uncertainty.</li>
+<li><strong>RR-10:</strong> A committed transaction can deadlock if the receiver fails silently or ownership acknowledgements are lost.</li>
+</ul>
+</section>
+
+<section id="traceability"><h2>14. Requirements Traceability</h2><table><tr><th>LR Finding / Research Gap</th><th>SRS Requirement</th><th>Later Design Area</th><th>Primary Evaluation</th></tr>
+<tr><td>Proactive handoff can preserve continuity better than waiting for loss.</td><td>RR-01 / FR-14</td><td>Handoff trigger</td><td>Handoff success / target loss</td></tr>
+<tr><td>Visibility loss creates a limited decision window.</td><td>RR-02 / FR-11</td><td>TTO model</td><td>TTO error</td></tr>
+<tr><td>Handoff must fit within available time.</td><td>RR-03 / FR-16</td><td>Feasibility model</td><td>Success vs. TTO margin</td></tr>
+<tr><td>Appearance-only identity transfer is vulnerable to viewpoint and occlusion changes.</td><td>RR-04 / FR-33–35</td><td>Identity verification</td><td>Re-ID / identity-transfer accuracy</td></tr>
+<tr><td>General negotiation may consume time in a short handoff window.</td><td>RR-05 / FR-24–25</td><td>Deadline-aware protocol</td><td>Negotiation latency / overhead</td></tr>
+<tr><td>Edge computation is constrained.</td><td>RR-06 / NFR-03</td><td>Edge architecture</td><td>Latency / resource utilization</td></tr>
+<tr><td>Raw video exchange is communication-heavy.</td><td>RR-07 / FR-26</td><td>Metadata protocol</td><td>Bandwidth / bytes per handoff</td></tr>
+<tr><td>Simulation may hide physical timing and communication issues.</td><td>RR-08 / FR-52</td><td>Physical deployment</td><td>Physical handoff success</td></tr>
+<tr><td>Independent robot frames cannot be assumed aligned.</td><td>RR-09 / FR-53</td><td>Shared-frame localization and message schema</td><td>Cross-robot position error at handoff</td></tr>
+<tr><td>Silent receiver failure or lost acknowledgement can deadlock or split ownership.</td><td>RR-10 / FR-54–56</td><td>Liveness watchdog and epoch rules</td><td>Watchdog latency / dual-ownership violations</td></tr>
+</table></section>
+
+<section id="priority"><h2>15. Requirements Prioritization</h2>
+<h3>15.1 Must Have</h3><ul><li>Target detection and tracking.</li><li>Target state estimation.</li><li>Short-horizon prediction.</li><li>TTO estimation.</li><li>Uncertainty-aware TTO because TTO uncertainty directly affects deadline-aware feasibility and safety-margin decisions.</li><li>Proactive handoff trigger.</li><li>Handoff feasibility assessment.</li><li>Robot-to-robot communication.</li><li>Target acquisition.</li><li>Cross-robot identity verification.</li><li>Handoff confirmation.</li><li>Failure handling.</li><li>Event logging.</li><li>Physical UGV validation.</li></ul>
+<h3>15.2 Should Have</h3><ul><li>Multi-candidate receiver selection and ranked failover (beyond the two-UGV baseline).</li><li>Communication-loss recovery.</li><li>Multi-cue identity verification.</li></ul>
+<h3>15.3 Could Have</h3><ul><li>Adaptive prediction.</li><li>More than two UGVs.</li><li>More advanced learned trajectory prediction.</li><li>Advanced distributed allocation mechanisms.</li><li>Larger-scale deployment.</li></ul>
+<h3>15.4 Not Required for the Core Contribution</h3><ul><li>Swarm-scale optimization.</li><li>Cloud-based centralized perception.</li><li>Continuous raw-video sharing.</li><li>Novel detector architecture.</li><li>Novel Re-ID architecture.</li></ul>
+</section>
+
+<section id="constraints"><h2>16. Constraints and Assumptions</h2>
+<h3>16.1 Constraints</h3><ul>
+<li><strong>SC-01 — Edge Computing Platform:</strong> The primary physical implementation shall use an NVIDIA Jetson Orin Nano as the onboard edge computing platform. Core perception, tracking, prediction, and handoff decision functions shall be designed to operate within its computational and memory constraints.</li>
+<li><strong>SC-02 — Hardware Platform Sensors and Roles:</strong> The physical UGV platform provides RGB/depth vision, LiDAR-based ranging, IMU sensing, and wheel-encoder feedback. RGB visual sensing is the primary modality for target detection, tracking, acquisition, and cross-robot identity verification. IMU and wheel-encoder data shall be available to support ego-motion and robot-state estimation. Depth is permitted to supply metric 3D target position and occlusion/visibility geometry (needed for TTO), and LiDAR supports localization in the shared frame and obstacle/safety awareness; neither shall be an input to the identity (Re-ID) pipeline unless experimentally justified in the Technical Design.</li>
+
+<li><strong>SC-03 — Communication:</strong> inter-robot coordination shall use lightweight metadata.</li>
+<li><strong>SC-04 — Moving Cameras:</strong> the perception design shall account for UGV/camera motion.</li>
+<li><strong>SC-05 — Sparse Coverage:</strong> the system shall not require continuous overlapping fields of view between adjacent UGVs.</li>
+<li><strong>SC-06 — Physical Validation:</strong> final system claims shall be supported by physical experiments.</li>
+</ul>
+<h3>16.2 Assumptions</h3><ul>
+<li>The primary validation scenario contains one principal target.</li><li>One UGV owns the target track at a time, except during an explicitly defined transitional handoff state.</li><li>At least one other UGV can act as a candidate receiver.</li><li>The robots have onboard cameras and sufficient edge compute for the selected implementation.</li><li>A communication path is available during the primary handoff scenario, although delay and packet loss shall be tested as impairments.</li><li>The initial physical environment is controlled or semi-controlled enough to permit repeatable experiments.</li>
+</ul></section>
+
+<section id="risks"><h2>17. Risks</h2><table><tr><th>Risk</th><th>Impact</th><th>Requirement Response</th></tr>
+<tr><td>Detection failure</td><td>High</td><td>Tracking confidence and recovery mechanisms.</td></tr>
+<tr><td>Identity switch</td><td>Very High</td><td>Cross-robot Re-ID and multi-cue verification.</td></tr>
+<tr><td>Prediction error</td><td>High</td><td>Prediction uncertainty and conservative feasibility decision.</td></tr>
+<tr><td>TTO estimation error</td><td>Very High</td><td>Dedicated TTO evaluation and timing analysis.</td></tr>
+<tr><td>Communication delay/loss</td><td>Very High</td><td>Deadline-aware protocol, freshness checks, timeout and recovery.</td></tr>
+<tr><td>Receiver unavailable</td><td>High</td><td>Receiver state and feasibility assessment.</td></tr>
+<tr><td>Late target acquisition</td><td>Very High</td><td>Acquisition deadline and explicit confirmation.</td></tr>
+<tr><td>Re-ID false match</td><td>Very High</td><td>Identity rejection and multi-cue verification.</td></tr>
+<tr><td>Moving-camera instability</td><td>High</td><td>Motion-aware tracking requirements.</td></tr>
+<tr><td>Edge overload</td><td>High</td><td>Resource constraints and modular benchmarking.</td></tr>
+<tr><td>Simulation-to-real gap</td><td>Very High</td><td>Physical UGV validation.</td></tr>
+<tr><td>Shared-frame misalignment between robots</td><td>Very High</td><td>FR-53 shared frame and uncertainty inflation.</td></tr>
+<tr><td>Silent receiver failure / split ownership</td><td>Very High</td><td>FR-54–56 liveness monitoring, epochs, acknowledged confirmation.</td></tr>
+<tr><td>Physical-experiment safety and subject privacy</td><td>High</td><td>NFR-14, NFR-15.</td></tr>
+</table></section>
+
+<section id="definition"><h2>18. Final System Definition</h2>
+<p>The proposed system is formally defined as:</p>
+<div class="success"><strong>A decentralized edge-based multi-UGV system that continuously tracks a target locally, predicts impending visibility loss, estimates the remaining time before target unavailability, evaluates whether another UGV can complete the transfer within that time budget, performs lightweight decentralized handoff coordination, enables the receiving UGV to acquire and re-identify the target, and confirms ownership transfer while maintaining identity continuity and operating within edge, communication, and physical-robot constraints.</strong></div>
+<h3>18.1 Frozen Engineering Decisions</h3>
+<div class="success"><strong>The following decisions are frozen at the SRS baseline and shall be treated as project-level engineering decisions unless a formally documented requirements change is approved.</strong></div>
+<table><tr><th>Decision</th><th>Final Baseline Decision</th><th>Engineering Rationale</th></tr>
+<tr><td>Primary physical compute</td><td><strong>NVIDIA Jetson Orin Nano</strong></td><td>It is the actual onboard edge platform for physical validation. The system shall be benchmarked on the real platform.</td></tr>
+<tr><td>Primary target sensing</td><td><strong>RGB vision</strong></td><td>The core research problem is visual tracking, predictive visibility loss, acquisition, and cross-robot identity continuity.</td></tr>
+<tr><td>Robot-state support</td><td><strong>IMU + wheel encoders</strong></td><td>They support ego-motion and robot-state estimation required for moving-camera operation.</td></tr>
+<tr><td>Depth/LiDAR role</td><td><strong>Supporting (geometry, localization, safety); not used for identity</strong></td><td>Depth supports metric 3D position and visibility geometry for TTO; LiDAR supports shared-frame localization and safety. Neither feeds the identity pipeline unless experimentally justified.</td></tr>
+<tr><td>Visibility-loss boundary</td><td><strong>Physical occlusion OR effective camera-FOV exit</strong></td><td>The system targets loss of reliable visual tracking, not only literal occlusion.</td></tr>
+<tr><td>TTO definition</td><td><strong>Operational time-to-visibility-loss</strong></td><td>TTO retains the project terminology while covering both visibility-loss mechanisms.</td></tr>
+<tr><td>Primary topology</td><td><strong>Two physical UGVs: Robot A → Robot B</strong></td><td>This is the minimum complete and reproducible research scenario.</td></tr>
+<tr><td>Coordination</td><td><strong>Decentralized peer-to-peer, bounded request/response</strong></td><td>No central decision maker and no unbounded negotiation loop in the core protocol.</td></tr>
+<tr><td>Ownership semantics</td><td><strong>COMMITTED ≠ OWNERSHIP</strong></td><td>Ownership changes only after acquisition, identity verification, track establishment, and explicit confirmation.</td></tr>
+<tr><td>Communication</td><td><strong>Metadata only</strong></td><td>Raw video is excluded from the normal inter-UGV handoff protocol.</td></tr>
+<tr><td>Validation</td><td><strong>Tier 3 physical moving UGVs is mandatory primary evidence</strong></td><td>Simulation and edge benchmarking support development and diagnosis but cannot replace physical validation.</td></tr>
+<tr><td>Research contribution</td><td><strong>Integrated timing + feasibility + decentralized handoff + identity continuity + edge execution + physical validation</strong></td><td>The project does not require inventing a novel detector or Re-ID architecture to make its central research contribution.</td></tr>
+</table>
+<h3>18.2 Requirements Baseline Boundary</h3>
+<p>This SRS intentionally does not freeze specific implementation technologies. Selection of detector, tracker, prediction model, Re-ID architecture, communication middleware, robotics framework, mathematical model, datasets, and numerical thresholds shall be made in the next project stages based on the requirements established here and the evidence from the Literature Review.</p>
+<h3>18.3 Next Controlled Project Stage</h3>
+<div class="flow"><span class="node">SRS v1.3<br><small>Frozen requirements &amp; decisions</small></span><span class="arrow">→</span><span class="node">Mathematical / Technical Design<br><small>Models, equations, interfaces, algorithms</small></span><span class="arrow">→</span><span class="node">Dataset &amp; Experimental Design<br><small>Baselines, scenarios, metrics</small></span><span class="arrow">→</span><span class="node">Implementation &amp; Tier 3 Validation</span></div>
+</section>
+<section id="changelog"><h2>Revision Notes — v1.3</h2><ul>
+<li>Version labels unified (header, metadata, footer, flow diagram).</li>
+<li>Added FR-53 to FR-56 (shared frame, acknowledged confirmation with ownership epochs, liveness monitoring, bounded failover) and RR-09/RR-10.</li>
+<li>Added NFR-13 to NFR-16 (ground truth, experiment safety, subject-data protection, parameter provenance).</li>
+<li>Clarified SC-02: depth may provide metric 3D position and occlusion geometry for TTO; the identity pipeline remains RGB-only.</li>
+<li>Extended §11 observables (TTO calibration, watchdog latency, dual-ownership violations, thermal events, impairment sensitivity) and the risk register.</li>
+</ul></section>
+<div class="footer">Software Requirements Specification · Proactive Time-to-Occlusion-Driven Decentralized Target Handoff for Edge UGVs · Version 1.3</div>
+</div>
+</body>
+</html>

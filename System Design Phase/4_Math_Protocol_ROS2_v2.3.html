@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 4: Mathematical Model, Protocol & Implementation (v2.3)</title>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--text:#1f2937;--muted:#64748b;--accent:#173b57;--accent2:#2f6f95;--line:#dbe3ea;--soft:#eef4f8;--warn:#fff7e6;--green:#edf8f1}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;line-height:1.6}
+.container{max-width:1180px;margin:auto;padding:36px 24px 70px}.cover{background:linear-gradient(135deg,#173b57,#2f6f95);color:white;border-radius:18px;padding:52px 48px;margin-bottom:28px;box-shadow:0 12px 35px rgba(0,0,0,.12)}
+.cover .label{font-size:13px;letter-spacing:2px;text-transform:uppercase;opacity:.82}.cover h1{font-size:38px;line-height:1.15;margin:14px 0 18px}.cover p{font-size:17px;max-width:950px;opacity:.94}.meta{display:flex;gap:28px;flex-wrap:wrap;margin-top:28px;font-size:14px}
+nav,section{background:var(--card);border:1px solid var(--line);border-radius:14px}nav{padding:24px 28px;margin-bottom:26px}nav h2{margin-top:0;color:var(--accent)}nav a{color:var(--accent2);text-decoration:none}nav ol{columns:2;margin-bottom:0}
+section{padding:30px 32px;margin:22px 0}h2{color:var(--accent);font-size:26px;border-bottom:2px solid var(--line);padding-bottom:9px;margin-top:0}h3{color:var(--accent2);margin-top:26px;font-size:20px}h4{margin-bottom:7px;color:#334155;font-size:16px}
+p{margin:9px 0}ul,ol{padding-left:25px}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}th{background:var(--soft);color:var(--accent);font-weight:600}
+.comp-card{border-left:5px solid var(--accent2);background:#fafcfd;padding:16px 20px;margin:16px 0;border-radius:6px;border:1px solid var(--line);border-left-width:5px}
+.comp-card strong{color:var(--accent);font-size:16px}
+.note{background:var(--warn);border-left:5px solid #d99a1d;padding:15px 17px;border-radius:5px;margin:18px 0}.success{background:var(--green);border-left:5px solid #3b8b5a;padding:15px 17px;border-radius:5px;margin:18px 0}
+.math-block{background:#1e293b;color:#f8fafc;padding:16px 18px;border-radius:8px;overflow-x:auto;font-size:14px;line-height:1.5;font-family:Consolas,Monaco,monospace;margin:14px 0;}
+.math-inline{font-family:Consolas,Monaco,monospace;background:#f1f5f9;color:#0f172a;padding:2px 5px;border-radius:4px;font-size:13px;}
+.footer{color:var(--muted);text-align:center;margin-top:35px;font-size:13px}@media(max-width:800px){nav ol{columns:1}.cover{padding:35px 25px}.cover h1{font-size:29px}section{padding:22px 18px}}
+</style>
+</head>
+<body>
+<div class="container">
+<header class="cover">
+<div class="label">Phase 4: Technical &amp; Implementation Baseline</div>
+<h1>Mathematical Model, Protocol &amp; ROS 2 Implementation Strategy</h1>
+<p>Formal mathematical definitions, inter-UGV protocol specifications, timing model, and the ROS 2 execution blueprint, aligned with SRS v1.3 and SAD v2.3 for the NVIDIA Jetson Orin Nano platform. Numeric values are <strong>planning values</strong> to be confirmed by Tier 2 measurements (SRS NFR-16).</p>
+<div class="meta"><span><strong>Status:</strong> Final Baseline V2.3</span><span><strong>Hardware Focus:</strong> Jetson Orin Nano + RGB-D/LiDAR</span><span><strong>Aligned with:</strong> SRS v1.3, SAD v2.3</span></div>
+</header>
+
+<nav id="toc"><h2>Document Contents</h2><ol>
+<li><a href="#s1">1. 3D Kinematic &amp; Mathematical Model</a></li>
+<li><a href="#s2">2. Handoff Decision &amp; Utility Logic</a></li>
+<li><a href="#s3">3. Timing Model &amp; Anti-Deadlock Protections</a></li>
+<li><a href="#s4">4. Inter-UGV Protocol &amp; Serialization</a></li>
+<li><a href="#s5">5. ROS 2 Execution Blueprint &amp; QoS</a></li>
+<li><a href="#s6">6. 2D-to-3D Perception Mechanics</a></li>
+<li><a href="#s7">7. Parameter Register &amp; Revision Notes</a></li>
+</ol></nav>
+
+<section id="s1">
+<h2>1. 3D Kinematic &amp; Mathematical Model</h2>
+<p>State estimation operates in 3D Cartesian space in a <strong>shared reference frame</strong>, accounting for ego-motion uncertainty. RGB remains the primary modality for detection, tracking and identity (SRS SC-02); depth supplies metric 3D position and occlusion geometry for TTO.</p>
+
+<h3>1.0 Frames and Conventions</h3>
+<ul>
+<li><strong><code>map</code></strong>: the shared world frame (common pre-built map; each UGV localizes against it using LiDAR/IMU/encoders via C-10). All exchanged spatial data is expressed here and carries a <code>frame_id</code>.</li>
+<li><strong><code>odom</code></strong>: per-robot, drifting, never exchanged.</li>
+<li><strong>Camera optical frame</strong>: X right, Y down, Z forward (depth). The frustum in §1.3 and the deprojection in §6 both use this convention.</li>
+</ul>
+
+<h3>1.1 3D State Vector &amp; Covariance</h3>
+<p>The target state <span class="math-inline">s(k)</span> and covariance <span class="math-inline">Σ(k)</span> at step <span class="math-inline">k</span> follow a 6-DoF constant-velocity kinematic model in <code>map</code>:</p>
+<div class="math-block">s(k) = [x, y, z, ẋ, ẏ, ż]^T      (in frame map)
+Σ(k) = Cov(s(k)) ∈ ℝ^(6x6)
+s(k+1) = F s(k) + w,   w ~ N(0, Q_target)</div>
+
+<h3>1.2 Ego-Motion Uncertainty (Measurement-Side Propagation)</h3>
+<p>Mecanum slippage and vibration corrupt the robot pose, not the target's dynamics. Therefore ego-motion uncertainty enters the <strong>measurement</strong> covariance rather than the process noise. A camera-frame observation <span class="math-inline">p_c</span> is mapped to <code>map</code> by <span class="math-inline">p_m = T(ξ) p_c</span> with robot pose <span class="math-inline">ξ</span> (covariance <span class="math-inline">Σ_ξ</span>):</p>
+<div class="math-block">R_total = J_c * R_cam * J_c^T + J_ξ * Σ_ξ * J_ξ^T
+J_c = ∂p_m/∂p_c ,   J_ξ = ∂p_m/∂ξ
+Q_total = Q_target                       (target acceleration noise only)</div>
+<p>This keeps the Mahalanobis gate from rejecting valid matches because of chassis motion. The deterministic transform is applied once (via <code>tf2</code>, §6); this section only propagates its uncertainty, so ego-motion is not double-counted.</p>
+<p><strong>Cross-robot inflation (SRS FR-53):</strong> when Robot B uses A's transferred state, it inflates the covariance by both robots' localization uncertainty: <span class="math-inline">Σ_B = Σ_target + Σ_ξ,A + Σ_ξ,B</span> (position blocks).</p>
+
+<h3>1.3 3D FOV Frustum and Time-to-Occlusion</h3>
+<p>Let <span class="math-inline">α_fov</span>, <span class="math-inline">β_fov</span> be the horizontal and vertical half-angles of the <em>effective</em> FOV (the narrower of the aligned RGB and depth FOVs):</p>
+<div class="math-block">V_fov = { p_c = (X, Y, Z) | Z &gt; 0, ||p_c||_2 ≤ R_max,
+          |arctan2(X, Z)| ≤ α_fov, |arctan2(Y, Z)| ≤ β_fov }</div>
+<p>The Time-to-Occlusion <span class="math-inline">T_TTO</span> is the infimum <span class="math-inline">τ &gt; 0</span> at which the predicted target position (transformed into the camera frame) leaves <span class="math-inline">V_fov</span> or the camera-to-target ray intersects a known 3D obstacle hull. The decision logic uses the uncertainty-aware lower bound:</p>
+<div class="math-block">T_TTO^safe = max(0, T̂_TTO − k_τ * σ_TTO)      (k_τ = 2, planning value)</div>
+<p>σ_TTO is obtained by propagating Σ(k) through the prediction horizon. The coverage of this bound is itself an evaluated quantity (TTO calibration, see Phase 5).</p>
+</section>
+
+<section id="s2">
+<h2>2. Handoff Decision &amp; Utility Logic</h2>
+
+<h3>2.1 Operational Regimes (TTO Trigger Zones)</h3>
+<ul>
+<li><strong>Zone 1: Steady Tracking</strong> (<span class="math-inline">T_TTO^safe &gt; 2.50 s</span>): No handoff initiated. Network silence maintained.</li>
+<li><strong>Zone 2: Proactive Trigger</strong> (<span class="math-inline">1.23 s ≤ T_TTO^safe ≤ 2.50 s</span>): Feasibility evaluated; <code>HANDOFF_RECOMMENDED</code> is emitted if a candidate passes the feasibility test below.</li>
+<li><strong>Zone 3: Critical Boundary</strong> (<span class="math-inline">T_TTO^safe &lt; 1.23 s</span>): Starting a <em>new</em> handoff is forbidden because the full budget no longer fits. An already-running transaction continues under the watchdog (§3.3).</li>
+</ul>
+<p>The 1.23 s boundary equals the total budget <span class="math-inline">Δt_budget^max</span> of §3.2, so the zone boundary and the feasibility test are the same inequality.</p>
+
+<h3>2.2 Threshold-Gated Utility Function</h3>
+<p>Receiver eligibility is a <strong>hard gate</strong>, and ranking among eligible receivers is a weighted sum. The gate removes unsafe candidates; it does not scale the scores of eligible ones, so a busy but safe robot (CPU ≤ 90%) is not penalized.</p>
+<div class="math-block">G(j) = 1  if Load_cpu(j) ≤ 90%  AND  Battery(j) ≥ 15%  AND  nav_available(j)  AND  link_fresh(j)
+       0  otherwise
+
+Feasible(j):  t̂_exec(j) + Δt_safety ≤ T_TTO^safe
+
+U_j = G(j) * Feasible(j) * [ w1*Φ_feas(j) + w2*Φ_FOV(j) + w3*Φ_net(j) ]
+w = (0.5, 0.3, 0.2),  w1 + w2 + w3 = 1   (configurable via C-12)</div>
+<ul>
+<li><span class="math-inline">Φ_feas(j) = clip((T_TTO^safe − t̂_exec(j) − Δt_safety) / T_ref, 0, 1)</span>, <span class="math-inline">T_ref = 1.0 s</span>: spare time after the expected execution time and the safety margin.</li>
+<li><span class="math-inline">Φ_FOV(j)</span> ∈ [0,1]: probability mass of the predicted target path that lies inside j's frustum during the hold window after the expected intercept time.</li>
+<li><span class="math-inline">Φ_net(j) = (1 − p_loss(j)) · clip(1 − RTT(j)/RTT_max, 0, 1)</span>, from measured link statistics.</li>
+</ul>
+<p>If no candidate has <span class="math-inline">U_j &gt; 0</span>, no handoff is initiated. In the two-UGV baseline there is a single candidate and the utility only reports the margin; ranking matters when more UGVs are present.</p>
+</section>
+
+<section id="s3">
+<h2>3. Timing Model &amp; Anti-Deadlock Protections</h2>
+
+<h3>3.1 Clock Synchronization</h3>
+<p>Clocks are synchronized with PTP (IEEE 1588v2) where available, otherwise with a software time-sync daemon; the achieved offset <span class="math-inline">δ_sync</span> is <strong>measured in Tier 2</strong>. The planning value is 2.0 ms, but Wi-Fi without hardware timestamping may not reach it. To keep deadline arithmetic robust, every request carries both an absolute deadline and a relative <code>tto_remaining_ms_at_send</code>; the receiver may use the relative value when its measured offset exceeds the budgeted <span class="math-inline">δ_sync</span>.</p>
+
+<h3>3.2 Latency Budget (Planning Values)</h3>
+<table>
+<thead><tr><th>Phase</th><th>Symbol</th><th>Planning value</th></tr></thead>
+<tbody>
+<tr><td>Decision + feasibility</td><td>Δt_dec</td><td>20 ms</td></tr>
+<tr><td>Negotiation (request → response, one round trip)</td><td>Δt_neg</td><td>60 ms</td></tr>
+<tr><td>Receiver slew / pre-position + acquisition (hard timeout 700 ms)</td><td>Δt_acq</td><td>600 ms</td></tr>
+<tr><td>Identity verification (one inference + multi-cue fusion)</td><td>Δt_id</td><td>120 ms</td></tr>
+<tr><td>Track establishment + CONFIRM / CONFIRM_ACK exchange</td><td>Δt_conf</td><td>66 ms</td></tr>
+<tr><td><strong>Execution total</strong></td><td>Δt_exec^max</td><td><strong>866 ms</strong></td></tr>
+<tr><td>Safety margin</td><td>Δt_safety</td><td>364 ms</td></tr>
+<tr><td><strong>Total budget</strong></td><td>Δt_budget^max</td><td><strong>1230 ms</strong></td></tr>
+</tbody></table>
+<div class="math-block">Δt_safety = 3 * σ_total + 2 * δ_sync = 3 * 120 ms + 2 * 2 ms = 364 ms</div>
+<p><strong>Confidence claim (corrected):</strong> with k = 3, a Gaussian tail gives about 99.9% one-sided coverage, but the distribution-free (Cantelli) guarantee is only ≥ 90%. Neither is assumed; σ_total and the achieved coverage are determined empirically from Tier 2 latency distributions, and the margin is recomputed (for example from the measured 99th percentile) if they differ.</p>
+<p>The acquisition window is therefore <strong>≤ 700 ms</strong>, not 1200 ms, and no separate "1.5 s lock" exists: the transaction lock equals the acquisition hard timeout plus the confirmation allowance.</p>
+
+<h3>3.3 10 Hz Liveness Watchdog (Anti-Deadlock)</h3>
+<div class="note"><strong>Reliability patch:</strong> an owner waiting in <code>COMMITTED</code>/<code>ACQUISITION</code> would otherwise hang if the receiver suffers a hardware, power or link failure.</div>
+<p>During acquisition the receiver emits <code>ACQ_STATUS</code> (<code>SLEWING</code> / <code>SEARCHING</code> / <code>ACQUIRED</code>) at <strong>10 Hz</strong>. The owner arms a watchdog <span class="math-inline">τ_hb = 300 ms</span>; three consecutive missed heartbeats abort the transaction (<code>ERR_CANDIDATE_DEAD</code>), with worst-case detection ≈ 300–400 ms depending on phase. A DDS LIVELINESS lease of 300 ms provides a redundant transport-level signal.</p>
+<p><strong>After an abort:</strong> the state machine enters RECOVERY and the owner keeps tracking. A new attempt is allowed only if another eligible candidate exists <em>and</em> the remaining <span class="math-inline">T_TTO^safe ≥ 1.23 s</span> (a full budget). Because detection alone costs ≈ 300 ms, a second attempt is usually infeasible in the two-UGV baseline; the abort's value is to end a doomed transaction early and return control to local recovery rather than waiting out the timeout.</p>
+
+<h3>3.4 Ownership Handshake and Epochs</h3>
+<ol>
+<li><code>HANDOFF_REQUEST</code> (epoch e) → <code>HANDOFF_RESPONSE</code>. State: <code>COMMITTED</code>; A remains the sole owner.</li>
+<li>B streams <code>ACQ_STATUS</code> at 10 Hz, acquires the target, verifies identity and establishes a local track.</li>
+<li>B sends <code>HANDOFF_CONFIRM</code> (epoch e). A replies <code>HANDOFF_CONFIRM_ACK</code> carrying epoch e+1 and only then releases exclusive ownership (continuing passive tracking).</li>
+<li>B becomes the active owner on receipt of the ACK. A lost CONFIRM is retransmitted a bounded number of times (default 3, 30 ms apart); if no ACK arrives, B aborts and A remains owner. A repeated CONFIRM for an already-acknowledged transaction is answered with the same ACK (idempotent).</li>
+<li>Any message with a stale epoch or an unknown <code>transaction_id</code> is rejected and logged.</li>
+</ol>
+<p>This realizes SRS FR-47 and FR-54: at no time do two UGVs hold exclusive ownership, and a commitment alone never transfers ownership.</p>
+</section>
+
+<section id="s4">
+<h2>4. Inter-UGV Protocol &amp; Serialization</h2>
+
+<h3>4.1 Binary Serialization Mandate</h3>
+<div class="success"><strong>Constraint:</strong> all wire messages are serialized with ROS 2 / DDS CDR using custom <code>.msg</code> interfaces. Transmitting the 512-dim float32 Re-ID vector as string-based JSON is prohibited.</div>
+
+<h3>4.2 Message Set</h3>
+<p>Every message begins with a common header (SRS FR-27–FR-30, FR-54):</p>
+<div class="math-block"># Header (common)
+uint16 protocol_version
+uint8  message_type
+string sender_id
+string receiver_id
+string transaction_id
+string target_id
+uint64 ownership_epoch
+uint32 sequence
+int64  stamp_utc_ns
+
+# HandoffRequest.msg  (Header +)
+int64  tto_deadline_utc_ns
+int32  tto_remaining_ms_at_send
+float32 tto_sigma_ms
+string frame_id                  # e.g. "map"
+float32[3]  position             # in frame_id
+float32[3]  velocity
+float32[21] cov_upper_triangle   # 6x6 target covariance
+float32[3]  sender_pose          # x, y, yaw in frame_id
+float32[6]  sender_pose_cov_ut   # 3x3 upper triangle
+float32[512] reid_feature_vector # L2-normalised OSNet embedding
+float32 reid_quality
+
+# HandoffResponse.msg (Header +)
+uint8 decision                   # ACCEPT / REJECT / UNAVAILABLE
+uint8 reason
+int32 est_acquisition_ms
+float32 cpu_load
+float32 battery
+
+# HandoffCancel.msg   (Header +)  uint8 reason
+# AcqStatus.msg       (Header +)  uint8 status; float32 confidence
+# HandoffConfirm.msg  (Header +)  float32 reid_similarity; string frame_id;
+#                                 float32[3] position; float32[21] cov_upper_triangle
+# HandoffConfirmAck   (Header +)  uint64 new_epoch</div>
+<p>The request payload is dominated by the 2048-byte embedding and totals roughly <strong>2.5–3 KB</strong> including header strings. This exceeds a single Wi-Fi MTU, so FastDDS fragmentation and reliable retransmission apply; the expected transfer time (target &lt; 2 ms) is a Tier 2 measurement target, not a guarantee. If loss sensitivity requires, the embedding can be sent as FP16 or INT8 (≈ 0.5–1 KB) after verifying the accuracy impact.</p>
+<p>Spatial fields without a valid <code>frame_id</code> are rejected by the receiver.</p>
+</section>
+
+<section id="s5">
+<h2>5. ROS 2 Execution Blueprint &amp; QoS</h2>
+<p>Logical components are grouped into composable nodes inside shared processes to use zero-copy intra-process communication on the 8 GB Jetson Orin Nano (CPU and GPU share unified memory).</p>
+
+<h3>5.1 Composable Node Graph</h3>
+<ul>
+<li><strong>Node 1: Perception &amp; Kinematics</strong> (<code>C-01</code>, <code>C-02</code>, <code>C-03</code>). Continuous; design target 30 Hz with an acceptance threshold fixed by Tier 2 (≥ 15 FPS sustained with the full stack active). Uses TensorRT/CUDA; publishes <span class="math-inline">T_TTO</span>, <span class="math-inline">T_TTO^safe</span> locally.</li>
+<li><strong>Node 2: Cooperative Handoff FSM</strong> (<code>C-04</code>, <code>C-05</code>, <code>C-06</code>, <code>C-09</code>). Event-driven; near-idle until <span class="math-inline">T_TTO^safe</span> falls below 2.50 s or a protocol message arrives.</li>
+<li><strong>Node 3: Identity &amp; Acquisition</strong> (<code>C-07</code>, <code>C-08</code>). The OSNet TensorRT engine is kept <em>resident</em> from startup so no load time falls inside the budget; inference runs on demand, and the owner refreshes a smoothed signature at a low rate so one is always ready. Fallback if Tier 2 shows memory contention: pre-warm at <code>HANDOFF_CANDIDATE</code> (Zone 2) and add the measured load time to Δt_dec.</li>
+<li><strong>Node 4: Platform &amp; Observability</strong> (<code>C-10</code>, <code>C-11</code>, <code>C-12</code>). Pose and covariance in the shared frame, motion/safety execution (including autonomous safe-stop), logging, and parameters.</li>
+<li><strong>Transport</strong> (<code>C-13</code>) is the FastDDS layer configured by the QoS table below; <strong>C-14</strong> runs offline off-robot.</li>
+</ul>
+
+<h3>5.2 DDS QoS Profiles</h3>
+<table>
+<thead><tr><th>Topic / Message</th><th>Reliability</th><th>Durability</th><th>History</th><th>Rationale</th></tr></thead>
+<tbody>
+<tr><td><code>HANDOFF_REQUEST</code>, <code>HANDOFF_RESPONSE</code>, <code>HANDOFF_CANCEL</code>, <code>HANDOFF_CONFIRM</code>, <code>HANDOFF_CONFIRM_ACK</code></td><td><strong>RELIABLE</strong></td><td>VOLATILE</td><td>Keep Last, 10</td><td>State-changing events must be delivered; retransmission occurs within the watchdog and confirmation windows.</td></tr>
+<tr><td><code>STATE_HEARTBEAT</code> (telemetry)</td><td><strong>BEST_EFFORT</strong></td><td>VOLATILE</td><td>Keep Last, 1</td><td>Only the latest value matters; retransmitting stale telemetry wastes bandwidth.</td></tr>
+<tr><td><code>ACQ_STATUS</code> (10 Hz liveness)</td><td><strong>BEST_EFFORT</strong></td><td>VOLATILE</td><td>Keep Last, 1; deadline 150 ms; liveliness lease 300 ms</td><td>Drives the anti-deadlock watchdog; missed samples are the signal.</td></tr>
+</tbody></table>
+</section>
+
+<section id="s6">
+<h2>6. 2D-to-3D Perception Mechanics</h2>
+<p>Extracting the 3D target centroid from a 2D detection with a depth-registered RGB-D camera (RGB drives detection, tracking and identity; depth supplies metric position):</p>
+<ol>
+<li><strong>2D Inference:</strong> TensorRT-optimized YOLO outputs a box <span class="math-inline">(u_min, v_min, u_max, v_max)</span>.</li>
+<li><strong>Depth Masking:</strong> with depth registered to the color image, take the median of the <em>valid</em> (non-zero) depth pixels in the central 50% of the box to avoid background bleed, giving <span class="math-inline">Z_c</span>. Depth noise grows with range, so its variance is included in <span class="math-inline">R_cam</span>.</li>
+<li><strong>Deprojection</strong> (pinhole, optical frame X right / Y down / Z forward):
+<div class="math-block">X_c = (u - c_x) * Z_c / f_x
+Y_c = (v - c_y) * Z_c / f_y</div></li>
+<li><strong>Frame Transformation:</strong> transform <span class="math-inline">[X_c, Y_c, Z_c]^T</span> to <code>map</code> via <code>tf2</code>, using the robot pose interpolated at the <em>image timestamp</em> (not the arrival time). The covariance is propagated as in §1.2, which separates the target's own motion from chassis motion without applying ego-motion twice.</li>
+</ol>
+</section>
+
+<section id="s7">
+<h2>7. Parameter Register &amp; Revision Notes</h2>
+<table>
+<thead><tr><th>Parameter</th><th>Planning value</th><th>Confirmed by</th></tr></thead>
+<tbody>
+<tr><td>Zone boundaries (T_TTO^safe)</td><td>2.50 s / 1.23 s</td><td>Tier 3 success vs. TTO margin</td></tr>
+<tr><td>Phase budgets (§3.2)</td><td>20 / 60 / 600 / 120 / 66 ms</td><td>Tier 2 component and link benchmarks</td></tr>
+<tr><td>σ_total, δ_sync, Δt_safety</td><td>120 ms, 2 ms, 364 ms</td><td>Tier 2 latency distributions; clock-offset test</td></tr>
+<tr><td>Acquisition hard timeout</td><td>700 ms</td><td>Tier 3 acquisition times</td></tr>
+<tr><td>Watchdog</td><td>10 Hz, 3 misses (300 ms)</td><td>Scenario D failure injection</td></tr>
+<tr><td>k_τ (TTO lower bound)</td><td>2</td><td>TTO interval coverage</td></tr>
+<tr><td>Eligibility gate</td><td>CPU ≤ 90%, battery ≥ 15%</td><td>Tier 2 resource profile</td></tr>
+<tr><td>Utility weights w1, w2, w3</td><td>0.5, 0.3, 0.2</td><td>Sensitivity analysis</td></tr>
+<tr><td>Request payload</td><td>≈ 2.5–3 KB</td><td>Tier 2 byte counts</td></tr>
+<tr><td>Perception rate</td><td>30 Hz target, ≥ 15 FPS acceptance</td><td>Tier 2 FPS under full load</td></tr>
+</tbody></table>
+<h3>Revision Notes — v2.3</h3>
+<ul>
+<li>Introduced the shared <code>map</code> frame and unified axis conventions; defined <span class="math-inline">T_TTO^safe</span>.</li>
+<li>Moved ego-motion covariance to the measurement side and removed the double-counting with <code>tf2</code>.</li>
+<li>Replaced the multiplicative resource factor by a hard eligibility gate and defined all utility terms.</li>
+<li>Rebuilt the latency budget (acquisition ≤ 700 ms; removed the 1.2 s and 1.5 s inconsistencies) and corrected the confidence claim.</li>
+<li>Completed the message set (header with sender/receiver, response, cancel, confirm, acknowledgement, epochs) and the ownership handshake.</li>
+<li>Re-ID engine kept resident; "VRAM" and "SLAM" replaced by unified-memory and localization wording; ROS 2 nodes extended to C-10–C-14; PTP stated as a measured target; failover limited to what the time budget allows.</li>
+</ul>
+</section>
+
+<div class="footer">Phase 4: Implementation Blueprint &amp; Mathematical Baseline &middot; Hardware-Grounded v2.3</div>
+</div>
+</body>
+</html>

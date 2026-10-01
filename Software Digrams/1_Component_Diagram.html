@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Component Diagram — EdgeSync: Proactive UGV Target Handoff</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #e2e8f0;
+      --accent: #38bdf8;
+      --accent2: #818cf8;
+      --line: #334155;
+      --soft: #1e3a5f;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      padding: 30px;
+    }
+
+    .page-title {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .page-title h1 {
+      font-size: 28px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.5px;
+    }
+
+    .page-title p {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    .badge-bar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #38bdf8;
+    }
+
+    .diagram-container {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 30px;
+      margin: 20px auto;
+      max-width: 1400px;
+      overflow-x: auto;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+      margin: 20px auto;
+      max-width: 1100px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+
+    .legend-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+    }
+
+    .matrix-container {
+      max-width: 1400px;
+      margin: 30px auto;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 24px;
+    }
+
+    .matrix-title {
+      font-size: 18px;
+      color: #38bdf8;
+      margin-bottom: 14px;
+      font-weight: 600;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid #334155;
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    th {
+      background: #0f172a;
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .footer {
+      text-align: center;
+      color: #64748b;
+      font-size: 12px;
+      margin-top: 30px;
+    }
+
+    .print-btn {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 28px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      color: #0f172a;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+    }
+
+    .print-btn:hover {
+      opacity: .88;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        color: #000;
+      }
+
+      .diagram-container, .matrix-container {
+        border-color: #ccc;
+        background: #fff;
+        box-shadow: none;
+      }
+
+      .page-title h1 {
+        -webkit-text-fill-color: #173b57;
+      }
+
+      .print-btn {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="page-title">
+    <h1>1. UML Component Diagram</h1>
+    <p>EdgeSync Architecture — 14 Components · 3 Architectural Layers · 16 Explicit Interfaces · SAD v2.3 & SRS v1.3 Aligned Baseline</p>
+    <div class="badge-bar">
+      <span class="badge">NVIDIA Jetson Orin Nano</span>
+      <span class="badge">RGB-Primary + 3D Depth Support</span>
+      <span class="badge">Shared Map Frame (tf2)</span>
+      <span class="badge">Acknowledged Ownership Epochs</span>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#38bdf8"></div> Layer A — Perception & Prediction
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#818cf8"></div> Layer B — Cooperative Handoff Coordination
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#34d399"></div> Layer C — Platform Observability & Support
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#fb923c"></div> Cross-UGV Shared Elements
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#475569"></div> External Platform Resources
+    </div>
+  </div>
+
+  <div class="diagram-container">
+    <pre class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize':'14px','primaryColor':'#1e3a5f','primaryTextColor':'#e2e8f0','primaryBorderColor':'#38bdf8','lineColor':'#64748b','secondaryColor':'#312e81','tertiaryColor':'#1e293b'}, 'flowchart': {'htmlLabels': true, 'curve': 'basis', 'rankSpacing': 65, 'nodeSpacing': 50}}}%%
+
+graph TB
+    subgraph EXTERNAL["🔌 External Platform Resources"]
+        direction LR
+        CAM["📷 RGB-D Camera<br/><small>RGB Primary (Detection/Re-ID)<br/>Depth for 3D Geometry</small>"]
+        LIDAR["📡 LiDAR 2D<br/><small>Shared-Frame Map Localization<br/>& Safety Ranging</small>"]
+        IMU["⚙️ IMU + Encoders<br/><small>Chassis State & Odometry</small>"]
+        NET["📶 5GHz Wi-Fi + PTP<br/><small>DDS Metadata P2P</small>"]
+    end
+
+    subgraph LAYER_A["🔵 Layer A — Perception & Prediction Layer"]
+        direction TB
+        C01["<b>C-01 · PerceptionSERVICE</b><br/><small>RGB Detections & Local Tracks</small><br/><small>YOLO TensorRT · 30Hz Target</small><br/><small>SRS: FR-01 — FR-04, SC-02</small>"]
+        C02["<b>C-02 · EstimationSERVICE</b><br/><small>Target 3D State in 'map' Frame</small><br/><small>Ego-Motion Uncertainty Propagation</small><br/><small>SRS: FR-05 — FR-06, FR-53</small>"]
+        C03["<b>C-03 · PredictionSERVICE</b><br/><small>Short-Horizon Motion & TTO</small><br/><small>3D FOV Frustum + Obstacle Ray</small><br/><small>SRS: FR-07 — FR-13</small>"]
+    end
+
+    subgraph LAYER_B["🟣 Layer B — Cooperative Handoff Coordination Layer"]
+        direction TB
+        C04["<b>C-04 · DecisionSERVICE</b><br/><small>Analytical Feasibility Engine</small><br/><small>Zone 1/2/3 Logic · No Motion Authority</small><br/><small>SRS: FR-14 — FR-17</small>"]
+        C05["<b>C-05 · ReceiverSERVICE</b><br/><small>Receiver Availability & Assessment</small><br/><small>Hard Gate G(j) + Utility Ranking</small><br/><small>SRS: FR-18 — FR-20</small>"]
+        C06["<b>C-06 · NegotiationSERVICE</b><br/><small>Bounded P2P Protocol Exchange</small><br/><small>Binary CDR · Reliable QoS</small><br/><small>SRS: FR-21 — FR-31, SC-03</small>"]
+        C07["<b>C-07 · IdentitySERVICE</b><br/><small>Cross-Robot Identity Verification</small><br/><small>Resident OSNet (512-dim Float32)</small><br/><small>SRS: FR-32 — FR-35</small>"]
+        C08["<b>C-08 · AcquisitionSERVICE</b><br/><small>Target Search & Local Track Lock</small><br/><small>Hard Timeout ≤ 700ms · 10Hz Liveness</small><br/><small>SRS: FR-36 — FR-38, FR-55</small>"]
+        C09["<b>C-09 · OwnershipSERVICE</b><br/><small>Sole Lifecycle & Ownership Authority</small><br/><small>FSM · Epochs · Acknowledged Confirmation</small><br/><small>SRS: FR-39 — FR-48, FR-54</small>"]
+    end
+
+    subgraph LAYER_C["🟢 Layer C — Platform Observability & Support"]
+        direction LR
+        C10["<b>C-10 · NavigationSERVICE</b><br/><small>Map Localization, Odometry</small><br/><small><b>Final Motion & Safety Authority (Safe-Stop)</b></small><br/><small>SRS: FR-49—FR-50, FR-53, NFR-14</small>"]
+        C11["<b>C-11 · MonitoringSERVICE</b><br/><small>Timestamped Event & Resource Logging</small><br/><small>SRS: §10, NFR-09 — NFR-10</small>"]
+        C12["<b>C-12 · ConfigurationSERVICE</b><br/><small>Parameter Register & Provenance</small><br/><small>SRS: NFR-07—08, NFR-16</small>"]
+    end
+
+    subgraph CROSS["🟠 Cross-UGV Shared Elements"]
+        direction LR
+        C13["<b>C-13 · TransportSERVICE</b><br/><small>FastDDS P2P Binary CDR</small><br/><small>≈ 2.5–3 KB Request Payload</small><br/><small>SRS: FR-21 — FR-31</small>"]
+        C14["<b>C-14 · EvaluationSERVICE</b><br/><small>Offline Analysis & Metrics</small><br/><small>Ground-Truth Comparison (No Online Authority)</small><br/><small>SRS: §11, NFR-13</small>"]
+    end
+
+    PEER["<b>🤖 Peer UGV (Robot B)</b><br/><small>Symmetric Component Architecture</small>"]
+
+    %% External feeds
+    CAM -->|"RGB Frames + Depth"| C01
+    LIDAR -.->|"2D Scan for Map Localization"| C10
+    IMU -->|"IMU + Wheel Encoders"| C10
+    NET -.->|"5GHz Network"| C13
+
+    %% Layer A Internal Flow (I-01, I-02)
+    C01 -->|"I-01: Detections & Tracks<br/>Frame ID, Timestamps"| C02
+    C02 -->|"I-02: Target 3D State<br/>Position, Velocity, Covariance"| C03
+
+    %% Layer C to A/B Integration (I-03, I-16)
+    C10 -->|"I-03: Robot Pose & Covariance<br/>in 'map' frame (tf2)"| C03
+    C10 -->|"I-16: Shared-Frame Pose Update<br/>to Target Estimator"| C02
+
+    %% Layer A to B Trigger (I-04)
+    C03 -->|"I-04: TTO Estimate & Uncertainty<br/>Predicted Trajectory in 'map'"| C04
+
+    %% Layer B Coordination Interfaces (I-05 to I-12)
+    C05 -->|"I-05: Receiver Assessment<br/>Availability, Gate, Utility"| C04
+    C04 -->|"I-06: Handoff Recommendation<br/>Analytical Feasibility Context"| C09
+    C09 -->|"I-07: Initiate Negotiation<br/>txn_id, target_id, receiver_id"| C06
+    C06 -->|"I-08: Negotiation Outcome<br/>ACCEPT / REJECT / TIMEOUT"| C09
+    C09 -->|"I-09: Request Target Signature<br/>for Handoff Payload"| C07
+    C08 <-->|"I-10: Candidate Observation<br/>& Re-ID Verification Result"| C07
+    C08 -->|"I-11: Acquisition Outcome<br/>SUCCESS / FAILURE / TIMEOUT"| C09
+    C08 <-->|"I-12: Advisory Motion Request<br/>(C-10 Retains Safety Veto)"| C10
+
+    %% New v2.3 Interfaces (I-14, I-15)
+    C08 -->|"I-14: 10 Hz Liveness ACQ_STATUS<br/>(SLEWING / SEARCHING / ACQUIRED)"| C09
+    C09 <-->|"I-15: Confirmation Exchange<br/>CONFIRM / CONFIRM_ACK (epoch e+1)"| C06
+
+    %% Observability Broadcast (I-13)
+    C09 -.->|"I-13: State Transitions<br/>txn_id, previous/new state"| C11
+    C10 -.->|"Chassis & Safety Telemetry"| C11
+    C11 -.->|"Offline Bags & CSV Logs"| C14
+
+    %% Cross-Robot Transport
+    C06 <-->|"Protocol Messages"| C13
+    C13 <-->|"FastDDS P2P<br/>RELIABLE & BEST_EFFORT"| PEER
+
+    %% Styling
+    style EXTERNAL fill:#1a1a2e,stroke:#475569,stroke-width:2px,color:#94a3b8
+    style LAYER_A fill:#0c2d48,stroke:#38bdf8,stroke-width:2px,color:#38bdf8
+    style LAYER_B fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#818cf8
+    style LAYER_C fill:#0d3320,stroke:#34d399,stroke-width:2px,color:#34d399
+    style CROSS fill:#3b1f0b,stroke:#fb923c,stroke-width:2px,color:#fb923c
+    style PEER fill:#1e293b,stroke:#f472b6,stroke-width:2px,color:#f472b6
+
+    style C01 fill:#164e63,stroke:#38bdf8,stroke-width:2px,color:#e2e8f0
+    style C02 fill:#164e63,stroke:#38bdf8,stroke-width:2px,color:#e2e8f0
+    style C03 fill:#164e63,stroke:#38bdf8,stroke-width:2px,color:#e2e8f0
+    style C04 fill:#312e81,stroke:#818cf8,stroke-width:2px,color:#e2e8f0
+    style C05 fill:#312e81,stroke:#818cf8,stroke-width:2px,color:#e2e8f0
+    style C06 fill:#312e81,stroke:#818cf8,stroke-width:2px,color:#e2e8f0
+    style C07 fill:#312e81,stroke:#818cf8,stroke-width:2px,color:#e2e8f0
+    style C08 fill:#312e81,stroke:#818cf8,stroke-width:2px,color:#e2e8f0
+    style C09 fill:#312e81,stroke:#818cf8,stroke-width:2px,color:#e2e8f0
+    style C10 fill:#14532d,stroke:#34d399,stroke-width:2px,color:#e2e8f0
+    style C11 fill:#14532d,stroke:#34d399,stroke-width:2px,color:#e2e8f0
+    style C12 fill:#14532d,stroke:#34d399,stroke-width:2px,color:#e2e8f0
+    style C13 fill:#431407,stroke:#fb923c,stroke-width:2px,color:#e2e8f0
+    style C14 fill:#431407,stroke:#fb923c,stroke-width:2px,color:#e2e8f0
+
+    style CAM fill:#1e293b,stroke:#475569,color:#cbd5e1
+    style LIDAR fill:#1e293b,stroke:#475569,color:#cbd5e1
+    style IMU fill:#1e293b,stroke:#475569,color:#cbd5e1
+    style NET fill:#1e293b,stroke:#475569,color:#cbd5e1
+</pre>
+  </div>
+
+  <div class="matrix-container">
+    <div class="matrix-title">📋 Complete Architecture Interfaces Matrix (I-01 through I-16) — SAD v2.3 Aligned</div>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Interface</th>
+          <th>Trigger Event</th>
+          <th>Main Data Transferred</th>
+          <th>SRS Trace</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>I-01</strong></td>
+          <td>C-01 &rarr; C-02</td>
+          <td>Processed frame (30 Hz target)</td>
+          <td>Detections (bbox, conf, class), tracks, timestamp, frame_id</td>
+          <td>FR-01–FR-04, SC-02</td>
+        </tr>
+        <tr>
+          <td><strong>I-02</strong></td>
+          <td>C-02 &rarr; C-03</td>
+          <td>Valid state update</td>
+          <td>Target 3D state vector [x,y,z,ẋ,ẏ,ż]^T, covariance Σ(k), freshness</td>
+          <td>FR-05–FR-06</td>
+        </tr>
+        <tr>
+          <td><strong>I-03</strong></td>
+          <td>C-10 &rarr; C-03</td>
+          <td>Robot-state update</td>
+          <td>Robot pose & velocity with covariance in 'map' frame (tf2 interpolation)</td>
+          <td>FR-49–FR-50, SC-02</td>
+        </tr>
+        <tr>
+          <td><strong>I-04</strong></td>
+          <td>C-03 &rarr; C-04</td>
+          <td>TTO / prediction update</td>
+          <td>T̂_TTO, T_TTO^safe bound, predicted path in 'map', visibility-loss condition</td>
+          <td>FR-07–FR-13</td>
+        </tr>
+        <tr>
+          <td><strong>I-05</strong></td>
+          <td>C-05 &rarr; C-04</td>
+          <td>Receiver assessment completed</td>
+          <td>receiver_id, hard gate G(j), utility U_j, kinematic feasibility, freshness</td>
+          <td>FR-18–FR-20</td>
+        </tr>
+        <tr>
+          <td><strong>I-06</strong></td>
+          <td>C-04 &rarr; C-09</td>
+          <td>Handoff recommendation emitted</td>
+          <td>HANDOFF_RECOMMENDED, analytical context, trigger timing, budget margin</td>
+          <td>FR-14–FR-17</td>
+        </tr>
+        <tr>
+          <td><strong>I-07</strong></td>
+          <td>C-09 &rarr; C-06</td>
+          <td>Negotiation initiation</td>
+          <td>transaction_id, target_id, receiver_id, tto_deadline_utc_ns, ownership_epoch</td>
+          <td>FR-21–FR-22</td>
+        </tr>
+        <tr>
+          <td><strong>I-08</strong></td>
+          <td>C-06 &rarr; C-09</td>
+          <td>Negotiation outcome</td>
+          <td>transaction_id, decision (ACCEPT/REJECT/UNAVAILABLE), latency, timeout</td>
+          <td>FR-23, FR-31</td>
+        </tr>
+        <tr>
+          <td><strong>I-09</strong></td>
+          <td>C-07 &rarr; C-09</td>
+          <td>Protocol preparation</td>
+          <td>transaction_id, compact 512-dim Re-ID feature vector + quality metric</td>
+          <td>FR-32</td>
+        </tr>
+        <tr>
+          <td><strong>I-10</strong></td>
+          <td>C-08 &harr; C-07</td>
+          <td>Candidate verification</td>
+          <td>Candidate visual crop, cosine similarity, spatial Mahalanobis match result</td>
+          <td>FR-33–FR-35</td>
+        </tr>
+        <tr>
+          <td><strong>I-11</strong></td>
+          <td>C-08 &rarr; C-09</td>
+          <td>Acquisition outcome</td>
+          <td>transaction_id, SUCCESS / FAILURE / TIMEOUT (hard cutoff ≤ 700ms)</td>
+          <td>FR-36–FR-38</td>
+        </tr>
+        <tr>
+          <td><strong>I-12</strong></td>
+          <td>C-08 &harr; C-10</td>
+          <td>Acquisition movement</td>
+          <td>Advisory intercept point, slewing constraints (C-10 maintains safety veto)</td>
+          <td>FR-36, FR-50, NFR-14</td>
+        </tr>
+        <tr>
+          <td><strong>I-13</strong></td>
+          <td>C-09 &rarr; local comps</td>
+          <td>State transition broadcast</td>
+          <td>transaction_id, previous_state, new_state, transition reason</td>
+          <td>FR-48</td>
+        </tr>
+        <tr>
+          <td><strong>I-14</strong></td>
+          <td>C-08 &rarr; C-09 (&rarr; peer)</td>
+          <td>10 Hz during COMMITTED/ACQ</td>
+          <td>transaction_id, epoch, status (SLEWING/SEARCHING/ACQUIRED), timestamp</td>
+          <td>FR-55 (Anti-Deadlock)</td>
+        </tr>
+        <tr>
+          <td><strong>I-15</strong></td>
+          <td>C-09 &harr; C-06</td>
+          <td>Confirmation exchange</td>
+          <td>HANDOFF_CONFIRM / HANDOFF_CONFIRM_ACK (monotonic epoch e+1 handshake)</td>
+          <td>FR-39–41, FR-54</td>
+        </tr>
+        <tr>
+          <td><strong>I-16</strong></td>
+          <td>C-10 &rarr; C-02 / C-06</td>
+          <td>Pose update</td>
+          <td>Robot pose & covariance in shared 'map' frame, frame_id, timestamp</td>
+          <td>FR-53</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  <div class="footer">EdgeSync · UML Component Diagram · Aligned with SAD v2.3 & SRS v1.3 · Graduation Project 2026</div>
+
+  <script>mermaid.initialize({ startOnLoad: true, securityLevel: 'loose' });</script>
+</body>
+
+</html>

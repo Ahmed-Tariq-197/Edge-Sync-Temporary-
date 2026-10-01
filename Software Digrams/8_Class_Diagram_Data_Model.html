@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Class Diagram & Data Model — EdgeSync</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #e2e8f0;
+      --accent: #38bdf8;
+      --accent2: #818cf8;
+      --line: #334155;
+      --soft: #1e3a5f;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      padding: 30px;
+    }
+
+    .page-title {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .page-title h1 {
+      font-size: 28px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.5px;
+    }
+
+    .page-title p {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    .badge-bar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #38bdf8;
+    }
+
+    .diagram-container {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 30px;
+      margin: 20px auto;
+      max-width: 1400px;
+      overflow-x: auto;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .section-label {
+      max-width: 1400px;
+      margin: 35px auto 12px;
+      font-size: 18px;
+      font-weight: 600;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .matrix-container {
+      max-width: 1400px;
+      margin: 25px auto;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 24px;
+    }
+
+    .matrix-title {
+      font-size: 17px;
+      color: #38bdf8;
+      margin-bottom: 14px;
+      font-weight: 600;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid #334155;
+      padding: 9px 12px;
+      text-align: left;
+    }
+
+    th {
+      background: #0f172a;
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .type-col {
+      color: #818cf8;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .footer {
+      text-align: center;
+      color: #64748b;
+      font-size: 12px;
+      margin-top: 30px;
+    }
+
+    .print-btn {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 28px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      color: #0f172a;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+    }
+
+    .print-btn:hover {
+      opacity: .88;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        color: #000;
+      }
+
+      .diagram-container, .matrix-container {
+        border-color: #ccc;
+        background: #fff;
+        box-shadow: none;
+      }
+
+      .page-title h1 {
+        -webkit-text-fill-color: #173b57;
+      }
+
+      .print-btn {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="page-title">
+    <h1>8. UML Class Diagram & Data Model</h1>
+    <p>Object-Oriented Service Architecture, Interface Contracts & ROS 2 Message Schema · SAD v2.3 & Math/Protocol v2.3</p>
+    <div class="badge-bar">
+      <span class="badge">14 System Services (C-01 to C-14)</span>
+      <span class="badge">ROS 2 Composable Node Architecture</span>
+      <span class="badge">Binary CDR Message Schemas</span>
+      <span class="badge">512-dim Float32 Embedding Model</span>
+    </div>
+  </div>
+
+  <!-- SECTION 1: UML CLASS DIAGRAM -->
+  <div class="section-label">🏛️ Section 1: Software Services UML Class Diagram</div>
+  <div class="diagram-container">
+    <pre class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize':'12px','primaryColor':'#1e3a5f','primaryTextColor':'#e2e8f0','primaryBorderColor':'#38bdf8','lineColor':'#64748b'}, 'classDiagram': {'htmlLabels': true}}}%%
+
+classDiagram
+    direction TB
+
+    class PerceptionSERVICE {
+        -string node_name
+        -float confidence_threshold
+        -unique_ptr~CudaEngine~ yolo_engine
+        -unique_ptr~ByteTracker~ tracker
+        +on_frame_received(Image frame) void
+        +extract_2d_detections(Mat rgb) vector~Detection2D~
+        +deproject_to_3d(Rect bbox, Mat depth) Vector3D
+        +publish_local_tracks() void
+    }
+
+    class EstimationSERVICE {
+        -ExtendedKalmanFilter6D ekf
+        -Vector6D state_vector
+        -Matrix6x6 state_covariance
+        -string shared_frame_id
+        +update_target_observation(Detection3D obs) void
+        +propagate_ego_motion(Matrix3x3 R_cam, Matrix3x3 Sigma_xi) Matrix3x3
+        +predict_step(double dt) void
+        +get_target_state() Target3DState
+    }
+
+    class PredictionSERVICE {
+        -double prediction_horizon_s
+        -Frustum3D camera_frustum
+        -double k_tau_safety_factor
+        +propagate_trajectory(Target3DState current) Trajectory3D
+        +compute_tto(Trajectory3D path) TTOEstimate
+        +compute_safe_tto_bound(double t_hat, double sigma) double
+        +evaluate_visibility_loss() uint8
+    }
+
+    class DecisionSERVICE {
+        -double zone1_threshold_s
+        -double zone2_threshold_s
+        -UtilityWeights weights
+        +classify_tto_zone(double tto_safe) uint8
+        +evaluate_hard_gate(PeerTelemetry peer) bool
+        +compute_utility(CandidateAssessment cand) double
+        +recommend_handoff(string target_id) HandoffRecommendation
+    }
+
+    class ReceiverSERVICE {
+        -map~string, PeerTelemetry~ peer_cache
+        -float max_cpu_gate
+        -float min_battery_gate
+        +on_peer_heartbeat(StateHeartbeat msg) void
+        +check_eligibility_gate(string peer_id) bool
+        +evaluate_candidate_rank(Target3DState tgt) vector~CandidateRank~
+    }
+
+    class NegotiationSERVICE {
+        -map~string, TransactionContext~ active_transactions
+        -int negotiation_timeout_ms
+        +send_handoff_request(HandoffRequest req) void
+        +on_request_received(HandoffRequest req) void
+        +send_handoff_response(HandoffResponse res) void
+        +on_response_received(HandoffResponse res) void
+        +cancel_negotiation(string txn_id, uint8 reason) void
+    }
+
+    class IdentitySERVICE {
+        -unique_ptr~CudaEngine~ osnet_engine
+        -size_t embedding_dim
+        -float similarity_threshold
+        -vector~float~ cached_signature
+        +extract_embedding(Mat crop) vector~float~
+        +compute_cosine_similarity(float* vA, float* vB) float
+        +verify_candidate(vector~float~ query, vector~float~ gallery, Matrix3x3 cov) bool
+    }
+
+    class AcquisitionSERVICE {
+        -int acquisition_timeout_ms
+        -uint8 acquisition_status
+        -TimerBase liveness_timer
+        +start_acquisition(TargetSpatialPrior prior) void
+        +emit_liveness_heartbeat() void
+        +request_advisory_motion(Vector3D target_pt) void
+        +on_candidate_locked(Detection3D cand) void
+    }
+
+    class OwnershipSERVICE {
+        -uint8 current_state
+        -uint64 ownership_epoch
+        -string active_target_id
+        -string active_transaction_id
+        -TimerBase watchdog_timer
+        -int missed_heartbeats_count
+        +transition_to(uint8 new_state, string reason) void
+        +arm_watchdog(int timeout_ms) void
+        +on_heartbeat_received() void
+        +on_watchdog_timeout() void
+        +send_confirmation(string peer_id) void
+        +acknowledge_confirmation(uint64 new_epoch) void
+    }
+
+    class NavigationSERVICE {
+        -PoseWithCovariance current_pose_map
+        -Twist current_velocity
+        -bool platform_safe_stop_active
+        +publish_shared_pose() void
+        +validate_advisory_motion(PoseStamped goal) bool
+        +engage_autonomous_safe_stop(string reason) void
+    }
+
+    class MonitoringSERVICE {
+        -string log_session_path
+        -vector~LogEvent~ event_buffer
+        +log_event(string event_name, string txn_id, int64 stamp) void
+        +record_telemetry(ResourceMetrics metrics) void
+        +flush_to_bag() void
+    }
+
+    class ConfigurationSERVICE {
+        -map~string, ParameterValue~ param_register
+        +get_double(string param_name) double
+        +get_int(string param_name) int
+        +load_from_yaml(string file_path) bool
+    }
+
+    PerceptionSERVICE --> EstimationSERVICE : I-01 Target Detection
+    EstimationSERVICE --> PredictionSERVICE : I-02 Target State Vector
+    NavigationSERVICE --> EstimationSERVICE : I-16 Shared Map Pose
+    NavigationSERVICE --> PredictionSERVICE : I-03 Ego-Motion Covariance
+    PredictionSERVICE --> DecisionSERVICE : I-04 TTO Estimate & Bounds
+    ReceiverSERVICE --> DecisionSERVICE : I-05 Peer Feasibility
+    DecisionSERVICE --> OwnershipSERVICE : I-06 Handoff Recommendation
+    OwnershipSERVICE --> NegotiationSERVICE : I-07 Initiate Protocol
+    NegotiationSERVICE --> OwnershipSERVICE : I-08 Negotiation Outcome
+    OwnershipSERVICE --> AcquisitionSERVICE : Trigger Acquisition
+    AcquisitionSERVICE --> IdentitySERVICE : I-10 Verify Candidate
+    AcquisitionSERVICE --> NavigationSERVICE : I-12 Advisory Motion
+    AcquisitionSERVICE --> OwnershipSERVICE : I-11/I-14 Liveness & Result
+    OwnershipSERVICE ..> MonitoringSERVICE : I-13 State Events
+    ConfigurationSERVICE ..> DecisionSERVICE : Parameters
+</pre>
+  </div>
+
+  <!-- SECTION 2: DATA MODEL & ROS 2 MESSAGE HIERARCHY -->
+  <div class="section-label">📊 Section 2: ROS 2 Message Schema & Relational Data Model</div>
+  <div class="diagram-container">
+    <pre class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize':'12px','primaryColor':'#1e3a5f','primaryTextColor':'#e2e8f0','primaryBorderColor':'#38bdf8','lineColor':'#64748b'}, 'classDiagram': {'htmlLabels': true}}}%%
+
+classDiagram
+    direction TB
+
+    class HeaderCommon {
+        +uint16 protocol_version
+        +uint8 message_type
+        +string sender_id
+        +string receiver_id
+        +string transaction_id
+        +string target_id
+        +uint64 ownership_epoch
+        +uint32 sequence
+        +int64 stamp_utc_ns
+    }
+
+    class HandoffRequest {
+        +int64 tto_deadline_utc_ns
+        +int32 tto_remaining_ms_at_send
+        +float32 tto_sigma_ms
+        +string frame_id
+        +float32[3] position
+        +float32[3] velocity
+        +float32[21] cov_upper_triangle
+        +float32[3] sender_pose
+        +float32[6] sender_pose_cov_ut
+        +float32[512] reid_feature_vector
+        +float32 reid_quality
+    }
+
+    class HandoffResponse {
+        +uint8 decision
+        +uint8 reason
+        +int32 est_acquisition_ms
+        +float32 cpu_load
+        +float32 battery
+    }
+
+    class HandoffCancel {
+        +uint8 reason
+    }
+
+    class AcqStatus {
+        +uint8 status
+        +float32 confidence
+    }
+
+    class HandoffConfirm {
+        +float32 reid_similarity
+        +string frame_id
+        +float32[3] position
+        +float32[21] cov_upper_triangle
+    }
+
+    class HandoffConfirmAck {
+        +uint64 new_epoch
+    }
+
+    class StateHeartbeat {
+        +string robot_id
+        +float32 cpu_load
+        +float32 battery_pct
+        +uint8 nav_status
+        +int64 stamp_utc_ns
+    }
+
+    class Target3DState {
+        +string target_id
+        +string frame_id
+        +float32[3] position
+        +float32[3] velocity
+        +float32[36] full_covariance
+        +float32 confidence
+        +int64 stamp_ns
+    }
+
+    HeaderCommon <|-- HandoffRequest : Inherits Header
+    HeaderCommon <|-- HandoffResponse : Inherits Header
+    HeaderCommon <|-- HandoffCancel : Inherits Header
+    HeaderCommon <|-- AcqStatus : Inherits Header
+    HeaderCommon <|-- HandoffConfirm : Inherits Header
+    HeaderCommon <|-- HandoffConfirmAck : Inherits Header
+    HandoffRequest *-- Target3DState : Encapsulates Kinematics
+</pre>
+  </div>
+
+  <!-- SECTION 3: FORMAL DATA DICTIONARY -->
+  <div class="matrix-container">
+    <div class="matrix-title">📋 Section 3: Protocol Message Data Dictionary (CDR Binary Mapped)</div>
+    <table>
+      <thead>
+        <tr>
+          <th>ROS 2 Message Interface</th>
+          <th>Field Name</th>
+          <th>Data Type</th>
+          <th>Physical Units / Value Range</th>
+          <th>Architectural Role & Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td rowspan="4"><code>HeaderCommon</code></td>
+          <td><code>protocol_version</code></td>
+          <td class="type-col">uint16</td>
+          <td>0x0203 (v2.3)</td>
+          <td>Compatibility gating; mismatched protocol versions rejected immediately.</td>
+        </tr>
+        <tr>
+          <td><code>transaction_id</code></td>
+          <td class="type-col">string</td>
+          <td>UUID / String token</td>
+          <td>Explicit separation of handoff transaction from physical <code>target_id</code>.</td>
+        </tr>
+        <tr>
+          <td><code>ownership_epoch</code></td>
+          <td class="type-col">uint64</td>
+          <td>Monotonic counter</td>
+          <td>Single ownership invariant enforcement; stale epochs rejected (FR-54).</td>
+        </tr>
+        <tr>
+          <td><code>stamp_utc_ns</code></td>
+          <td class="type-col">int64</td>
+          <td>Nanoseconds UTC</td>
+          <td>PTP IEEE 1588v2 timestamp for staleness and deadline validation.</td>
+        </tr>
+        <tr>
+          <td rowspan="5"><code>HandoffRequest.msg</code></td>
+          <td><code>tto_deadline_utc_ns</code></td>
+          <td class="type-col">int64</td>
+          <td>Absolute UTC nanoseconds</td>
+          <td>Calculated deadline at which target tracking will fail on Robot A.</td>
+        </tr>
+        <tr>
+          <td><code>tto_remaining_ms_at_send</code></td>
+          <td class="type-col">int32</td>
+          <td>Milliseconds (1230–2500 ms)</td>
+          <td>Relative deadline fallback when clock offset exceeds budget δ_sync.</td>
+        </tr>
+        <tr>
+          <td><code>position / velocity</code></td>
+          <td class="type-col">float32[3]</td>
+          <td>Meters / (Meters/sec)</td>
+          <td>Target 3D position and velocity expressed in shared <code>frame_id = "map"</code>.</td>
+        </tr>
+        <tr>
+          <td><code>cov_upper_triangle</code></td>
+          <td class="type-col">float32[21]</td>
+          <td>Meters² covariance</td>
+          <td>Symmetric 6x6 upper-triangle target state covariance.</td>
+        </tr>
+        <tr>
+          <td><code>reid_feature_vector</code></td>
+          <td class="type-col">float32[512]</td>
+          <td>Unit L2-norm vector</td>
+          <td>2048-byte OSNet embedding for cross-robot visual verification.</td>
+        </tr>
+        <tr>
+          <td rowspan="2"><code>HandoffResponse.msg</code></td>
+          <td><code>decision</code></td>
+          <td class="type-col">uint8</td>
+          <td>1=ACCEPT, 2=REJECT, 3=UNAVAIL</td>
+          <td>Outcome of receiver hard gate G(j) and analytical feasibility check.</td>
+        </tr>
+        <tr>
+          <td><code>est_acquisition_ms</code></td>
+          <td class="type-col">int32</td>
+          <td>Milliseconds (≤ 700 ms)</td>
+          <td>Receiver estimated slew and target lock latency.</td>
+        </tr>
+        <tr>
+          <td><code>AcqStatus.msg</code> (10 Hz)</td>
+          <td><code>status</code></td>
+          <td class="type-col">uint8</td>
+          <td>1=SLEWING, 2=SEARCHING, 3=ACQUIRED</td>
+          <td>Anti-deadlock heartbeat payload; 3 missed trips watchdog (300 ms).</td>
+        </tr>
+        <tr>
+          <td><code>HandoffConfirm.msg</code></td>
+          <td><code>reid_similarity</code></td>
+          <td class="type-col">float32</td>
+          <td>Cosine similarity [0.0, 1.0]</td>
+          <td>Verification score (must satisfy threshold ≥ 0.70 to confirm).</td>
+        </tr>
+        <tr>
+          <td><code>HandoffConfirmAck.msg</code></td>
+          <td><code>new_epoch</code></td>
+          <td class="type-col">uint64</td>
+          <td>epoch e + 1</td>
+          <td>Owner release confirmation; activates ownership on Robot B (FR-54).</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  <div class="footer">EdgeSync · UML Class Diagram & Data Model · Aligned with SAD v2.3, SRS v1.3 & Math v2.3 · Graduation Project 2026</div>
+
+  <script>mermaid.initialize({ startOnLoad: true, securityLevel: 'loose' });</script>
+</body>
+
+</html>

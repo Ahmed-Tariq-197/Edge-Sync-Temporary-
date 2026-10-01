@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROS 2 Node Graph — EdgeSync: Composable Node Architecture</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #e2e8f0;
+      --accent: #38bdf8;
+      --accent2: #818cf8;
+      --line: #334155;
+      --soft: #1e3a5f;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      padding: 30px;
+    }
+
+    .page-title {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .page-title h1 {
+      font-size: 28px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.5px;
+    }
+
+    .page-title p {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    .badge-bar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #38bdf8;
+    }
+
+    .diagram-container {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 30px;
+      margin: 20px auto;
+      max-width: 1400px;
+      overflow-x: auto;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .section-label {
+      max-width: 1400px;
+      margin: 30px auto 10px;
+      font-size: 18px;
+      font-weight: 600;
+      color: #38bdf8;
+    }
+
+    .qos-table {
+      max-width: 1400px;
+      margin: 20px auto;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid #334155;
+      padding: 10px 14px;
+      text-align: left;
+    }
+
+    th {
+      background: #0f172a;
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .reliable {
+      color: #34d399;
+      font-weight: 600;
+    }
+
+    .best-effort {
+      color: #fb923c;
+      font-weight: 600;
+    }
+
+    .footer {
+      text-align: center;
+      color: #64748b;
+      font-size: 12px;
+      margin-top: 30px;
+    }
+
+    .print-btn {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 28px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      color: #0f172a;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+    }
+
+    .print-btn:hover {
+      opacity: .88;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        color: #000;
+      }
+
+      .diagram-container, .qos-table {
+        border-color: #ccc;
+        background: #fff;
+        box-shadow: none;
+      }
+
+      .page-title h1 {
+        -webkit-text-fill-color: #173b57;
+      }
+
+      .print-btn {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="page-title">
+    <h1>7. ROS 2 Computation Node Graph</h1>
+    <p>Composable Node Architecture, Topics, Custom Interfaces & DDS QoS Profiles · SAD v2.3, SRS v1.3 & Math v2.3</p>
+    <div class="badge-bar">
+      <span class="badge">ROS 2 Humble Composable Nodes</span>
+      <span class="badge">Zero-Copy Intra-Process Transport</span>
+      <span class="badge">FastDDS Binary CDR Serialization</span>
+      <span class="badge">Complete Monotonic QoS Specs</span>
+    </div>
+  </div>
+
+  <div class="diagram-container">
+    <pre class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize':'12px','primaryColor':'#1e3a5f','primaryTextColor':'#e2e8f0','primaryBorderColor':'#38bdf8','lineColor':'#64748b'}, 'flowchart': {'htmlLabels': true, 'curve': 'basis', 'rankSpacing': 50, 'nodeSpacing': 35}}}%%
+
+graph TB
+    subgraph HW["📷 Hardware Sensor Streams"]
+        RGB_IN["/camera/rgb/image_raw<br/><small>sensor_msgs/Image</small>"]
+        DEPTH_IN["/camera/depth/image_raw<br/><small>sensor_msgs/Image (Aligned)</small>"]
+        LIDAR_IN["/scan<br/><small>sensor_msgs/LaserScan</small>"]
+        ODOM_IN["/chassis/odom<br/><small>nav_msgs/Odometry (STM32)</small>"]
+    end
+
+    subgraph PROCESS_1["📦 Process 1: Perception & Kinematics (Zero-Copy Container · 30Hz Target)"]
+        direction TB
+        subgraph C01_NODE["C-01 PerceptionSERVICE Node"]
+            YOLO["<b>yolo_detector_node</b><br/><small>TensorRT FP16</small>"]
+            TRACKER["<b>target_tracker_node</b><br/><small>DeepSORT Association</small>"]
+            DEPTH_PROC["<b>depth_deproject_node</b><br/><small>Central 50% Median &rarr; 3D</small>"]
+        end
+        subgraph C02_NODE["C-02 EstimationSERVICE Node"]
+            KF["<b>target_kf_estimator_node</b><br/><small>6-DoF EKF in 'map' frame</small>"]
+        end
+        subgraph C03_NODE["C-03 PredictionSERVICE Node"]
+            PRED["<b>trajectory_predictor_node</b><br/><small>Constant Velocity Propagator</small>"]
+            TTO["<b>tto_evaluator_node</b><br/><small>3D Frustum + Obstacle Ray</small>"]
+        end
+    end
+
+    subgraph PROCESS_2["📦 Process 2: Cooperative Handoff FSM (Event-Driven Container)"]
+        direction TB
+        subgraph C04_NODE["C-04 DecisionSERVICE Node"]
+            DECISION["<b>handoff_decision_node</b><br/><small>Hard Gate G(j) & Utility U_j</small>"]
+        end
+        subgraph C05_NODE["C-05 ReceiverSERVICE Node"]
+            RECEIVER["<b>receiver_evaluator_node</b><br/><small>Peer Telemetry Monitor</small>"]
+        end
+        subgraph C06_NODE["C-06 NegotiationSERVICE Node"]
+            NEGOT["<b>negotiation_handler_node</b><br/><small>P2P Request/Response Mgr</small>"]
+        end
+        subgraph C09_NODE["C-09 OwnershipSERVICE Node"]
+            FSM["<b>ownership_fsm_node</b><br/><small>Sole Lifecycle Authority<br/>10Hz Watchdog (300ms)</small>"]
+        end
+    end
+
+    subgraph PROCESS_3["📦 Process 3: Identity & Acquisition"]
+        direction TB
+        subgraph C07_NODE["C-07 IdentitySERVICE Node"]
+            REID["<b>reid_verifier_node</b><br/><small><b>Resident OSNet TensorRT</b><br/>512-dim Float32 Embedding</small>"]
+        end
+        subgraph C08_NODE["C-08 AcquisitionSERVICE Node"]
+            ACQ["<b>target_acquisition_node</b><br/><small>Frustum Lock & 10Hz Liveness</small>"]
+        end
+    end
+
+    subgraph PROCESS_4["📦 Process 4: Platform & Observability"]
+        direction TB
+        C10_NODE["<b>C-10 navigation_platform_node</b><br/><small>Map Localization (tf2) · <b>Autonomous Safe-Stop</b></small>"]
+        C11_NODE["<b>C-11 monitoring_logger_node</b><br/><small>Timestamped Event / Resource Log</small>"]
+        C12_NODE["<b>C-12 config_param_node</b><br/><small>Parameter Register Manager</small>"]
+    end
+
+    subgraph DDS_OUT["📡 Inter-Robot FastDDS Domain (P2P Wire Messages)"]
+        DDS_REQ["/edgesync/handoff_request (RELIABLE)"]
+        DDS_RES["/edgesync/handoff_response (RELIABLE)"]
+        DDS_CAN["/edgesync/handoff_cancel (RELIABLE)"]
+        DDS_ACQ["/edgesync/acq_status (BEST_EFFORT · 10Hz)"]
+        DDS_CONF["/edgesync/handoff_confirm (RELIABLE)"]
+        DDS_ACK["/edgesync/handoff_confirm_ack (RELIABLE)"]
+        DDS_BEAT["/edgesync/state_heartbeat (BEST_EFFORT · 1Hz)"]
+    end
+
+    %% Sensor to Process 1
+    RGB_IN --> YOLO
+    DEPTH_IN --> DEPTH_PROC
+    LIDAR_IN --> C10_NODE
+    ODOM_IN --> C10_NODE
+
+    %% Process 1 Internal (Zero-Copy Intra-Process)
+    YOLO -->|"/detections [zero-copy]"| TRACKER
+    TRACKER -->|"/tracks"| DEPTH_PROC
+    DEPTH_PROC -->|"/target/detection_3d"| KF
+    C10_NODE -->|"/robot/pose_shared (in 'map' frame - I-16)"| KF
+    KF -->|"/target/state (TargetState.msg)"| PRED
+    PRED -->|"/predicted_path"| TTO
+
+    %% Process 1 to Process 2
+    TTO -->|"/tto/estimate (TTOEstimate.msg - I-04)"| DECISION
+
+    %% Process 2 Internal
+    RECEIVER -->|"/receiver/assessment (ReceiverState.msg - I-05)"| DECISION
+    DECISION -->|"/handoff/recommendation (I-06)"| FSM
+    FSM -->|"/handoff/initiate (I-07)"| NEGOT
+    NEGOT -->|"/handoff/outcome (I-08)"| FSM
+
+    %% Process 2 to Process 3
+    FSM -->|"/acquisition/trigger"| ACQ
+    ACQ <-->|"/identity/verify (IdentityVerify.srv - I-10)"| REID
+    ACQ -->|"/acquisition/result (I-11)"| FSM
+
+    %% Process 3 to Process 4 (Navigation Advisory)
+    ACQ -->|"/nav/goal_advisory (I-12)"| C10_NODE
+
+    %% Process 2 & 3 to DDS Wire
+    NEGOT <--> DDS_REQ
+    NEGOT <--> DDS_RES
+    FSM <--> DDS_CAN
+    ACQ --> DDS_ACQ
+    FSM <--> DDS_CONF
+    FSM <--> DDS_ACK
+    RECEIVER <--> DDS_BEAT
+
+    %% Observability
+    FSM -.->|"/events (I-13)"| C11_NODE
+
+    %% Styling
+    style HW fill:#1a1a2e,stroke:#475569,stroke-width:2px,color:#94a3b8
+    style PROCESS_1 fill:#0c2d48,stroke:#38bdf8,stroke-width:2px,color:#38bdf8
+    style PROCESS_2 fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#818cf8
+    style PROCESS_3 fill:#312e81,stroke:#c084fc,stroke-width:2px,color:#c084fc
+    style PROCESS_4 fill:#0d3320,stroke:#34d399,stroke-width:2px,color:#34d399
+    style DDS_OUT fill:#3b1f0b,stroke:#fb923c,stroke-width:2px,color:#fb923c
+</pre>
+  </div>
+
+  <div class="section-label">📋 Complete DDS Quality of Service (QoS) Specification</div>
+  <table class="qos-table">
+    <thead>
+      <tr>
+        <th>ROS 2 Topic</th>
+        <th>Message Type</th>
+        <th>Reliability</th>
+        <th>Durability</th>
+        <th>History / Depth</th>
+        <th>Design Rationale</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>/edgesync/handoff_request</code></td>
+        <td>HandoffRequest.msg</td>
+        <td class="reliable">RELIABLE</td>
+        <td>VOLATILE</td>
+        <td>Keep Last, 10</td>
+        <td>Initiates handoff; carries 512-dim embedding and 3D kinematics. Delivery must be guaranteed.</td>
+      </tr>
+      <tr>
+        <td><code>/edgesync/handoff_response</code></td>
+        <td>HandoffResponse.msg</td>
+        <td class="reliable">RELIABLE</td>
+        <td>VOLATILE</td>
+        <td>Keep Last, 10</td>
+        <td>Critical accept/reject commitment. FastDDS retransmission applies if packet dropped.</td>
+      </tr>
+      <tr>
+        <td><code>/edgesync/handoff_cancel</code></td>
+        <td>HandoffCancel.msg</td>
+        <td class="reliable">RELIABLE</td>
+        <td>VOLATILE</td>
+        <td>Keep Last, 10</td>
+        <td>Explicit transaction termination (watchdog, timeout, Re-ID mismatch). Enforces single-owner invariant.</td>
+      </tr>
+      <tr>
+        <td><code>/edgesync/acq_status</code></td>
+        <td>AcqStatus.msg</td>
+        <td class="best-effort">BEST_EFFORT</td>
+        <td>VOLATILE</td>
+        <td>Keep Last, 1 (Deadline 150ms, Lease 300ms)</td>
+        <td>10 Hz liveness heartbeat. Retransmission is unwanted; 3 missed heartbeats trip anti-deadlock watchdog.</td>
+      </tr>
+      <tr>
+        <td><code>/edgesync/handoff_confirm</code></td>
+        <td>HandoffConfirm.msg</td>
+        <td class="reliable">RELIABLE</td>
+        <td>VOLATILE</td>
+        <td>Keep Last, 10</td>
+        <td>Receiver signals successful acquisition and Re-ID match. Carries current epoch e.</td>
+      </tr>
+      <tr>
+        <td><code>/edgesync/handoff_confirm_ack</code></td>
+        <td>HandoffConfirmAck.msg</td>
+        <td class="reliable">RELIABLE</td>
+        <td>VOLATILE</td>
+        <td>Keep Last, 10</td>
+        <td>Previous owner releases exclusive ownership and activates monotonic new_epoch e+1 (FR-54).</td>
+      </tr>
+      <tr>
+        <td><code>/edgesync/state_heartbeat</code></td>
+        <td>StateHeartbeat.msg</td>
+        <td class="best-effort">BEST_EFFORT</td>
+        <td>VOLATILE</td>
+        <td>Keep Last, 1</td>
+        <td>1 Hz low-rate peer availability & resource telemetry (CPU, battery, nav state).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  <div class="footer">EdgeSync · ROS 2 Node Graph · Aligned with SAD v2.3, SRS v1.3 & Math v2.3 · Graduation Project 2026</div>
+
+  <script>mermaid.initialize({ startOnLoad: true, securityLevel: 'loose' });</script>
+</body>
+
+</html>

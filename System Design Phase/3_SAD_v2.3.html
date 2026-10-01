@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Software Architecture Design — Proactive UGV Target Handoff</title>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--text:#1f2937;--muted:#64748b;--accent:#173b57;--accent2:#2f6f95;--line:#dbe3ea;--soft:#eef4f8;--warn:#fff7e6;--green:#edf8f1}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;line-height:1.6}
+.container{max-width:1180px;margin:auto;padding:36px 24px 70px}.cover{background:linear-gradient(135deg,#173b57,#2f6f95);color:white;border-radius:18px;padding:52px 48px;margin-bottom:28px;box-shadow:0 12px 35px rgba(0,0,0,.12)}
+.cover .label{font-size:13px;letter-spacing:2px;text-transform:uppercase;opacity:.82}.cover h1{font-size:38px;line-height:1.15;margin:14px 0 18px}.cover p{font-size:17px;max-width:950px;opacity:.94}.meta{display:flex;gap:28px;flex-wrap:wrap;margin-top:28px;font-size:14px}
+nav,section{background:var(--card);border:1px solid var(--line);border-radius:14px}nav{padding:24px 28px;margin-bottom:26px}nav h2{margin-top:0;color:var(--accent)}nav a{color:var(--accent2);text-decoration:none}nav ol{columns:2;margin-bottom:0}
+section{padding:30px 32px;margin:22px 0}h2{color:var(--accent);font-size:26px;border-bottom:2px solid var(--line);padding-bottom:9px;margin-top:0}h3{color:var(--accent2);margin-top:26px;font-size:20px}h4{margin-bottom:7px;color:#334155;font-size:16px}
+p{margin:9px 0}ul,ol{padding-left:25px}table{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px}th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}th{background:var(--soft);color:var(--accent);font-weight:600}
+.comp-card{border-left:5px solid var(--accent2);background:#fafcfd;padding:16px 20px;margin:16px 0;border-radius:6px;border:1px solid var(--line);border-left-width:5px}
+.comp-card strong{color:var(--accent);font-size:16px}
+.note{background:var(--warn);border-left:5px solid #d99a1d;padding:15px 17px;border-radius:5px;margin:18px 0}.success{background:var(--green);border-left:5px solid #3b8b5a;padding:15px 17px;border-radius:5px;margin:18px 0}
+.flow{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:22px;margin:18px 0;text-align:center}.node{display:inline-block;background:white;border:2px solid var(--accent2);border-radius:9px;padding:9px 13px;margin:4px;font-weight:bold;font-size:13px}.arrow{font-size:18px;color:var(--accent2)}
+pre{background:#1e293b;color:#f8fafc;padding:16px 18px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.45;font-family:Consolas,Monaco,monospace}
+code{font-family:Consolas,Monaco,monospace;background:#f1f5f9;color:#0f172a;padding:2px 5px;border-radius:4px;font-size:12.5px}
+pre code{background:transparent;color:inherit;padding:0}
+.footer{color:var(--muted);text-align:center;margin-top:35px;font-size:13px}@media(max-width:800px){nav ol{columns:1}.cover{padding:35px 25px}.cover h1{font-size:29px}section{padding:22px 18px}}
+</style>
+</head>
+<body>
+<div class="container">
+<header class="cover">
+<div class="label">Software Architecture Design · SRS v1.3 Aligned Baseline</div>
+<h1>Proactive Time-to-Occlusion-Driven Decentralized Target Handoff for Edge UGVs</h1>
+<p>Formal Software Architecture Design defining components, responsibilities, interfaces, system boundaries, and deployment architecture harmonized against SRS v1.3.</p>
+<div class="meta">
+  <span><strong>Version:</strong> 2.3 - SRS v1.3 Aligned Engineering Baseline</span>
+  <span><strong>Baseline:</strong> SRS v1.3 - Final Engineering Baseline</span>
+  <span><strong>Scope:</strong> Two-UGV Primary Physical Validation</span>
+</div>
+</header>
+
+<nav id="toc"><h2>Document Contents</h2><ol>
+<li><a href="#s1">1. System Components</a></li>
+<li><a href="#s2">2. Responsibilities</a></li>
+<li><a href="#s3">3. Interactions / Interfaces</a></li>
+<li><a href="#s4">4. System Boundaries</a></li>
+<li><a href="#s5">5. Deployment</a></li>
+</ol></nav>
+
+<section id="s1">
+<h2>1. System Components</h2>
+
+<h3>1.0 Design Principles</h3>
+<p>The system is decomposed into components according to their responsibilities. This architecture is strictly bound by the hardware constraints and frozen engineering decisions established in SRS v1.3, specifically targeting the <strong>NVIDIA Jetson Orin Nano</strong> platform with RGB as the primary modality.</p>
+<p>The architecture is governed by the following principles:</p>
+<table>
+<thead><tr><th>Principle</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><strong>Edge-first Computing</strong></td><td>Perception, prediction, TTO estimation, decision-making, and Re-ID functions are executable on the UGV's NVIDIA Jetson Orin Nano onboard compute.</td></tr>
+<tr><td><strong>Component Modularity</strong></td><td>Major functions are separated into independently testable and replaceable components. Each participating UGV implements the same logical component model and interface contracts. Component configuration and runtime role may differ between the current owner and receiving UGV.</td></tr>
+<tr><td><strong>Identity Separation</strong></td><td><code>target_id</code> identifies the tracked physical target, while <code>transaction_id</code> identifies the specific handoff attempt. These identifiers shall never be treated as interchangeable.</td></tr>
+<tr><td><strong>Freshness &amp; Ordering</strong></td><td>Time-sensitive messages shall carry timestamp and transaction/state association information sufficient to reject stale or out-of-sequence data.</td></tr>
+<tr><td><strong>Ownership Consistency</strong></td><td>Ownership-related messages shall be associated with the current <code>ownership_epoch</code> or equivalent versioning mechanism to prevent stale ownership claims.</td></tr>
+<tr><td><strong>Metadata-only Cooperation</strong></td><td>UGVs exchange compact target metadata and control messages rather than continuous raw video.</td></tr>
+<tr><td><strong>Deadline Awareness</strong></td><td>Handoff negotiation and acquisition operate within the available TTO-based time budget.</td></tr>
+<tr><td><strong>Shared Reference Frame</strong></td><td>All spatial data exchanged between UGVs is expressed in an explicitly identified shared frame (e.g., a common pre-built map) and carries pose uncertainty. Per-robot odometry frames are never exchanged as if they were aligned.</td></tr>
+<tr><td><strong>Acknowledged Ownership &amp; Liveness</strong></td><td>Confirmation is acknowledged by the previous owner, ownership messages carry a monotonically increasing epoch, and the receiver proves liveness during acquisition. Silent failure must be detectable well before the TTO deadline.</td></tr>
+<tr><td><strong>Parameter Provenance</strong></td><td>Time budgets and thresholds are planning values until confirmed by Tier 2 measurements; components read them from C-12 rather than hard-coding them.</td></tr>
+</tbody>
+</table>
+
+<h3>1.1 Logical Architecture Overview</h3>
+<p>The following diagram outlines the logical component flow and primary separation of authority within the decentralized edge stack:</p>
+<pre><code>                    ┌──────────────────────────┐
+                    │       UGV A              │
+                    │                          │
+Camera ───────────► │ C-01 PerceptionSERVICE   │
+                    │          │               │
+                    │          ▼               │
+                    │ C-02 EstimationSERVICE   │
+                    │          │               │
+IMU/Encoders ─────► │          ▼               │
+                    │ C-03 PredictionSERVICE   │
+                    │          │               │
+                    │     TTO + Uncertainty    │
+                    │          │               │
+                    │          ▼               │
+                    │ C-04 DecisionSERVICE      │
+                    │          ▲               │
+                    │          │ I-05          │
+                    │ C-05 ReceiverSERVICE     │
+                    │          │               │
+                    │          ▼               │
+                    │ C-09 OwnershipSERVICE    │
+                    │          │               │
+                    │          ▼               │
+                    │ C-06 NegotiationSERVICE  │
+                    └──────────┼───────────────┘
+                               │
+                        C-13 Metadata
+                         P2P Transport
+                               │
+                               ▼
+                    ┌──────────────────────────┐
+                    │       UGV B              │
+                    │                          │
+                    │ C-06 NegotiationSERVICE  │
+                    │          │               │
+                    │          ▼               │
+                    │ C-09 OwnershipSERVICE    │
+                    │          │               │
+                    │          ▼               │
+                    │ C-08 AcquisitionSERVICE  │
+                    │       │        │         │
+                    │       │        ▼         │
+                    │       │  C-07 Identity   │
+                    │       │     SERVICE      │
+                    │       │                  │
+                    │       ▼                  │
+                    │ C-10 NavigationSERVICE   │
+                    │  (motion + safety auth)  │
+                    └──────────────────────────┘</code></pre>
+<p><em>Note: the diagram shows the <strong>active role</strong> of each robot during one handoff. Every UGV instantiates the full C-01–C-13 component set; the owner exercises the sender path (C-01–C-06, C-09) and the receiver exercises the receiver path (C-06–C-10), and roles may swap in later handoffs.</em></p>
+
+<h3>1.2 Layer A — Perception and Prediction Layer</h3>
+
+<div class="comp-card">
+<h4>C-01 · PerceptionSERVICE</h4>
+<p><strong>Purpose:</strong> Provide local visual perception for target detection and tracking.</p>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+<li>Acquire timestamped RGB camera frames.</li>
+<li>Produce target detections and localization information required by downstream tracking and prediction functions.</li>
+<li>Maintain local target tracks.</li>
+<li>Maintain tracking confidence.</li>
+<li>Report target visibility and tracking status.</li>
+<li>Optionally consume depth/LiDAR information when required by the Technical Design for geometric visibility, acquisition, safety, or validation.</li>
+</ul>
+<p><strong>Logical Structure:</strong><br>
+<code>RGB Camera &rarr; Visual Detection &rarr; Multi-Object Tracking &rarr; Target Track</code><br>
+<code>Depth/LiDAR ──► Optional Geometric / Acquisition / Safety Support</code><br>
+<strong>SRS Mapping:</strong> FR-01–FR-04, SC-02.</p>
+</div>
+
+<div class="comp-card">
+<h4>C-02 · EstimationSERVICE</h4>
+<p><strong>Purpose:</strong> Maintain a temporally consistent representation of the target state for downstream prediction and handoff decisions.</p>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+<li>Maintain recent target observations.</li>
+<li>Estimate target position, velocity, and confidence.</li>
+<li>Preserve temporal consistency.</li>
+<li>Provide the latest valid target state to downstream components.</li>
+</ul>
+<p><strong>SRS Mapping:</strong> FR-05–FR-06.</p>
+</div>
+
+<div class="comp-card">
+<h4>C-03 · PredictionSERVICE</h4>
+<p><strong>Purpose:</strong> Predict short-term target motion and estimate the Time-to-Occlusion (TTO) with associated uncertainty, representing the remaining time before the target becomes physically occluded or exits the effective FOV.</p>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+<li>Predict short-term target motion with uncertainty.</li>
+<li>Estimate the applicable visibility-loss condition.</li>
+<li>Continuously update the TTO estimate.</li>
+<li>Provide the estimated time budget and uncertainty bounds to the DecisionSERVICE.</li>
+</ul>
+<p><strong>SRS Mapping:</strong> FR-07–FR-13.</p>
+</div>
+
+<h3>1.3 Layer B — Cooperative Handoff Coordination</h3>
+
+<div class="comp-card">
+<h4>C-04 · DecisionSERVICE</h4>
+<p><strong>Purpose:</strong> Evaluate whether handoff criteria are satisfied within the available TTO budget and emit a handoff recommendation.</p>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+<li>Consume the TTO estimate together with its uncertainty/bounds.</li>
+<li>Consume receiver feasibility information (from C-05) and analytically determine whether the proposed handoff can complete within the available TTO budget and safety margin.</li>
+<li>Avoid treating an uncertain TTO estimate as an exact deadline.</li>
+<li>Emit <code>HANDOFF_RECOMMENDED</code> when the configured analytical criteria are satisfied.</li>
+<li>Reject infeasible handoff attempts.</li>
+</ul>
+<p><strong>Boundary:</strong> C-04 is an analytical engine only. It does not exert direct kinematic control over the receiver. C-09 is the sole lifecycle authority.<br>
+<strong>SRS Mapping:</strong> FR-14–FR-17.</p>
+</div>
+
+<div class="comp-card">
+<h4>C-05 · ReceiverSERVICE</h4>
+<p><strong>Purpose:</strong> Assess receiver-side availability and acquisition feasibility using available receiver state information.</p>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+<li>Maintain knowledge of available peer UGVs.</li>
+<li>Evaluate receiver suitability based on availability, communication capability, kinematic motion constraints, and spatial relationship.</li>
+<li>In the primary two-UGV scenario, C-05 evaluates the designated Robot B. For future multi-UGV extensions, C-05 may evaluate and rank eligible receiver candidates.</li>
+</ul>
+<p><strong>SRS Mapping:</strong> FR-18–FR-20.</p>
+<p><strong>Two-UGV note:</strong> Only one candidate exists; ranked failover (Rank-2) applies only when additional eligible UGVs are present. Eligibility uses a hard resource gate (CPU load, battery, navigation availability) followed by a weighted utility.</p>
+</div>
+
+<div class="comp-card">
+<h4>C-06 · NegotiationSERVICE</h4>
+<p><strong>Purpose:</strong> Coordinate handoff requests and responses between UGVs through deadline-bounded peer-to-peer communication.</p>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+<li>Exchange handoff requests, responses, target metadata, and control messages.</li>
+<li>Enforce deadline-bounded communication.</li>
+<li>Associate messages with the sender, target, <code>transaction_id</code>, and timestamp.</li>
+<li>Detect communication timeout and failure conditions.</li>
+</ul>
+<p><strong>SRS Mapping:</strong> FR-21–FR-31, SC-03.</p>
+<p><strong>Message set:</strong> HANDOFF_REQUEST, HANDOFF_RESPONSE (accept / reject / unavailable), HANDOFF_CANCEL, ACQ_STATUS (liveness), HANDOFF_CONFIRM, HANDOFF_CONFIRM_ACK. All carry sender_id, transaction_id, target_id, ownership_epoch, sequence number and timestamp; spatial payloads carry a frame_id.</p>
+</div>
+
+<div class="comp-card">
+<h4>C-07 · IdentitySERVICE</h4>
+<p><strong>Purpose:</strong> Verify that the target acquired by the receiving UGV is the same target previously tracked by the sending UGV.</p>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+<li>Maintain a cross-UGV target identity representation.</li>
+<li>Support multi-cue identity verification using appearance and, where available, spatial, temporal, or predicted-state consistency.</li>
+<li>Produce an identity match or rejection decision.</li>
+</ul>
+<p><strong>SRS Mapping:</strong> FR-32–FR-35.</p>
+<p><strong>Timing note:</strong> The Re-ID engine is kept resident (warm) so that no engine-load time falls inside the handoff budget; the owner maintains a smoothed identity signature of the target at a low rate so one is always ready to send. If Tier 2 shows memory contention, the engine is pre-warmed at HANDOFF_CANDIDATE instead, and the measured load time is added to the budget.</p>
+</div>
+
+<div class="comp-card">
+<h4>C-08 · AcquisitionSERVICE</h4>
+<p><strong>Purpose:</strong> Enable the receiving UGV to locate and establish a local track for the transferred target within a bounded time.</p>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+<li>Search for and acquire the target using onboard visual perception, with supporting depth/LiDAR information when available and justified.</li>
+<li>Establish a local track within the acquisition deadline.</li>
+<li>Report acquisition success or failure.</li>
+</ul>
+<p><strong>SRS Mapping:</strong> FR-36–FR-38.</p>
+</div>
+
+<div class="comp-card">
+<h4>C-09 · OwnershipSERVICE</h4>
+<p><strong>Purpose:</strong> Manage the complete handoff transaction lifecycle and control local ownership transfer.</p>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+<li>Maintain the handoff state machine, including explicit recovery branches.</li>
+<li>Manage negotiation, acquisition, identity-verification, confirmation, and failure/recovery states.</li>
+<li>Confirm a handoff only after successful acquisition and identity verification.</li>
+<li>Transfer ownership after confirmation.</li>
+</ul>
+<p><strong>Handoff Lifecycle (With Explicit Recovery):</strong></p>
+<pre><code>        TRACKING
+            ↓
+        HANDOFF CANDIDATE
+            ↓
+        NEGOTIATING
+            ↓
+        COMMITTED
+            ↓
+        ACQUISITION
+            ↓
+        IDENTITY VERIFICATION
+            ↓
+        CONFIRMED
+            │
+            ├── FAILURE
+            ├── TIMEOUT
+            └── INVALID
+                    ↓
+                RECOVERY
+                ↙      ↘
+          TRACKING    TERMINAL FAILURE</code></pre>
+<p><strong>Ownership Rule:</strong> Acceptance of a handoff request (COMMITTED) does not transfer ownership. Ownership changes only after the receiving UGV has acquired and verified the target.<br>
+<strong>SRS Mapping:</strong> FR-39–FR-48.</p>
+<p><strong>Consistency rules:</strong> (1) The previous owner stays exclusive owner until it receives HANDOFF_CONFIRM and returns HANDOFF_CONFIRM_ACK carrying epoch+1; stale-epoch messages are rejected. (2) During COMMITTED/ACQUISITION the owner monitors receiver liveness and aborts on loss of liveness (ERR_CANDIDATE_DEAD). (3) In the two-UGV baseline an abort enters RECOVERY; re-attempt occurs only if the remaining TTO still exceeds the budget and another eligible candidate exists.</p>
+</div>
+
+<h3>1.4 Layer C — Platform Observability Support</h3>
+
+<div class="comp-card">
+<h4>C-10 · NavigationSERVICE</h4>
+<p><strong>Purpose:</strong> Provide the interface between the cooperative tracking system and the simulated or physical UGV platform.</p>
+<p><strong>Responsibilities:</strong></p>
+<ul>
+<li>Provide robot pose and velocity information derived from IMU and wheel encoders.</li>
+<li>Abstract the underlying robotics framework.</li>
+<li><strong>NavigationSERVICE retains final platform-motion and safety authority.</strong> Motion requests from AcquisitionSERVICE are advisory/request-based and may be rejected or modified by the navigation/safety layer.</li>
+</ul>
+<p><strong>SRS Mapping:</strong> FR-49–FR-50, SC-02.</p>
+<p><strong>Localization:</strong> Publishes robot pose and its covariance in the shared reference frame (map-based localization using LiDAR/IMU/encoders) in addition to the local odometry frame. It also owns the autonomous safe-stop that engages when compute or communication is lost.</p>
+</div>
+
+<div class="comp-card">
+<h4>C-11 · MonitoringSERVICE</h4>
+<p><strong>Purpose:</strong> Provide observability and record the events required to analyze system behavior and handoff performance.</p>
+<p><strong>SRS Mapping:</strong> &sect;10, NFR-09–NFR-10.</p>
+</div>
+
+<div class="comp-card">
+<h4>C-12 · ConfigurationSERVICE</h4>
+<p><strong>Purpose:</strong> Manage runtime parameters and experiment configuration independently from the core system logic.</p>
+<p><strong>SRS Mapping:</strong> NFR-07–NFR-08.</p>
+</div>
+
+<h3>1.5 Shared Cross-UGV Elements</h3>
+
+<div class="comp-card">
+<h4>C-13 · TransportSERVICE</h4>
+<p><strong>Purpose:</strong> Provide the logical communication channel through which C-06 exchanges messages with peer UGVs.</p>
+<p><strong>SRS Mapping:</strong> Supports FR-21–FR-31.</p>
+</div>
+
+<div class="comp-card">
+<h4>C-14 · EvaluationSERVICE</h4>
+<p><strong>Purpose:</strong> Aggregate logs from multiple UGVs after an experiment to calculate cross-UGV evaluation metrics.</p>
+<p><strong>Boundary Constraint:</strong> C-14 is strictly offline and has no authority over online perception, prediction, negotiation, acquisition, or ownership decisions.</p>
+<p><strong>SRS Mapping:</strong> &sect;11.</p>
+</div>
+
+</section>
+
+<section id="s2">
+<h2>2. Responsibilities</h2>
+<h3>2.1 Responsibilities Matrix</h3>
+<table>
+<thead><tr><th>Component</th><th>Primary responsibility</th><th>Authority / boundary</th><th>SRS trace</th></tr></thead>
+<tbody>
+<tr><td>C-01 Perception</td><td>RGB frames, detection, local tracks, track confidence, visibility status</td><td>Depth/LiDAR used only as supporting geometry</td><td>FR-01–04</td></tr>
+<tr><td>C-02 Estimation</td><td>Target state (position, velocity, confidence) and short history, in the shared frame</td><td>Propagates ego-motion uncertainty into state covariance</td><td>FR-05–06, FR-53</td></tr>
+<tr><td>C-03 Prediction</td><td>Short-horizon prediction and uncertainty-aware TTO (occlusion and FOV exit)</td><td>Provides TTO and a lower confidence bound to C-04</td><td>FR-07–13</td></tr>
+<tr><td>C-04 Decision</td><td>Analytical feasibility versus TTO bound and budget</td><td>Analytical only; no lifecycle or motion authority</td><td>FR-14–17</td></tr>
+<tr><td>C-05 Receiver</td><td>Peer availability, eligibility gate, utility ranking</td><td>Advisory input to C-04</td><td>FR-18–20</td></tr>
+<tr><td>C-06 Negotiation</td><td>Bounded request/response, message validity, timeouts</td><td>Never changes ownership by itself</td><td>FR-21–31</td></tr>
+<tr><td>C-07 Identity</td><td>Identity signature, multi-cue verification, accept/reject</td><td>Appearance pipeline is RGB-only</td><td>FR-32–35</td></tr>
+<tr><td>C-08 Acquisition</td><td>Search, acquire and establish a local track within the acquisition timeout; emit liveness status</td><td>Motion requests are advisory to C-10</td><td>FR-36–38, FR-55</td></tr>
+<tr><td>C-09 Ownership</td><td>Handoff state machine, epochs, acknowledged confirmation, recovery</td><td>Sole lifecycle and ownership authority</td><td>FR-39–48, FR-54–56</td></tr>
+<tr><td>C-10 Navigation</td><td>Pose/velocity and covariance in the shared frame; motion execution</td><td>Final platform motion and safety authority</td><td>FR-49–50, FR-53, NFR-14</td></tr>
+<tr><td>C-11 Monitoring</td><td>Timestamped event and resource logging</td><td>Observes only</td><td>§10, NFR-09–10</td></tr>
+<tr><td>C-12 Configuration</td><td>Runtime parameters, budgets, weights, experiment configuration</td><td>No online decision logic</td><td>NFR-07–08, NFR-16</td></tr>
+<tr><td>C-13 Transport</td><td>Peer-to-peer metadata channel (QoS per message class)</td><td>Transport only</td><td>FR-21–31</td></tr>
+<tr><td>C-14 Evaluation</td><td>Offline aggregation and metrics, including ground-truth comparison</td><td>Offline; no online authority</td><td>§11, NFR-13</td></tr>
+</tbody></table>
+<h3>2.2 Layer notes</h3>
+
+<h3>2.2.1 Layer A — Perception and Prediction Layer</h3>
+<h4>C-01 &middot; PerceptionSERVICE</h4>
+<p><strong>Responsibilities:</strong> Acquire timestamped RGB frames. Produce target detections and localization required for tracking. Depth/LiDAR utilized optionally as supporting modalities.</p>
+<h4>C-03 &middot; PredictionSERVICE</h4>
+<p><strong>Responsibilities:</strong> Include FOV exit boundaries explicitly alongside geometric physical occlusion constraints for TTO calculation. Represent prediction uncertainty.</p>
+
+<h3>2.2.2 Layer B — Cooperative Handoff Coordination</h3>
+<h4>C-04 &middot; DecisionSERVICE</h4>
+<p><strong>Responsibilities:</strong> Evaluate handoff timing feasibility against the TTO budget and uncertainty bounds. Process receiver assessments to make analytical handoff recommendations.</p>
+<h4>C-05 &middot; ReceiverSERVICE</h4>
+<p><strong>Responsibilities:</strong> Assess receiver motion availability and kinematic feasibility before proposing them as viable candidates.</p>
+
+<h3>2.2.3 Layer C — Platform Observability Support</h3>
+<h4>C-10 &middot; NavigationSERVICE</h4>
+<p><strong>Responsibilities:</strong> Provide robot pose and velocity. Process advisory motion requests while maintaining absolute control over platform safety and movement execution.</p>
+</section>
+
+<section id="s3">
+<h2>3. Interactions / Interfaces</h2>
+
+<h3>3.1 Intra-UGV Interfaces</h3>
+<table>
+<thead><tr><th>ID</th><th>Interface</th><th>Trigger</th><th>Main Information</th><th>SRS Trace</th></tr></thead>
+<tbody>
+<tr><td>I-01</td><td>C-01 &rarr; C-02</td><td>Processed frame</td><td>Detections, localization, tracks, timestamp, frame identifier</td><td>FR-01–FR-04, SC-02</td></tr>
+<tr><td>I-02</td><td>C-02 &rarr; C-03</td><td>Valid state update</td><td>Position, velocity, confidence, history, freshness</td><td>FR-05–FR-06</td></tr>
+<tr><td>I-03</td><td>C-10 &rarr; C-03</td><td>Robot-state update</td><td>Pose and velocity with covariance in the shared frame (map/LiDAR + IMU + encoders), platform state, frame_id, timestamp</td><td>FR-49–FR-50, SC-02</td></tr>
+<tr><td>I-04</td><td>C-03 &rarr; C-04</td><td>TTO/prediction update</td><td>TTO estimate, TTO uncertainty/bounds, predicted trajectory, prediction validity, visibility-loss condition, timestamp/freshness</td><td>FR-07–FR-13</td></tr>
+<tr><td>I-05</td><td>C-05 &rarr; C-04</td><td>Receiver assessment completed</td><td>receiver_id, availability, communication status, acquisition feasibility, relevant robot state, freshness/timestamp</td><td>FR-18–FR-20</td></tr>
+<tr><td>I-06</td><td>C-04 &rarr; C-09</td><td>Handoff proceed decision</td><td>Handoff recommendation, reason, trigger timing, analytical context</td><td>FR-14–FR-17</td></tr>
+<tr><td>I-07</td><td>C-09 &rarr; C-06</td><td>Negotiation initiation</td><td>transaction_id, negotiation initiation, receiver identifier</td><td>FR-21–FR-22</td></tr>
+<tr><td>I-08</td><td>C-06 &rarr; C-09</td><td>Negotiation outcome</td><td>transaction_id, accept, reject, timeout, latency, response information</td><td>FR-23, FR-31</td></tr>
+<tr><td>I-09</td><td>C-07 &rarr; C-09</td><td>Logical protocol preparation</td><td>transaction_id, compact identity signature and contextual information</td><td>FR-32</td></tr>
+<tr><td>I-10</td><td>C-08 &harr; C-07</td><td>Candidate acquisition</td><td>transaction_id, candidate observation and identity verification result</td><td>FR-33–FR-35</td></tr>
+<tr><td>I-11</td><td>C-08 &rarr; C-09</td><td>Acquisition outcome</td><td>transaction_id, success, failure, timeout, confidence, timing</td><td>FR-36–FR-38</td></tr>
+<tr><td>I-12</td><td>C-08 &harr; C-10</td><td>Acquisition movement</td><td>Advisory target point, interception constraints, motion result</td><td>FR-36, FR-50</td></tr>
+<tr><td>I-13</td><td>C-09 &rarr; local comps</td><td>State transition</td><td>transaction_id, previous state, new state, reason</td><td>FR-48</td></tr>
+<tr><td>I-14</td><td>C-08 &rarr; C-09 (&rarr; C-06 &rarr; peer C-09)</td><td>10 Hz during COMMITTED/ACQUISITION</td><td>transaction_id, ownership_epoch, status (SLEWING / SEARCHING / ACQUIRED), timestamp</td><td>FR-55</td></tr>
+<tr><td>I-15</td><td>C-09 &harr; C-06</td><td>Confirmation exchange</td><td>HANDOFF_CONFIRM / HANDOFF_CONFIRM_ACK, transaction_id, ownership_epoch</td><td>FR-39–41, FR-54</td></tr>
+<tr><td>I-16</td><td>C-10 &rarr; C-02 / C-06</td><td>Pose update</td><td>Pose and covariance in shared frame, frame_id, timestamp</td><td>FR-53</td></tr>
+</tbody>
+</table>
+
+<h3>3.2 Logical Data Objects</h3>
+<p>To explicitly map data boundaries established in SRS v1.3, the following logical data objects are defined within the architecture:</p>
+<table>
+<thead><tr><th>Data Object</th><th>Owner / Producer</th><th>Consumer</th></tr></thead>
+<tbody>
+<tr><td>Track State</td><td>C-02</td><td>C-03</td></tr>
+<tr><td>Prediction State</td><td>C-03</td><td>C-04</td></tr>
+<tr><td>TTO Estimate</td><td>C-03</td><td>C-04</td></tr>
+<tr><td>Receiver State</td><td>C-05</td><td>C-04</td></tr>
+<tr><td>Handoff Request</td><td>C-06 / C-09</td><td>Peer C-06</td></tr>
+<tr><td>Identity Representation</td><td>C-07</td><td>Peer C-07</td></tr>
+<tr><td>Acquisition Result</td><td>C-08</td><td>C-09</td></tr>
+<tr><td>Handoff Confirmation</td><td>C-09</td><td>Peer C-09 / C-11</td></tr>
+<tr><td>Handoff Response</td><td>C-06 (receiver)</td><td>Peer C-06 / C-09</td></tr>
+<tr><td>Liveness Status</td><td>C-08 / C-09 (receiver)</td><td>Peer C-09 (owner watchdog)</td></tr>
+<tr><td>Confirmation Acknowledgement</td><td>C-09 (previous owner)</td><td>Peer C-09 / C-11</td></tr>
+<tr><td>Shared-frame Pose</td><td>C-10</td><td>C-02, C-06</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="s4">
+<h2>4. System Boundaries</h2>
+
+<h3>4.1 System Context</h3>
+<table>
+<thead><tr><th>Domain</th><th>Description</th><th>Examples</th></tr></thead>
+<tbody>
+<tr><td><strong>System</strong></td><td>Decentralized Edge-AI software stack instantiated on each participating UGV.</td><td>C-01–C-13</td></tr>
+<tr><td><strong>External Platform &amp; Infrastructure</strong></td><td>Hardware, operating systems, networking, and supporting services.</td><td>RGB Camera, supporting Depth/LiDAR sensors, NVIDIA Jetson Orin Nano, navigation framework, communication network</td></tr>
+</tbody>
+</table>
+
+<h3>4.2 External Dependencies and Physical Boundary</h3>
+<table>
+<thead><tr><th>External Element</th><th>Relationship with System</th><th>Boundary Status</th></tr></thead>
+<tbody>
+<tr><td>RGB Camera &amp; Supporting Sensors</td><td>Provides visual/spatial observations to C-01.</td><td>External platform resource</td></tr>
+<tr><td>NVIDIA Jetson Orin Nano</td><td>Hosts the software components (Compute boundary).</td><td>Deployment resource</td></tr>
+<tr><td>Robot Platform</td><td>Provides physical state (IMU/Encoders) and executes motion requests through C-10.</td><td>External platform</td></tr>
+<tr><td>Shared map / localization reference</td><td>Defines the shared reference frame used for all exchanged spatial data.</td><td>External platform resource</td></tr>
+<tr><td>Ground-truth instrumentation (Tier 3 only)</td><td>Independent measurement of target/robot pose and events for evaluation; consumed offline by C-14 only.</td><td>Evaluation only; no online influence</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="s5">
+<h2>5. Deployment</h2>
+
+<h3>5.1 Deployment Topology</h3>
+<p><strong>Primary Validation Topology:</strong> Two physical UGVs are used in the core validation scenario: Robot A (current owner) and Robot B (designated receiver).</p>
+<p><strong>Architectural Extensibility:</strong> The logical receiver-selection architecture permits additional UGVs without changing ownership-transfer semantics.</p>
+
+<h3>5.2 Deployment Tiers</h3>
+<table>
+<thead><tr><th>Tier</th><th>Status</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td><strong>Tier 1 — Simulation Testing</strong></td><td>Simulation testing</td><td>Validate the architecture, handoff protocol, and TTO behavior in a controlled environment.</td></tr>
+<tr><td><strong>Tier 2 — Jetson Orin Nano Edge Benchmarking</strong></td><td>Edge benchmarking</td><td>Validate the software on the physical NVIDIA Jetson Orin Nano hardware to measure compute and latency feasibility.</td></tr>
+<tr><td><strong>Tier 3 — Physical Moving UGVs</strong></td><td>Mandatory primary research deliverable</td><td>Validate cooperative handoff on physically moving UGVs using the primary RGB-based perception pipeline and supporting robot-state and spatial sensing as justified by the Technical Design.</td></tr>
+</tbody>
+</table>
+
+<h3>5.3 Deployment Constraints and Assumptions</h3>
+<h4>Constraints mapped to SRS</h4>
+<table>
+<thead><tr><th>SRS Trace</th><th>Constraint Name</th><th>Architectural Implication</th></tr></thead>
+<tbody>
+<tr><td><strong>SC-01</strong></td><td>Edge Computing Platform</td><td>Core processing must conform strictly to the memory/GPU/CPU limits of the NVIDIA Jetson Orin Nano.</td></tr>
+<tr><td><strong>SC-02</strong></td><td>Hardware Platform Sensors</td><td>Architecture must integrate RGB as primary, utilizing IMU and Encoders for robot state, with Depth/LiDAR acting as optional supporting modalities.</td></tr>
+<tr><td><strong>SC-03</strong></td><td>Communication</td><td>Raw video and high-volume point clouds remain local; cooperation is strictly metadata-only.</td></tr>
+<tr><td><strong>SC-04</strong></td><td>Moving Cameras</td><td>System tracking and kinematic feasibility checks must dynamically account for ego-motion.</td></tr>
+<tr><td><strong>SC-05</strong></td><td>Sparse Coverage</td><td>System does not assume continuous overlapping fields of view between adjacent UGVs.</td></tr>
+<tr><td><strong>SC-06</strong></td><td>Physical Validation</td><td>The final system proof must rely on Tier 3 Physical Deployment, not just simulation.</td></tr>
+</tbody>
+</table>
+
+<h3>5.4 Process-Level Deployment (per UGV)</h3>
+<table>
+<thead><tr><th>ROS 2 process / node</th><th>Components</th><th>Execution model</th></tr></thead>
+<tbody>
+<tr><td>Perception &amp; Kinematics</td><td>C-01, C-02, C-03</td><td>Continuous (target 30 Hz; acceptance threshold set by Tier 2)</td></tr>
+<tr><td>Cooperative Handoff FSM</td><td>C-04, C-05, C-06, C-09</td><td>Event-driven</td></tr>
+<tr><td>Identity &amp; Acquisition</td><td>C-07, C-08</td><td>Engine resident; inference on demand</td></tr>
+<tr><td>Platform &amp; Observability</td><td>C-10, C-11, C-12</td><td>Continuous / low rate</td></tr>
+<tr><td>DDS middleware layer</td><td>C-13</td><td>Transport (QoS profiles per message class)</td></tr>
+<tr><td>Off-robot analysis</td><td>C-14</td><td>Offline after experiments</td></tr>
+</tbody></table>
+</section>
+
+<section id="changelog"><h2>Revision Notes — v2.3</h2><ul>
+<li>Aligned to SRS v1.3; version labels and section numbering corrected.</li>
+<li>Replaced the abbreviated responsibilities stub with a full matrix for C-01–C-14.</li>
+<li>Added shared-reference-frame, acknowledged-ownership/liveness and parameter-provenance principles; interfaces I-14–I-16 and the corresponding data objects.</li>
+<li>Clarified two-UGV failover, resident Re-ID engine, symmetric role model, and process-level deployment.</li>
+</ul></section>
+
+<div class="footer">Software Architecture Design &middot; Proactive Time-to-Occlusion-Driven Decentralized Target Handoff for Edge UGVs &middot; Hardware-Grounded v2.3</div>
+</div>
+</body>
+</html>

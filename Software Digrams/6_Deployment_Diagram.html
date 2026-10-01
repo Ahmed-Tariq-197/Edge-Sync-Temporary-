@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deployment Diagram — EdgeSync: Physical Hardware Architecture</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #e2e8f0;
+      --accent: #38bdf8;
+      --accent2: #818cf8;
+      --line: #334155;
+      --soft: #1e3a5f;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      padding: 30px;
+    }
+
+    .page-title {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .page-title h1 {
+      font-size: 28px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.5px;
+    }
+
+    .page-title p {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    .badge-bar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .badge {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #38bdf8;
+    }
+
+    .diagram-container {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 30px;
+      margin: 20px auto;
+      max-width: 1400px;
+      overflow-x: auto;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .spec-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      max-width: 1400px;
+      margin: 20px auto;
+    }
+
+    .spec-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px 20px;
+    }
+
+    .spec-card h3 {
+      font-size: 15px;
+      color: #38bdf8;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .spec-card p {
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    .footer {
+      text-align: center;
+      color: #64748b;
+      font-size: 12px;
+      margin-top: 30px;
+    }
+
+    .print-btn {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 28px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      color: #0f172a;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+    }
+
+    .print-btn:hover {
+      opacity: .88;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        color: #000;
+      }
+
+      .diagram-container, .spec-card {
+        border-color: #ccc;
+        background: #fff;
+        box-shadow: none;
+      }
+
+      .page-title h1 {
+        -webkit-text-fill-color: #173b57;
+      }
+
+      .print-btn {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="page-title">
+    <h1>6. UML Deployment Diagram</h1>
+    <p>Physical Hardware & Process-Level Architecture · SAD v2.3, SRS v1.3 & Experimental Protocol v1.1</p>
+    <div class="badge-bar">
+      <span class="badge">NVIDIA Jetson Orin Nano (8 GB)</span>
+      <span class="badge">Resident OSNet Re-ID in Unified Memory</span>
+      <span class="badge">Autonomous Platform Safe-Stop (NFR-14)</span>
+      <span class="badge">Tier 3 Independent Ground Truth (NFR-13)</span>
+    </div>
+  </div>
+
+  <div class="spec-grid">
+    <div class="spec-card">
+      <h3>🧠 Jetson Orin Nano (8 GB)</h3>
+      <p>6-core Arm Cortex-A78AE @ 1.5GHz · 1024-core Ampere GPU · Unified LPDDR5 8GB (shared CPU/GPU) · Ubuntu 22.04 LTS · ROS 2 Humble · nvpmodel 15W mode.</p>
+    </div>
+    <div class="spec-card">
+      <h3>👁️ Perception & Sensors</h3>
+      <p>RGB-D Astra Pro Plus (RGB primary, registered depth) · RPLiDAR 2D for shared-frame map localization · MPU6050 IMU + Hall encoders via STM32F407 (FreeRTOS).</p>
+    </div>
+    <div class="spec-card">
+      <h3>📶 Network & Middleware</h3>
+      <p>5GHz Wi-Fi · FastDDS / Cyclone DDS · PTP (IEEE 1588v2) time synchronization · Binary CDR serialization (≈ 2.5–3 KB max packet).</p>
+    </div>
+    <div class="spec-card">
+      <h3>🎯 Independent Ground Truth</h3>
+      <p>Time-synchronized overhead optical motion-capture rig with passive fiducials (SRS NFR-13). Evaluated offline via C-14 without online influence.</p>
+    </div>
+  </div>
+
+  <div class="diagram-container">
+    <pre class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize':'12px','primaryColor':'#1e3a5f','primaryTextColor':'#e2e8f0','primaryBorderColor':'#38bdf8','lineColor':'#64748b'}, 'flowchart': {'htmlLabels': true, 'curve': 'basis', 'rankSpacing': 50, 'nodeSpacing': 35}}}%%
+
+graph TB
+    subgraph UGV_A["🤖 Physical Robot A (Current Owner) — Hiwonder JetAuto"]
+        direction TB
+
+        subgraph JETSON_A["🧠 NVIDIA Jetson Orin Nano (8 GB Unified Memory)"]
+            direction TB
+            subgraph PROC1_A["Process 1: Perception & Kinematics (30Hz)"]
+                NODE1_A["<b>C-01 Perception + C-02 Estimation + C-03 Prediction</b><br/><small>YOLO TensorRT · 6-DoF EKF · Frustum TTO</small>"]
+            end
+            subgraph PROC2_A["Process 2: Cooperative Handoff FSM"]
+                NODE2_A["<b>C-04 Decision + C-05 Receiver + C-06 Negotiation + C-09 Ownership</b><br/><small>Zone Logic · 10Hz Watchdog · Epoch Lifecycle</small>"]
+            end
+            subgraph PROC3_A["Process 3: Identity & Acquisition"]
+                NODE3_A["<b>C-07 Identity + C-08 Acquisition</b><br/><small>Resident OSNet TensorRT (Warm in Unified Memory)</small>"]
+            end
+            subgraph PROC4_A["Process 4: Platform & Observability"]
+                NODE4_A["<b>C-10 Navigation + C-11 Monitoring + C-12 Configuration</b><br/><small>Map Localization (tf2) · <b>Autonomous Safe-Stop</b> · Parameter Register</small>"]
+            end
+            DDS_A["<b>C-13 TransportSERVICE (FastDDS Middleware)</b>"]
+        end
+
+        subgraph SENSORS_A["📡 Sensor & Microcontroller Suite"]
+            CAM_A["📷 Astra Pro Plus RGB-D<br/><small>USB 3.0</small>"]
+            LIDAR_A["📡 RPLiDAR 2D<br/><small>USB Serial</small>"]
+            STM_A["🔌 STM32F407 (FreeRTOS)<br/><small>IMU + 4x Mecanum Encoders</small>"]
+        end
+    end
+
+    subgraph UGV_B["🤖 Physical Robot B (Candidate Receiver) — Hiwonder JetAuto"]
+        direction TB
+
+        subgraph JETSON_B["🧠 NVIDIA Jetson Orin Nano (8 GB Unified Memory)"]
+            direction TB
+            subgraph PROC1_B["Process 1: Perception & Kinematics (30Hz)"]
+                NODE1_B["<b>C-01 Perception + C-02 Estimation + C-03 Prediction</b>"]
+            end
+            subgraph PROC2_B["Process 2: Cooperative Handoff FSM"]
+                NODE2_B["<b>C-04 Decision + C-05 Receiver + C-06 Negotiation + C-09 Ownership</b>"]
+            end
+            subgraph PROC3_B["Process 3: Identity & Acquisition"]
+                NODE3_B["<b>C-07 Identity + C-08 Acquisition</b><br/><small>Resident OSNet TensorRT (Warm in Unified Memory)</small>"]
+            end
+            subgraph PROC4_B["Process 4: Platform & Observability"]
+                NODE4_B["<b>C-10 Navigation + C-11 Monitoring + C-12 Configuration</b><br/><small><b>Autonomous Safe-Stop</b></small>"]
+            end
+            DDS_B["<b>C-13 TransportSERVICE (FastDDS Middleware)</b>"]
+        end
+
+        subgraph SENSORS_B["📡 Sensor & Microcontroller Suite"]
+            CAM_B["📷 Astra Pro Plus RGB-D<br/><small>USB 3.0</small>"]
+            LIDAR_B["📡 RPLiDAR 2D<br/><small>USB Serial</small>"]
+            STM_B["🔌 STM32F407 (FreeRTOS)<br/><small>IMU + 4x Mecanum Encoders</small>"]
+        end
+    end
+
+    subgraph INFRA["🌐 Network Infrastructure"]
+        ROUTER["📶 5GHz Wi-Fi Router<br/><small>PTP Time Sync Daemon (IEEE 1588v2)</small>"]
+    end
+
+    subgraph GT_STATION["🎯 Independent Ground-Truth Testbed (Tier 3 — SRS NFR-13)"]
+        MOCAP["🎥 Overhead Motion Capture / Camera Rig<br/><small>Time-Synchronized Ground Truth (Fiducials on Robots & Target)</small>"]
+        GT_LOGGER["💾 Ground-Truth Data Logger<br/><small>Computes True Time-to-Loss & True Handoff Latency</small>"]
+    end
+
+    subgraph OFFLINE_EVAL["💻 Offline Evaluation Workstation"]
+        C14["<b>C-14 EvaluationSERVICE</b><br/><small>Cross-Robot Log Aggregation & Metrics</small><br/><small>HSR, ADE/FDE, TTO Calibration, Dual-Ownership Violations</small>"]
+    end
+
+    TARGET["🎯 Moving Physical Target (Person / Obstacle Tracked)"]
+
+    %% Physical sensor connections
+    CAM_A -->|"RGB + Depth (USB 3.0)"| NODE1_A
+    LIDAR_A -->|"Scan (USB Serial)"| NODE4_A
+    STM_A -->|"UART 115200 (Odometry/IMU)"| NODE4_A
+
+    CAM_B -->|"RGB + Depth (USB 3.0)"| NODE1_B
+    LIDAR_B -->|"Scan (USB Serial)"| NODE4_B
+    STM_B -->|"UART 115200 (Odometry/IMU)"| NODE4_B
+
+    %% Process communication
+    NODE1_A <-->|"Zero-Copy Intra-Process"| NODE2_A
+    NODE2_A <-->|"Zero-Copy Intra-Process"| NODE3_A
+    NODE4_A <-->|"tf2 Map Transform & Safety"| NODE2_A
+    NODE2_A <--> DDS_A
+
+    NODE1_B <-->|"Zero-Copy Intra-Process"| NODE2_B
+    NODE2_B <-->|"Zero-Copy Intra-Process"| NODE3_B
+    NODE4_B <-->|"tf2 Map Transform & Safety"| NODE2_B
+    NODE2_B <--> DDS_B
+
+    %% P2P FastDDS Network
+    DDS_A <-->|"FastDDS P2P<br/>HANDOFF_REQUEST / RESPONSE<br/>10Hz ACQ_STATUS<br/>CONFIRM / CONFIRM_ACK"| ROUTER
+    ROUTER <-->|"FastDDS P2P Binary CDR"| DDS_B
+
+    %% Target visibility
+    TARGET -.->|"Optical Target"| CAM_A
+    TARGET -.->|"Optical Target"| CAM_B
+
+    %% Ground Truth & Evaluation
+    TARGET -.->|"Fiducial Marker"| MOCAP
+    UGV_A -.->|"Tracking Marker"| MOCAP
+    UGV_B -.->|"Tracking Marker"| MOCAP
+    MOCAP --> GT_LOGGER
+    GT_LOGGER -.->|"Ground Truth Dataset"| C14
+
+    NODE4_A -.->|"Robot A ROS bags"| C14
+    NODE4_B -.->|"Robot B ROS bags"| C14
+
+    %% Styling
+    style UGV_A fill:#0c2d48,stroke:#38bdf8,stroke-width:2px,color:#38bdf8
+    style UGV_B fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#818cf8
+    style INFRA fill:#1e293b,stroke:#64748b,stroke-width:1px,color:#cbd5e1
+    style GT_STATION fill:#14532d,stroke:#34d399,stroke-width:2px,color:#34d399
+    style OFFLINE_EVAL fill:#3b1f0b,stroke:#fb923c,stroke-width:2px,color:#fb923c
+    style TARGET fill:#451a03,stroke:#f59e0b,stroke-width:2px,color:#fde68a
+</pre>
+  </div>
+
+  <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+  <div class="footer">EdgeSync · UML Deployment Diagram · Aligned with SAD v2.3, SRS v1.3 & Experimental Design v1.1 · Graduation Project 2026</div>
+
+  <script>mermaid.initialize({ startOnLoad: true, securityLevel: 'loose' });</script>
+</body>
+
+</html>
