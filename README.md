@@ -107,5 +107,5 @@ The following system models represent the certified architectural baseline:
 
 ## 📄 License & Attribution
 
-Developed by **Mustafa Mohamed** ([@Mustafa700aa](https://github.com/Mustafa700aa)) as part of the Robotics Graduation Project.  
+Developed by **Mustafa Mohamed** ([@Mustafa700aa](https://github.com/Mustafa700aa)) as part of the Graduation Project.  
 All architectural designs, mathematical models, and implementation specifications are documented under standard academic research and open engineering guidelines.
