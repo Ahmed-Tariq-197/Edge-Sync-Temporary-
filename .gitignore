@@ -31,3 +31,7 @@ ENV/
 build/
 install/
 log/
+
+# Internal Reports & Analysis Docs
+EdgeSync_Architectural_Sync_Report_*.md
+

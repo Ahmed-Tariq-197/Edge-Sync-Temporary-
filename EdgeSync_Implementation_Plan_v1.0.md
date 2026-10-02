@@ -231,41 +231,48 @@ edgesync_ws/
 
 ---
 
-## 🗓️ Phased Implementation Roadmap (Hyper-Agile 9-Day Schedule)
+## 🗓️ Phased Implementation Roadmap & Engineering Work Breakdown Structure (WBS)
 
 ```mermaid
-gantt
-    title EdgeSync Hyper-Agile 9-Day Engineering Schedule (AI-Assisted)
-    dateFormat  YYYY-MM-DD
-    axisFormat  Day %e
-    section Phase 0: Ground Truth & Ethics (Days 1-6)
-    Sprint 0 - Ethics, Recruitment & Mocap Rig      :s0, 2026-01-01, 6d
-    section Phase 1: Core Code Gen & Arch (Days 1-2)
-    Sprint 1 - Edge Setup & FastDDS XML Config      :s1, 2026-01-01, 1d
-    Sprint 2 - Messages & Custom Interfaces         :s2, 2026-01-01, 1d
-    Sprint 3 - 3D Deprojection & TDD Perception     :s3, 2026-01-01, 1d
-    Sprint 4 - 3D EKF & Safe TTO Predictor (TDD)   :s4, 2026-01-01, 2d
-    Sprint 5 - Resident TensorRT OSNet (SOLID ABC)  :s5, 2026-01-02, 1d
-    Sprint 6 - Ownership FSM & 10Hz Watchdog        :s6, 2026-01-02, 1d
-    Sprint 7 - Nav2 Slew & Safe-Stop Authority      :s7, 2026-01-02, 1d
-    section Phase 2: Tier 1 Sim & Debugging (Days 3-4)
-    Sprint 8 - Simulation & Fault Injection Harness :s8, 2026-01-03, 2d
-    Sprint 8b - Ablation & Baseline Switches        :s8b, 2026-01-04, 1d
-    section Phase 3: Tier 2 Edge Calibration (Days 5-6)
-    Sprint 9 - Orin Nano Profiling & Param Calib   :s9, 2026-01-05, 2d
-    section Phase 4: Tier 3 Physical Validation (Days 7-9)
-    Sprint 10 - Physical Testbed Trials & Metrics   :s10, 2026-01-07, 3d
+flowchart TD
+    subgraph Phase0["Phase 0: Ground Truth & Ethics Verification"]
+        WP0["WP-0: Pre-requisites & Mocap Ground Truth Rig"]
+    end
+    subgraph Phase1["Phase 1: Core Architecture & Edge Package Implementation"]
+        WP1["WP-1: Edge Environment & DDS Configuration"]
+        WP2["WP-2: Message Definitions & Serialization Layer"]
+        WP3["WP-3: 2D-to-3D Perception Engine (TDD)"]
+        WP4["WP-4: 3D EKF Tracking & Safe TTO Predictor"]
+        WP5["WP-5: Resident TensorRT Identity Engine"]
+        WP6["WP-6: Ownership FSM & Liveness Watchdog"]
+        WP7["WP-7: Acquisition Slew & Safety Authority"]
+    end
+    subgraph Phase2["Phase 2: Simulation & Protocol Fault Injection"]
+        WP8["WP-8: Tier 1 Simulation & Fault Injection"]
+        WP8b["WP-8b: Ablation & Baseline Switches"]
+    end
+    subgraph Phase3["Phase 3: Hardware Profiling & Parameter Calibration"]
+        WP9["WP-9: Tier 2 Edge Profiling & Constant Calibration"]
+    end
+    subgraph Phase4["Phase 4: Physical Testbed Validation & Performance Evaluation"]
+        WP10["WP-10: Tier 3 Physical Testbed Validation & Ground Truth"]
+    end
+
+    WP0 --> WP10
+    WP1 --> WP2 --> WP3 --> WP4 --> WP5 --> WP6 --> WP7
+    WP7 --> WP8 --> WP8b --> WP9 --> WP10
 ```
 
 ---
 
-### Detailed Sprint Work Breakdown Structure (WBS)
+### Detailed Work Breakdown Structure (WBS)
 
-##### **Sprint 0: Pre-requisites & Ground Truth (Days 1-6, Parallel)**
+#### 🔹 Phase 0: Ground Truth & Ethics Verification
+##### **Work Package 0: Pre-requisites & Ground Truth Calibration**
 * **Deliverables:** Institutional ethics approval (NFR-15). Recruit >= 6 subjects. Calibrate Mocap ground-truth rig and generate clock-sync accuracy report (NFR-13).
 
-#### 🔹 Phase 1: Core Code Generation & Architecture (Days 1–2)
-##### **Sprint 1: Jetson Orin Nano Edge Environment & DDS Configuration (Day 1)**
+#### 🔹 Phase 1: Core Architecture & Edge Package Implementation
+##### **Work Package 1: Jetson Orin Nano Edge Environment & DDS Configuration**
 * **Deliverables:**
   1. Setup JetPack 6.0 (Ubuntu 22.04 LTS, TensorRT 8.6, ROS 2 Humble) with Python 3.10.
   2. Configure power profiles: `sudo nvpmodel -m 0` (15W 6-core mode) and lock clocks via `sudo jetson_clocks`.
@@ -273,7 +280,7 @@ gantt
   4. Author `fastdds_profiles.xml` for shared-memory transport and strict QoS (Reliable protocol msgs, Best-Effort 10Hz Heartbeat with 150ms deadline and 300ms lease). Tune reliable writer: heartbeatPeriod=10ms, nackResponseDelay=1ms. Deadline/Liveliness QoS active only when transaction is OPEN.
 * **Quality Gate 1:** Measure δ_sync over 10,000 samples; if > 2 ms, write to YAML and enable relative-deadline mode. Record Ping RTT p99.
 
-##### **Sprint 2: Message Definitions & Serialization Layer (Day 1)**
+##### **Work Package 2: Message Definitions & Serialization Layer**
 * **Deliverables:**
   1. Implement package `edgesync_msgs` (using standard `CMakeLists.txt` for `rosidl_default_generators`). Standardize all topic namespaces under `/{robot_id}/edgesync/`.
   2. Implement `HandoffHeader.msg` enforcing protocol version, sender/receiver UUIDs, transaction ID, target ID, monotonic ownership epoch $e$, sequence numbers, and nanosecond UTC timestamps. Use `HandoffHeader.msg` as a composed field (not inherited) across all protocol messages.
@@ -282,7 +289,7 @@ gantt
   5. Implement `OwnershipEvent.msg` (reliable ownership transition events) and service definition `IdentityVerify.srv`.
 * **Quality Gate 2:** Serialize messages with rclpy.serialization.serialize_message() and assert len(HandoffRequest) <= 3072 bytes.
 
-##### **Sprint 3: 2D-to-3D Perception Engine & TDD Unit Testing (C-01) (Day 1)**
+##### **Work Package 3: 2D-to-3D Perception Engine & TDD Unit Testing (C-01)**
 * **SOLID & OOP Requirements:**
   * Define `BaseDetector(abc.ABC)` with abstract method `detect(image: np.ndarray) -> List[Detection]`.
   * Define `BaseTracker(abc.ABC)` with abstract method `update(detections: List[Detection]) -> List[Track]`.
@@ -299,7 +306,7 @@ gantt
   2. Implement `perception_node.py`: `perception_node` publishes the CAMERA-FRAME centroid `p_c`, `R_cam`, and timestamp. The `tf2` map transform and `R_total` ego-motion inflation are applied exactly ONCE in `estimation_node` (C-02).
 * **Quality Gate 3:** Pure math unit tests pass 100%; perception node sustains $\ge 20\text{ FPS}$ on Orin Nano with 3D centroid Euclidean error $\le 0.15\text{ m}$.
 
-##### **Sprint 4: 3D EKF Tracking, Ego-Motion Covariance & Safe TTO Predictor (C-02 & C-03) (Days 1–2)**
+##### **Work Package 4: 3D EKF Tracking, Ego-Motion Covariance & Safe TTO Predictor (C-02 & C-03)**
 * **SOLID & OOP Requirements:**
   * Define `BaseStateEstimator(abc.ABC)` with abstract methods `predict(dt)` and `update(measurement, R_total)`.
   * Define `BaseTTOPredictor(abc.ABC)` with abstract method `compute_tto(target_state, camera_pose, obstacles) -> TTOResult`.
@@ -321,7 +328,7 @@ gantt
   2. Integrate `estimation_node.py` publishing `/target/state_3d` and `/target/tto`.
 * **Quality Gate 4:** 100% pass on all estimation unit tests; EKF covariance remains positive semi-definite; $T_{TTO}^{safe}$ achieves $\ge 95\%$ conservative lower-bound coverage.
 
-##### **Sprint 5: Resident TensorRT Identity Engine (C-07) (Day 2)**
+##### **Work Package 5: Resident TensorRT Identity Engine (C-07)**
 * **SOLID & OOP Requirements:**
   * Define `BaseIdentityExtractor(abc.ABC)` with abstract method `extract_embedding(crop: np.ndarray) -> np.ndarray`.
   * Implement concrete `OsnetTrtExtractor(BaseIdentityExtractor)` using TensorRT Python runtime.
@@ -333,8 +340,7 @@ gantt
   4. Write `pytest tests/test_identity_fusion.py` testing cosine distance and multi-cue rejection of distractors.
 * **Quality Gate 5:** TensorRT OSNet inference latency on Orin Nano $\le 18\text{ ms}$; cosine similarity calculation $\le 0.5\text{ ms}$; zero dynamic allocations during handoff.
 
-
-##### **Sprint 6: Ownership FSM, P2P Coordination & 10Hz Watchdog (C-04, C-05, C-06, C-09) (Day 2)**
+##### **Work Package 6: Ownership FSM, P2P Coordination & 10Hz Watchdog (C-04, C-05, C-06, C-09)**
 * **Deliverables:**
   1. Implement `ownership_fsm.py` conforming strictly to the certified State Machine and Sequence Diagrams.
   2. Robot A (Sender) FSM states exactly: TRACKING, HANDOFF_CANDIDATE, NEGOTIATING, COMMITTED, ACQUISITION, IDENTITY_VERIFICATION, CONFIRMED, STANDBY, RECOVERY, TERMINAL_FAILURE.
@@ -351,7 +357,7 @@ gantt
   7. Write `pytest tests/test_fsm_transitions.py` and `test_watchdog_timeout.py`.
 * **Quality Gate 6:** Property-based test (hypothesis) over FSM with random loss/dup/reorder/delay. Assert invariant: at most one OWNER per epoch, divergence bounded by T_claim. Watchdog detection <= 400ms after SIGKILL.
 
-##### **Sprint 7: Acquisition Slew, Nav2 Integration & Chassis Safety Authority (C-08 & C-10) (Day 2)**
+##### **Work Package 7: Acquisition Slew, Nav2 Integration & Chassis Safety Authority (C-08 & C-10)**
 * **Deliverables:**
   1. Create package explicitly for C-08: `edgesync_acquisition` containing `target_acquisition_node.py` (frustum lock & search controller) and `liveness_publisher.py` (runs 10Hz ACQ_STATUS in dedicated callback group).
   2. Implement `navigation_bridge_node.py`: wrap Nav2 Simple Commander Python API (`BasicNavigator`) for Mecanum base navigation, and `acquisition_controller.py` for pre-positioning intercept poses.
@@ -360,20 +366,20 @@ gantt
 
 ---
 
-#### 🔹 Phase 2: Tier 1 Simulation & Debugging (Days 3–4)
-##### **Sprint 8: Tier 1 Simulation & Fault Injection Harness (Days 3–4)**
+#### 🔹 Phase 2: Tier 1 Simulation & Protocol Fault Injection
+##### **Work Package 8: Tier 1 Simulation & Fault Injection Harness**
 * **Deliverables:**
   1. Setup Gazebo / ROS 2 simulation with 2 JetAuto UGV models and 1 moving human target actor.
   2. Implement automated Python test harness (`test_fault_injection.py`) executing Scenarios D (Crash), F (Netem loss/delay), and G (Stale epoch $e-1$).
 * **Quality Gate 8:** 100% pass on protocol conformance suite; zero dual-ownership occurrences.
 
-##### **Sprint 8b: Ablation & Baseline Switches**
+##### **Work Package 8b: Ablation & Baseline Switches**
 * **Deliverables:** Implement zero-hardcoding YAML flags in algorithm_thresholds.yaml: trigger_mode {proactive, reactive}, ego_cov_enabled, identity_mode {multicue, appearance_only}, watchdog_enabled, ack_confirm_enabled.
 
 ---
 
-#### 🔹 Phase 3: Tier 2 Edge Calibration & Hardware Deployment (Days 5–6)
-##### **Sprint 9: Tier 2 Edge Profiling & Constant Calibration (Days 5–6)**
+#### 🔹 Phase 3: Tier 2 Edge Profiling & Parameter Calibration
+##### **Work Package 9: Tier 2 Edge Profiling & Constant Calibration**
 * **Deliverables:**
   1. Deploy Python stack to physical NVIDIA Jetson Orin Nano 8GB hardware.
   2. Run 10-minute thermal soak running full perception, estimation, and ROS 2 graph.
@@ -385,8 +391,8 @@ gantt
 
 ---
 
-#### 🔹 Phase 4: Tier 3 Physical Validation (Days 7–9)
-##### **Sprint 10: Tier 3 Physical Testbed Validation & Ground Truth (Days 7–9)**
+#### 🔹 Phase 4: Tier 3 Physical Validation & Performance Evaluation
+##### **Work Package 10: Tier 3 Physical Testbed Validation & Ground Truth**
 * **Deliverables:**
   1. Deploy dual physical JetAuto UGVs in indoor test arena equipped with external ground-truth motion tracking.
   2. Execute all 7 pre-registered experimental scenarios (Scenarios A through G).

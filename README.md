@@ -33,7 +33,6 @@
 EdgeSync/
 ├── EdgeSync_Implementation_Plan_v1.0_2.md     # Certified Master Implementation Plan (v1.0/v2.3)
 ├── EdgeSync_Implementation_Plan_v1.0.md       # Synchronized Master Plan mirror
-├── EdgeSync_Architectural_Sync_Report_Waves_1_2_3.md # Comprehensive Engineering Synchronization Report
 ├── README.md                                  # Main project documentation & entry point
 ├── Hardware Description/                      # Robot specifications and hardware manuals
 │   ├── JetAuto User Manual.pdf                # Hiwonder JetAuto comprehensive manual
@@ -159,30 +158,36 @@ The system is structured into 9 modular ROS 2 packages adhering to the **Single 
 
 ---
 
-## 🗓️ Engineering Roadmap (11 Sprints)
+## 🗓️ Engineering Roadmap & Work Breakdown Structure (WBS)
 
 ```mermaid
-gantt
-    title EdgeSync Hyper-Agile 9-Day Engineering Schedule (AI-Assisted)
-    dateFormat  YYYY-MM-DD
-    axisFormat  Day %e
-    section Phase 0: Ground Truth & Ethics (Days 1-6)
-    Sprint 0 - Ethics, Recruitment & Mocap Rig      :s0, 2026-01-01, 6d
-    section Phase 1: Core Code Gen & Arch (Days 1-2)
-    Sprint 1 - Edge Setup & FastDDS XML Config      :s1, 2026-01-01, 1d
-    Sprint 2 - Messages & Custom Interfaces         :s2, 2026-01-01, 1d
-    Sprint 3 - 3D Deprojection & TDD Perception     :s3, 2026-01-01, 1d
-    Sprint 4 - 3D EKF & Safe TTO Predictor (TDD)   :s4, 2026-01-01, 2d
-    Sprint 5 - Resident TensorRT OSNet (SOLID ABC)  :s5, 2026-01-02, 1d
-    Sprint 6 - Ownership FSM & 10Hz Watchdog        :s6, 2026-01-02, 1d
-    Sprint 7 - Nav2 Slew & Safe-Stop Authority      :s7, 2026-01-02, 1d
-    section Phase 2: Tier 1 Sim & Debugging (Days 3-4)
-    Sprint 8 - Simulation & Fault Injection Harness :s8, 2026-01-03, 2d
-    Sprint 8b - Ablation & Baseline Switches        :s8b, 2026-01-04, 1d
-    section Phase 3: Tier 2 Edge Calibration (Days 5-6)
-    Sprint 9 - Orin Nano Profiling & Param Calib   :s9, 2026-01-05, 2d
-    section Phase 4: Tier 3 Physical Validation (Days 7-9)
-    Sprint 10 - Physical Testbed Trials & Metrics   :s10, 2026-01-07, 3d
+flowchart TD
+    subgraph Phase0["Phase 0: Ground Truth & Ethics Verification"]
+        WP0["WP-0: Pre-requisites & Mocap Ground Truth Rig"]
+    end
+    subgraph Phase1["Phase 1: Core Architecture & Edge Package Implementation"]
+        WP1["WP-1: Edge Environment & DDS Configuration"]
+        WP2["WP-2: Message Definitions & Serialization Layer"]
+        WP3["WP-3: 2D-to-3D Perception Engine (TDD)"]
+        WP4["WP-4: 3D EKF Tracking & Safe TTO Predictor"]
+        WP5["WP-5: Resident TensorRT Identity Engine"]
+        WP6["WP-6: Ownership FSM & Liveness Watchdog"]
+        WP7["WP-7: Acquisition Slew & Safety Authority"]
+    end
+    subgraph Phase2["Phase 2: Simulation & Protocol Fault Injection"]
+        WP8["WP-8: Tier 1 Simulation & Fault Injection"]
+        WP8b["WP-8b: Ablation & Baseline Switches"]
+    end
+    subgraph Phase3["Phase 3: Hardware Profiling & Parameter Calibration"]
+        WP9["WP-9: Tier 2 Edge Profiling & Constant Calibration"]
+    end
+    subgraph Phase4["Phase 4: Physical Testbed Validation & Performance Evaluation"]
+        WP10["WP-10: Tier 3 Physical Testbed Validation & Ground Truth"]
+    end
+
+    WP0 --> WP10
+    WP1 --> WP2 --> WP3 --> WP4 --> WP5 --> WP6 --> WP7
+    WP7 --> WP8 --> WP8b --> WP9 --> WP10
 ```
 
 ---
