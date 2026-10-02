@@ -281,8 +281,7 @@ IMU/Encoders ─────► │          ▼               │
 <li>Abstract the underlying robotics framework.</li>
 <li><strong>NavigationSERVICE retains final platform-motion and safety authority.</strong> Motion requests from AcquisitionSERVICE are advisory/request-based and may be rejected or modified by the navigation/safety layer.</li>
 </ul>
-<p><strong>SRS Mapping:</strong> FR-49–FR-50, SC-02.</p>
-<p><strong>Localization:</strong> Publishes robot pose and its covariance in the shared reference frame (map-based localization using LiDAR/IMU/encoders) in addition to the local odometry frame. It also owns the autonomous safe-stop that engages when compute or communication is lost.</p>
+<p><strong>Localization:</strong> Publishes robot pose and its covariance in the shared reference frame (map-based localization using LiDAR/IMU/encoders) in addition to the local odometry frame. C-10 owns the autonomous safe-stop. "Communication lost" means loss of the host-to-STM32 command stream or loss of localization, NOT loss of the peer UGV link. Safe-stop is enforced in two places: (1) safety_authority_node ramps to zero; (2) STM32F407 firmware runs an independent cmd_vel deadman watchdog (cmd_vel_watchdog_ms = 150) that decelerates to zero at a bounded rate if no valid velocity frame arrives. A hardware E-stop cuts motor power independently of both.</p>
 </div>
 
 <div class="comp-card">
@@ -357,7 +356,7 @@ IMU/Encoders ─────► │          ▼               │
 <section id="s3">
 <h2>3. Interactions / Interfaces</h2>
 
-<h3>3.1 Intra-UGV Interfaces</h3>
+<h3>3.1 18 Explicit Interfaces</h3>
 <table>
 <thead><tr><th>ID</th><th>Interface</th><th>Trigger</th><th>Main Information</th><th>SRS Trace</th></tr></thead>
 <tbody>
@@ -378,6 +377,7 @@ IMU/Encoders ─────► │          ▼               │
 <tr><td>I-15</td><td>C-09 &harr; C-06</td><td>Confirmation exchange</td><td>HANDOFF_CONFIRM / HANDOFF_CONFIRM_ACK, transaction_id, ownership_epoch</td><td>FR-39–41, FR-54</td></tr>
 <tr><td>I-16</td><td>C-10 &rarr; C-02 / C-06</td><td>Pose update</td><td>Pose and covariance in shared frame, frame_id, timestamp</td><td>FR-53</td></tr>
 <tr><td>I-17</td><td>C-09 &rarr; C-08</td><td>Target acquisition control</td><td>Start / Cancel Acquisition (txn_id, spatial prior, epoch)</td><td>FR-36, FR-37</td></tr>
+<tr><td>I-18</td><td>C-06 &rarr; C-05 / C-09</td><td>peer STATE_HEARTBEAT / OWNER_CLAIM</td><td>role, epoch, cpu, battery, nav_status, txn_id</td><td>FR-47, FR-54</td></tr>
 </tbody>
 </table>
 
@@ -474,7 +474,7 @@ IMU/Encoders ─────► │          ▼               │
 <section id="changelog"><h2>Revision Notes — v2.3</h2><ul>
 <li>Aligned to SRS v1.3; version labels and section numbering corrected.</li>
 <li>Replaced the abbreviated responsibilities stub with a full matrix for C-01–C-14.</li>
-<li>Added shared-reference-frame, acknowledged-ownership/liveness and parameter-provenance principles; interfaces I-14–I-16 and the corresponding data objects.</li>
+<li>Added shared-reference-frame, acknowledged-ownership/liveness and parameter-provenance principles; interfaces I-14–I-18 and the corresponding data objects.</li>
 <li>Clarified two-UGV failover, resident Re-ID engine, symmetric role model, and process-level deployment.</li>
 </ul></section>
 

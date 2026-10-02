@@ -241,16 +241,16 @@ stateDiagram-v2
     HANDOFF_CANDIDATE --> TRACKING : T_TTO safe > 2.50s [Recovered]
     HANDOFF_CANDIDATE --> NEGOTIATING : Feasibility confirmed
     HANDOFF_CANDIDATE --> TRACKING : Infeasible / No receiver
-    NEGOTIATING --> COMMITTED : Response = ACCEPT
+    NEGOTIATING --> COMMITTED : ACCEPT (arm watchdog t_last_good = t_ACCEPT, cutoff 700ms, T_txn 886ms)
     NEGOTIATING --> RECOVERY : Response = REJECT / Timeout (80ms)
     COMMITTED --> ACQUISITION : Peer begins acquisition (I-17)
     ACQUISITION --> IDENTITY_VERIFICATION : ACQ_STATUS = ACQUIRED received
     ACQUISITION --> RECOVERY : 3 missed heartbeats (300ms) / Timeout > 700ms
     IDENTITY_VERIFICATION --> CONFIRMED : HANDOFF_CONFIRM received (epoch e)
     IDENTITY_VERIFICATION --> RECOVERY : 3 missed heartbeats (300ms) / HANDOFF_CANCEL
-    CONFIRMED --> STANDBY : Peer reports role=OWNER & epoch e+1 (STATE_HEARTBEAT)
-    CONFIRMED --> RECOVERY : ACK lost / T_claim expired without peer heartbeat
-    STANDBY --> [*]
+    CONFIRMED --> STANDBY : Peer OWNER_CLAIM(epoch e+1, txn T)
+    CONFIRMED --> RECOVERY : HANDOFF_CANCEL(ACK_TIMEOUT) or T_claim 200ms expired / reclaim at epoch e+2
+    STANDBY --> IDLE_RECEIVER : (STANDBY equals IDLE of Receiver FSM)
     RECOVERY --> TRACKING : Resume solo tracking (reclaim target)
     RECOVERY --> HANDOFF_CANDIDATE : Re-attempt (Rank-2 peer & T_TTO safe >= 1.23s)
     RECOVERY --> TERMINAL_FAILURE : Target lost & T_TTO safe < 1.23s
@@ -291,7 +291,7 @@ stateDiagram-v2
     AWAITING_ACK: Send CONFIRM (epoch e), wait CONFIRM_ACK (3x30ms retry)
 
     TRACKING: ✅ TRACKING (Epoch e+1)
-    TRACKING: Activated on ACK receipt; publish role=OWNER
+    TRACKING: Activated on ACK receipt; publish OWNER_CLAIM (RELIABLE, 3x20ms burst)
 
     IDLE --> EVALUATING : HANDOFF_REQUEST received
     EVALUATING --> ACCEPTED : Gate passed & Feasible
@@ -303,9 +303,14 @@ stateDiagram-v2
     SEARCHING --> IDLE : Acquisition timeout (> 700ms)
     VERIFYING --> AWAITING_ACK : Re-ID match >= threshold (send CONFIRM)
     VERIFYING --> IDLE : Identity mismatch (send CANCEL)
-    AWAITING_ACK --> TRACKING : CONFIRM_ACK received (epoch e+1)
+    AWAITING_ACK --> TRACKING : CONFIRM_ACK before T_ack=100ms (publish OWNER_CLAIM burst)
     AWAITING_ACK --> IDLE : ACK timeout (send CANCEL, abort)
-    TRACKING --> [*]
+    ACCEPTED --> IDLE : HANDOFF_CANCEL(txn) from A
+    SLEWING --> IDLE : HANDOFF_CANCEL(txn) from A [cancel slew via I-12]
+    SEARCHING --> IDLE : HANDOFF_CANCEL(txn) from A
+    VERIFYING --> IDLE : HANDOFF_CANCEL(txn) from A
+    AWAITING_ACK --> IDLE : HANDOFF_CANCEL(txn) from A
+    TRACKING --> TRACKING_SENDER : (TRACKING equals TRACKING of Sender FSM)
 </pre>
   </div>
 

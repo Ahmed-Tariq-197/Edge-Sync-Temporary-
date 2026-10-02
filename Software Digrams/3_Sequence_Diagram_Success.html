@@ -364,9 +364,15 @@ sequenceDiagram
         deactivate C06B
 
         C09B ->> C09B: State: AWAITING_ACK &rarr; <b>TRACKING (Epoch e+1)</b><br/>Robot B is now active tracking owner!
-        C09B ->> DDS: STATE_HEARTBEAT {role=OWNER, ownership_epoch=e+1}
+        C09B ->> C06B: OWNER_CLAIM {role=OWNER, epoch=e+1} (burst x3)
         deactivate C09B
-        DDS ->> C09A: Deliver STATE_HEARTBEAT (role=OWNER, epoch e+1)
+        activate C06B
+        C06B ->> DDS: OWNERSHIP_EVENT (RELIABLE)
+        deactivate C06B
+        DDS ->> C06A: Deliver OWNERSHIP_EVENT
+        activate C06A
+        C06A ->> C09A: I-18 OWNER_CLAIM
+        deactivate C06A
         activate C09A
         C09A ->> C09A: State: CONFIRMED &rarr; <b>STANDBY (Epoch e+1)</b><br/>Robot A enters STANDBY role (FR-54)
         deactivate C09A

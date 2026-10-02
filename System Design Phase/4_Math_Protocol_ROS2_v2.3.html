@@ -62,7 +62,7 @@ s(k+1) = F s(k) + w,   w ~ N(0, Q_target)</div>
 J_c = ∂p_m/∂p_c ,   J_ξ = ∂p_m/∂ξ
 Q_total = Q_target                       (target acceleration noise only)</div>
 <p>This keeps the Mahalanobis gate from rejecting valid matches because of chassis motion. The deterministic transform is applied once (via <code>tf2</code>, §6); this section only propagates its uncertainty, so ego-motion is not double-counted.</p>
-<p><strong>Cross-robot inflation (SRS FR-53):</strong> when Robot B uses A's transferred state, it inflates the covariance by both robots' localization uncertainty: <span class="math-inline">Σ_B = Σ_target + Σ_ξ,A + Σ_ξ,B</span> (position blocks).</p>
+<p><strong>Cross-robot gating (SRS FR-53):</strong> A's transferred covariance already contains A's localization uncertainty (via <span class="math-inline">R_{total}</span>). B's own pose uncertainty enters B's measurement <span class="math-inline">R_{total,B}</span>. The B-side Mahalanobis gate therefore uses <span class="math-inline">S = H \cdot \Sigma_{A,pred}(t_B) \cdot H^T + R_{total,B}</span>, with no extra additive pose terms.</p>
 
 <h3>1.3 3D FOV Frustum and Time-to-Occlusion</h3>
 <p>Let <span class="math-inline">α_fov</span>, <span class="math-inline">β_fov</span> be the horizontal and vertical half-angles of the <em>effective</em> FOV (the narrower of the aligned RGB and depth FOVs):</p>
@@ -126,18 +126,30 @@ w = (0.5, 0.3, 0.2),  w1 + w2 + w3 = 1   (configurable via C-12)</div>
 
 <h3>3.3 10 Hz Liveness Watchdog (Anti-Deadlock)</h3>
 <div class="note"><strong>Reliability patch:</strong> an owner waiting in <code>COMMITTED</code>, <code>ACQUISITION</code>, or <code>IDENTITY_VERIFICATION</code> would otherwise hang if the receiver suffers a hardware, power or link failure.</div>
-<p>During acquisition and verification, the receiver emits <code>ACQ_STATUS</code> (<code>SLEWING</code> / <code>SEARCHING</code> / <code>ACQUIRED</code>) at <strong>10 Hz</strong>. The owner arms a watchdog timer = last good heartbeat + 300 ms; three consecutive missed heartbeats abort the transaction (<code>ERR_CANDIDATE_DEAD</code>), with practical detection taking 300–400 ms including scheduling. This saves at most 700 − 300 = 400 ms compared to waiting for the full cutoff. A DDS LIVELINESS lease of 300 ms provides a redundant transport-level signal.</p>
+<p>During acquisition and verification, the receiver emits <code>ACQ_STATUS</code> (<code>SLEWING</code> / <code>SEARCHING</code> / <code>ACQUIRED</code>) at <strong>10 Hz</strong>. The owner arms a watchdog timer = last good heartbeat + 300 ms; three consecutive missed heartbeats abort the transaction (<code>ERR_CANDIDATE_DEAD</code>), with practical detection taking 300–400 ms including scheduling. This saves at most 700 − 300 = 400 ms compared to waiting for the full cutoff. A DDS LIVELINESS lease of 300 ms provides a redundant transport-level signal. The watchdog is armed on receipt of HANDOFF_RESPONSE=ACCEPT with t_last_good := t_ACCEPT_rx. The acquisition cutoff (700 ms) and T_txn (886 ms) are armed at the same instant.</p>
 <p><strong>After an abort:</strong> the state machine enters RECOVERY and the owner keeps tracking. A new attempt is allowed only if another eligible candidate exists <em>and</em> the remaining <span class="math-inline">T_TTO^safe ≥ 1.23 s</span> (a full budget). Because detection alone costs ≈ 300 ms, a second attempt is usually infeasible in the two-UGV baseline; the abort's value is to end a doomed transaction early and return control to local recovery rather than waiting out the timeout.</p>
 
 <h3>3.4 Ownership Handshake and Epochs</h3>
 <ol>
 <li><code>HANDOFF_REQUEST</code> (epoch e) → <code>HANDOFF_RESPONSE</code>. State: <code>COMMITTED</code>; A remains the sole owner.</li>
 <li>B streams <code>ACQ_STATUS</code> at 10 Hz, acquires the target, verifies identity and establishes a local track.</li>
-<li>B sends <code>HANDOFF_CONFIRM</code> (epoch e). A replies <code>HANDOFF_CONFIRM_ACK</code> carrying epoch e+1 and only then releases exclusive ownership (continuing passive tracking). A transitions to STANDBY only when B reports role=OWNER and epoch e+1 via STATE_HEARTBEAT.</li>
-<li>B becomes the active owner on receipt of the ACK. <b>CRITICAL: B must instantly emit an event-triggered <code>STATE_HEARTBEAT</code> upon entering the TRACKING state to bypass the 1Hz delay and satisfy A's T_claim gate.</b> A lost CONFIRM is retransmitted a bounded number of times (default 3, 30 ms apart). If no ACK arrives, B aborts via HANDOFF_CANCEL(ACK_TIMEOUT) and A reclaims the target at epoch e+1 after T_claim. A repeated CONFIRM for an already-acknowledged transaction is answered with the same ACK (idempotent).</li>
-<li>Any message with a stale epoch or an unknown <code>transaction_id</code> is rejected and logged.</li>
+<li>B sends <code>HANDOFF_CONFIRM</code> (epoch e, txn T) and starts <span class="math-inline">T_{ack}</span> on its LOCAL MONOTONIC clock (default 100 ms; CONFIRM retransmitted 3 &times; 30 ms inside this window). A, if T is OPEN, replies <code>HANDOFF_CONFIRM_ACK</code>(new_epoch = e+1), enters <code>CONFIRMED</code>, releases exclusivity and starts <span class="math-inline">T_{claim}</span> (200 ms, local monotonic) at the instant the ACK is sent.</li>
+<li>B becomes OWNER only if the ACK is received before <span class="math-inline">T_{ack}</span> expires. On entering <code>TRACKING</code>, B publishes <code>OWNER_CLAIM</code> (role=OWNER, epoch e+1, txn T) on the RELIABLE <code>/{robot_id}/edgesync/ownership_event</code> topic as a burst of 3 copies, 20 ms apart. If <span class="math-inline">T_{ack}</span> expires first, B sends <code>HANDOFF_CANCEL(ACK_TIMEOUT)</code>, goes <code>IDLE</code> and IRREVOCABLY ignores any later ACK for T.</li>
+<li>A leaves <code>CONFIRMED</code> on the first of: (a) <code>OWNER_CLAIM</code>(epoch e+1, txn T) &rarr; <code>STANDBY</code>. (b) <code>HANDOFF_CANCEL</code>(T) &rarr; <code>RECOVERY</code>, reclaim IMMEDIATELY at epoch e+2. (c) <span class="math-inline">T_{claim}</span> expiry &rarr; <code>RECOVERY</code>, reclaim at epoch e+2.</li>
+<li>Epoch arbitration: a robot in OWNER role that receives <code>OWNER_CLAIM</code> or <code>STATE_HEARTBEAT</code>(role=OWNER) with epoch &gt; its own demotes to <code>STANDBY</code> within one control cycle. Highest epoch wins.</li>
+<li>Startup invariant: <span class="math-inline">t_{ack\_ms} + owner\_claim\_latency\_budget\_ms &lt; t_{claim\_ms}</span>.</li>
 </ol>
 <p>This realizes SRS FR-47 and FR-54: at no time do two UGVs hold exclusive ownership, and a commitment alone never transfers ownership.</p>
+
+<h3>3.5 Transaction table and message admission</h3>
+<p>Each robot keeps a transaction table: <code>OPEN</code> | <code>CLOSED(reason)</code> | <code>CONFIRMED(stored ACK)</code>. A transaction leaves <code>OPEN</code> on any transition into <code>RECOVERY</code>, <code>IDLE</code>, <code>STANDBY</code> or <code>TRACKING</code>. <code>CLOSED</code> entries are retained &ge; <code>txn_tombstone_ttl_ms</code> (10 s).</p>
+<p><strong>Admission order:</strong></p>
+<ol>
+<li>Check <code>protocol_version</code>, <code>frame_id</code>, <code>receiver_id</code> (drop if not self or *).</li>
+<li>Transaction lookup: unknown &rarr; drop, <code>CLOSED</code> &rarr; drop, <code>CONFIRMED</code> + duplicate <code>CONFIRM</code> &rarr; replay stored ACK (idempotent; do NOT restart <span class="math-inline">T_{claim}</span>).</li>
+<li>Epoch check.</li>
+<li>Sequence check.</li>
+</ol>
 </section>
 
 <section id="s4">
@@ -191,7 +203,7 @@ float32 battery
 
 <section id="s5">
 <h2>5. ROS 2 Execution Blueprint &amp; QoS</h2>
-<p>Logical components are grouped into composable nodes inside shared processes to use zero-copy intra-process communication on the 8 GB Jetson Orin Nano (CPU and GPU share unified memory).</p>
+<p>Logical components are grouped into four OS processes. Within a process, tightly coupled stages (C-01 &rarr; C-02 &rarr; C-03) are implemented as one rclpy Node using direct method calls (no DDS hop). Between processes on the same host, Fast DDS uses its shared-memory transport (one copy, not zero-copy). Zero-copy/intra-process composition is NOT used (rclpy limitation).</p>
 
 <h3>5.1 Composable Node Graph</h3>
 <ul>
@@ -206,9 +218,9 @@ float32 battery
 <table>
 <thead><tr><th>Topic / Message</th><th>Reliability</th><th>Durability</th><th>History</th><th>Rationale</th></tr></thead>
 <tbody>
-<tr><td><code>HANDOFF_REQUEST</code>, <code>HANDOFF_RESPONSE</code>, <code>HANDOFF_CANCEL</code>, <code>HANDOFF_CONFIRM</code>, <code>HANDOFF_CONFIRM_ACK</code></td><td><strong>RELIABLE</strong></td><td>VOLATILE</td><td>Keep Last, 10</td><td>State-changing events must be delivered; retransmission occurs within the watchdog and confirmation windows.</td></tr>
-<tr><td><code>STATE_HEARTBEAT</code> (telemetry)</td><td><strong>BEST_EFFORT</strong></td><td>VOLATILE</td><td>Keep Last, 1</td><td>Only the latest value matters; retransmitting stale telemetry wastes bandwidth.</td></tr>
-<tr><td><code>ACQ_STATUS</code> (10 Hz liveness)</td><td><strong>BEST_EFFORT</strong></td><td>VOLATILE</td><td>Keep Last, 1; deadline 150 ms; liveliness lease 300 ms</td><td>Drives the anti-deadlock watchdog; missed samples are the signal.</td></tr>
+<tr><td><code>/{robot_id}/edgesync/handoff_request</code><br><code>/{robot_id}/edgesync/handoff_response</code><br><code>/{robot_id}/edgesync/handoff_cancel</code><br><code>/{robot_id}/edgesync/handoff_confirm</code><br><code>/{robot_id}/edgesync/handoff_confirm_ack</code><br><code>/{robot_id}/edgesync/ownership_event</code> (<code>OWNER_CLAIM</code>)</td><td><strong>RELIABLE</strong></td><td>VOLATILE</td><td>Keep Last, 10</td><td>State-changing events must be delivered; retransmission occurs within the watchdog and confirmation windows.</td></tr>
+<tr><td><code>/{robot_id}/edgesync/state_heartbeat</code> (telemetry)</td><td><strong>BEST_EFFORT</strong></td><td>VOLATILE</td><td>Keep Last, 1</td><td>Only the latest value matters; retransmitting stale telemetry wastes bandwidth.</td></tr>
+<tr><td><code>/{robot_id}/edgesync/acq_status</code> (10 Hz liveness)</td><td><strong>BEST_EFFORT</strong></td><td>VOLATILE</td><td>Keep Last, 1; deadline 150 ms; liveliness lease 300 ms</td><td>Drives the anti-deadlock watchdog; missed samples are the signal.</td></tr>
 </tbody></table>
 </section>
 
@@ -240,7 +252,7 @@ Y_c = (v - c_y) * Z_c / f_y</div></li>
 <tr><td>Utility weights w1, w2, w3</td><td>0.5, 0.3, 0.2</td><td>Sensitivity analysis</td></tr>
 <tr><td>Request payload</td><td>≈ 2.5–3 KB</td><td>Tier 2 byte counts</td></tr>
 <tr><td>Perception rate</td><td>30 Hz target, ≥ 15 FPS acceptance</td><td>Tier 2 FPS under full load</td></tr>
-<tr><td>Transaction &amp; Network Limits</td><td>T_txn = 886 ms | T_claim = 200 ms | Negotiation Timeout = 80 ms | CONFIRM Retry = 3x30ms</td><td>Protocol robustness</td></tr>
+<tr><td>Transaction &amp; Network Limits</td><td>T_txn = 886 ms | T_claim = 200 ms | T_ack = 100 ms | Negotiation Timeout = 80 ms | CONFIRM Retry = 3x30ms | txn_tombstone_ttl_ms = 10 s</td><td>Protocol robustness</td></tr>
 <tr><td>Re-ID Similarity Threshold</td><td>0.70</td><td>Tier 3 ID switches</td></tr>
 </tbody>
 </table>

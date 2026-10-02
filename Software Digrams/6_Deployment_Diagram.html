@@ -271,12 +271,12 @@ graph TB
     STM_B -->|"UART 115200 (Odometry/IMU)"| NODE4_B
 
     %% Process communication
-    NODE1_A <-->|"FastDDS shared memory, loaned msgs (inter-process)"| NODE2_A
+    NODE1_A <-->|"FastDDS SHM transport (inter-process, 1 copy)"| NODE2_A
     NODE2_A <-->|"FastDDS shared memory (inter-process)"| NODE3_A
     NODE4_A <-->|"tf2 Map Transform & Safety"| NODE2_A
     NODE2_A <--> DDS_A
 
-    NODE1_B <-->|"FastDDS shared memory, loaned msgs (inter-process)"| NODE2_B
+    NODE1_B <-->|"FastDDS SHM transport (inter-process, 1 copy)"| NODE2_B
     NODE2_B <-->|"FastDDS shared memory (inter-process)"| NODE3_B
     NODE4_B <-->|"tf2 Map Transform & Safety"| NODE2_B
     NODE2_B <--> DDS_B

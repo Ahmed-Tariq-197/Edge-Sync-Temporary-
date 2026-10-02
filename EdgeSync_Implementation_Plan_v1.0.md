@@ -56,7 +56,10 @@ edgesync_ws/
 │   │   │   ├── HandoffConfirm.msg
 │   │   │   ├── HandoffConfirmAck.msg
 │   │   │   ├── StateHeartbeat.msg
-│   │   │   └── TargetState3D.msg
+│   │   │   ├── OwnershipEvent.msg
+│   │   │   └── Target3DState.msg
+│   │   ├── srv/
+│   │   │   └── IdentityVerify.srv
 │   │   ├── CMakeLists.txt
 │   │   └── package.xml
 │   │
@@ -180,6 +183,17 @@ edgesync_ws/
 │   │   ├── setup.py
 │   │   └── setup.cfg
 │   │
+│   ├── edgesync_acquisition/             # Python Package (setup.py, rclpy) - C-08
+│   │   ├── edgesync_acquisition/
+│   │   │   ├── __init__.py
+│   │   │   └── nodes/
+│   │   │       ├── __init__.py
+│   │   │       ├── target_acquisition_node.py # Frustum lock & search controller
+│   │   │       └── liveness_publisher.py      # 10Hz ACQ_STATUS in dedicated callback group
+│   │   ├── package.xml
+│   │   ├── setup.py
+│   │   └── setup.cfg
+│   │
 │   ├── edgesync_observability/           # Python Package (setup.py, rclpy)
 │   │   ├── edgesync_observability/
 │   │   │   ├── __init__.py
@@ -224,6 +238,8 @@ gantt
     title EdgeSync Hyper-Agile 9-Day Engineering Schedule (AI-Assisted)
     dateFormat  YYYY-MM-DD
     axisFormat  Day %e
+    section Phase 0: Ground Truth & Ethics (Days 1-6)
+    Sprint 0 - Ethics, Recruitment & Mocap Rig      :s0, 2026-01-01, 6d
     section Phase 1: Core Code Gen & Arch (Days 1-2)
     Sprint 1 - Edge Setup & FastDDS XML Config      :s1, 2026-01-01, 1d
     Sprint 2 - Messages & Custom Interfaces         :s2, 2026-01-01, 1d
@@ -234,6 +250,7 @@ gantt
     Sprint 7 - Nav2 Slew & Safe-Stop Authority      :s7, 2026-01-02, 1d
     section Phase 2: Tier 1 Sim & Debugging (Days 3-4)
     Sprint 8 - Simulation & Fault Injection Harness :s8, 2026-01-03, 2d
+    Sprint 8b - Ablation & Baseline Switches        :s8b, 2026-01-04, 1d
     section Phase 3: Tier 2 Edge Calibration (Days 5-6)
     Sprint 9 - Orin Nano Profiling & Param Calib   :s9, 2026-01-05, 2d
     section Phase 4: Tier 3 Physical Validation (Days 7-9)
@@ -244,22 +261,26 @@ gantt
 
 ### Detailed Sprint Work Breakdown Structure (WBS)
 
+##### **Sprint 0: Pre-requisites & Ground Truth (Days 1-6, Parallel)**
+* **Deliverables:** Institutional ethics approval (NFR-15). Recruit >= 6 subjects. Calibrate Mocap ground-truth rig and generate clock-sync accuracy report (NFR-13).
+
 #### 🔹 Phase 1: Core Code Generation & Architecture (Days 1–2)
 ##### **Sprint 1: Jetson Orin Nano Edge Environment & DDS Configuration (Day 1)**
 * **Deliverables:**
-  1. Setup Ubuntu 22.04 LTS (JetPack 5.1.2 / 6.0) with Python 3.10 and ROS 2 Humble.
+  1. Setup JetPack 6.0 (Ubuntu 22.04 LTS, TensorRT 8.6, ROS 2 Humble) with Python 3.10.
   2. Configure power profiles: `sudo nvpmodel -m 0` (15W 6-core mode) and lock clocks via `sudo jetson_clocks`.
   3. Deploy **PTP (IEEE 1588v2)** time daemon (`ptp4l` / `chrony`) on 5 GHz Wi-Fi. Verify offset $\delta_{sync} \le 2\text{ ms}$.
-  4. Author `fastdds_profiles.xml` for zero-copy intra-process transport and strict QoS (Reliable protocol msgs, Best-Effort 10Hz Heartbeat with 150ms deadline and 300ms lease).
-* **Quality Gate 1:** Ping RTT $\le 1.5\text{ ms}$; clock offset $\delta_{sync} \le 2.0\text{ ms}$ verified across 10,000 samples.
+  4. Author `fastdds_profiles.xml` for shared-memory transport and strict QoS (Reliable protocol msgs, Best-Effort 10Hz Heartbeat with 150ms deadline and 300ms lease). Tune reliable writer: heartbeatPeriod=10ms, nackResponseDelay=1ms. Deadline/Liveliness QoS active only when transaction is OPEN.
+* **Quality Gate 1:** Measure δ_sync over 10,000 samples; if > 2 ms, write to YAML and enable relative-deadline mode. Record Ping RTT p99.
 
 ##### **Sprint 2: Message Definitions & Serialization Layer (Day 1)**
 * **Deliverables:**
-  1. Implement package `edgesync_msgs` (using standard `CMakeLists.txt` for `rosidl_default_generators`).
-  2. Implement `HandoffHeader.msg` enforcing protocol version, sender/receiver UUIDs, transaction ID, target ID, monotonic ownership epoch $e$, sequence numbers, and nanosecond UTC timestamps.
-  3. Formulate `HandoffRequest.msg` with static array `float32[512] reid_feature_vector` and 21-element upper-triangular covariance (`float32[21] cov_upper_triangle`).
+  1. Implement package `edgesync_msgs` (using standard `CMakeLists.txt` for `rosidl_default_generators`). Standardize all topic namespaces under `/{robot_id}/edgesync/`.
+  2. Implement `HandoffHeader.msg` enforcing protocol version, sender/receiver UUIDs, transaction ID, target ID, monotonic ownership epoch $e$, sequence numbers, and nanosecond UTC timestamps. Use `HandoffHeader.msg` as a composed field (not inherited) across all protocol messages.
+  3. Formulate `HandoffRequest.msg` with composed `HandoffHeader header`, static array `float32[512] reid_feature_vector`, and 21-element upper-triangular covariance (`float32[21] cov_upper_triangle`).
   4. Implement `StateHeartbeat.msg` containing `uint8 role` and `uint64 ownership_epoch`.
-* **Quality Gate 2:** Validate total binary CDR payload $\le 3072\text{ bytes}$ via `ros2 topic echo` binary inspection.
+  5. Implement `OwnershipEvent.msg` (reliable ownership transition events) and service definition `IdentityVerify.srv`.
+* **Quality Gate 2:** Serialize messages with rclpy.serialization.serialize_message() and assert len(HandoffRequest) <= 3072 bytes.
 
 ##### **Sprint 3: 2D-to-3D Perception Engine & TDD Unit Testing (C-01) (Day 1)**
 * **SOLID & OOP Requirements:**
@@ -275,7 +296,7 @@ gantt
     * Test handling of `NaN`, zero depth, and out-of-range sensor readings.
 * **Deliverables:**
   1. Complete and pass `pytest tests/test_depth_deprojection.py` (100% pass).
-  2. Implement `perception_node.py` utilizing `tf2_ros` Buffer and TransformListener to transform deprojected camera coordinates to the shared `map` frame at image capture timestamp $t_{stamp}$.
+  2. Implement `perception_node.py`: `perception_node` publishes the CAMERA-FRAME centroid `p_c`, `R_cam`, and timestamp. The `tf2` map transform and `R_total` ego-motion inflation are applied exactly ONCE in `estimation_node` (C-02).
 * **Quality Gate 3:** Pure math unit tests pass 100%; perception node sustains $\ge 20\text{ FPS}$ on Orin Nano with 3D centroid Euclidean error $\le 0.15\text{ m}$.
 
 ##### **Sprint 4: 3D EKF Tracking, Ego-Motion Covariance & Safe TTO Predictor (C-02 & C-03) (Days 1–2)**
@@ -316,27 +337,25 @@ gantt
 ##### **Sprint 6: Ownership FSM, P2P Coordination & 10Hz Watchdog (C-04, C-05, C-06, C-09) (Day 2)**
 * **Deliverables:**
   1. Implement `ownership_fsm.py` conforming strictly to the certified State Machine and Sequence Diagrams.
-  2. Implement Robot A Sender FSM: `TRACKING` $\to$ `CANDIDATE` $\to$ `NEGOTIATING` $\to$ `COMMITTED` $\to$ `AWAITING_CONFIRMATION` $\to$ `CONFIRMED` / `RECOVERY`.
-  3. Implement Robot B Receiver FSM: `IDLE` $\to$ `EVALUATING` $\to$ `ACCEPTED` $\to$ `SLEWING` $\to$ `SEARCHING` $\to$ `VERIFYING_IDENTITY` $\to$ `AWAITING_ACK` $\to$ `TRACKING_OWNER`.
+  2. Robot A (Sender) FSM states exactly: TRACKING, HANDOFF_CANDIDATE, NEGOTIATING, COMMITTED, ACQUISITION, IDENTITY_VERIFICATION, CONFIRMED, STANDBY, RECOVERY, TERMINAL_FAILURE.
+  3. Robot B (Receiver) FSM states exactly: IDLE, EVALUATING, ACCEPTED, SLEWING, SEARCHING, VERIFYING, AWAITING_ACK, TRACKING.
   4. Implement `eligibility_gate.py` (Hard gate $G(j)$) and `utility_engine.py` ($U_j$) with weights ($w_1=0.5, w_2=0.3, w_3=0.2$) dynamically loaded from `coordination_params.yaml`.
   5. Implement `liveness_watchdog.py`:
-     * Robot B publishes `AcqStatus.msg` at 10 Hz.
+     * Robot B publishes `AcqStatus.msg` at 10 Hz in dedicated callback group.
      * Robot A arms timer $\tau_{hb} = 300\text{ ms}$ (injected from YAML). Upon 3 missed heartbeats $\to$ raise `ERR_CANDIDATE_DEAD`, transition to `RECOVERY`, retain sole ownership.
-  6. Implement **Strict Epoch Handshake**:
-     * Robot B sends `HANDOFF_CONFIRM` with epoch `e`.
-     * Robot A replies `HANDOFF_CONFIRM_ACK` with epoch `e+1`.
-     * Robot B becomes exclusive `TRACKING_OWNER` upon receiving the ACK and instantly fires an event-triggered `STATE_HEARTBEAT` with `role=OWNER`.
-     * Robot A transitions to `STANDBY` only upon receiving this heartbeat. If it is not received within `T_claim` (200ms), A reclaims ownership at epoch `e+1`.
+  6. Implement **Strict Epoch Handshake & Ownership Arbitration**:
+     * Robot B sends `HANDOFF_CONFIRM` with epoch `e` and starts local monotonic $T_{ack}$ (100ms, CONFIRM retransmitted 3 x 30ms).
+     * Robot A replies `HANDOFF_CONFIRM_ACK` with epoch `e+1`, enters `CONFIRMED`, releases exclusivity, and starts local monotonic $T_{claim}$ (200ms) at the instant ACK is sent.
+     * Robot B becomes OWNER only upon receiving ACK before $T_{ack}$ expires. On entering `TRACKING`, B publishes `OWNER_CLAIM` (role=OWNER, epoch $e+1$) as a reliable burst (3x, 20ms) and fires event-triggered `STATE_HEARTBEAT`.
+     * Robot A transitions to `STANDBY` on `OWNER_CLAIM` or `STATE_HEARTBEAT`. If neither arrives before $T_{claim}$ expires, Robot A transitions to `RECOVERY` and reclaims target ownership at epoch `e+2`. Stale epoch messages are dropped; highest epoch wins arbitration.
   7. Write `pytest tests/test_fsm_transitions.py` and `test_watchdog_timeout.py`.
-* **Quality Gate 6:** Zero dual-ownership violations across 500 simulated negotiation cycles; watchdog triggers within $320\text{ ms}$ upon simulated receiver SIGKILL.
+* **Quality Gate 6:** Property-based test (hypothesis) over FSM with random loss/dup/reorder/delay. Assert invariant: at most one OWNER per epoch, divergence bounded by T_claim. Watchdog detection <= 400ms after SIGKILL.
 
 ##### **Sprint 7: Acquisition Slew, Nav2 Integration & Chassis Safety Authority (C-08 & C-10) (Day 2)**
 * **Deliverables:**
-  1. Implement `navigation_bridge_node.py`: wrap Nav2 Simple Commander Python API (`BasicNavigator`) for Mecanum base navigation.
-  2. Implement `acquisition_controller.py`: compute pre-positioning intercept pose in shared `map` frame using extrapolated 3D velocity.
-  3. Implement `safety_authority_node.py` (C-10):
-     * C-10 is the ultimate `/cmd_vel` authority. Motion requests from C-08 are advisory.
-     * Implement autonomous **Safe-Stop**: if localization is lost or communication severed, ramp velocity down to 0 at $1.5\text{ m/s}^2$.
+  1. Create package explicitly for C-08: `edgesync_acquisition` containing `target_acquisition_node.py` (frustum lock & search controller) and `liveness_publisher.py` (runs 10Hz ACQ_STATUS in dedicated callback group).
+  2. Implement `navigation_bridge_node.py`: wrap Nav2 Simple Commander Python API (`BasicNavigator`) for Mecanum base navigation, and `acquisition_controller.py` for pre-positioning intercept poses.
+  3. Autonomous Safe-Stop (two layers): (a) safety_authority_node ramps to 0 on lost localization. (b) STM32F407 FreeRTOS firmware runs independent cmd_vel_watchdog_ms (150ms).
 * **Quality Gate 7:** Chassis slews to intercept orientation within $\le 450\text{ ms}$; emergency safe-stop engages within $50\text{ ms}$ of heartbeat severance.
 
 ---
@@ -347,6 +366,9 @@ gantt
   1. Setup Gazebo / ROS 2 simulation with 2 JetAuto UGV models and 1 moving human target actor.
   2. Implement automated Python test harness (`test_fault_injection.py`) executing Scenarios D (Crash), F (Netem loss/delay), and G (Stale epoch $e-1$).
 * **Quality Gate 8:** 100% pass on protocol conformance suite; zero dual-ownership occurrences.
+
+##### **Sprint 8b: Ablation & Baseline Switches**
+* **Deliverables:** Implement zero-hardcoding YAML flags in algorithm_thresholds.yaml: trigger_mode {proactive, reactive}, ego_cov_enabled, identity_mode {multicue, appearance_only}, watchdog_enabled, ack_confirm_enabled.
 
 ---
 
@@ -369,8 +391,38 @@ gantt
   1. Deploy dual physical JetAuto UGVs in indoor test arena equipped with external ground-truth motion tracking.
   2. Execute all 7 pre-registered experimental scenarios (Scenarios A through G).
   3. Run offline evaluation pipeline (`run_offline_evaluation.py`):
-     * Calculate Handoff Success Rate ($\text{HSR} \ge 85\%$).
-     * Calculate Identity Transfer Accuracy ($\text{ITA} \ge 90\%$).
+     * Strictly evaluate Experimental Design §8 criteria: `HSR >= 90%, IDF1 within 5 pp, median margin > 0, >= 15 FPS, memory < 80%`. No relaxations allowed.
      * Verify Dual-Ownership Violations $\equiv 0$.
      * Verify Zero Loss of Target Identity.
 * **Quality Gate 10:** Complete statistical validation report with confidence intervals meeting all pre-registered success criteria in SRS v1.3 and Experimental Design v1.1.
+
+---
+
+## 📄 Appendix: Master Timing Budgets & Thresholds Configuration (YAML)
+
+```yaml
+timing_budgets:
+  ros__parameters:
+    dt_dec_ms: 20
+    dt_neg_ms: 60
+    t_neg_timeout_ms: 80
+    dt_acq_ms: 600
+    t_acq_cutoff_ms: 700
+    dt_id_ms: 120
+    dt_conf_ms: 66
+    sigma_total_ms: 120
+    delta_sync_ms: 2
+    t_txn_ms: 886
+    watchdog_period_ms: 100
+    watchdog_max_missed: 3
+    t_ack_ms: 100
+    t_claim_ms: 200
+    confirm_retry_count: 3
+    confirm_retry_period_ms: 30
+    owner_claim_burst: 3
+    owner_claim_burst_period_ms: 20
+    owner_claim_latency_budget_ms: 60
+    txn_tombstone_ttl_ms: 10000
+    peer_telemetry_max_age_ms: 2500
+    cmd_vel_watchdog_ms: 150
+```

@@ -200,7 +200,7 @@ graph TB
         ODOM_IN["/chassis/odom<br/><small>nav_msgs/Odometry (STM32)</small>"]
     end
 
-    subgraph PROCESS_1["📦 Process 1: Perception & Kinematics (Zero-Copy Container · 30Hz Target)"]
+    subgraph PROCESS_1["📦 Process 1: Perception & Kinematics (30Hz Target)"]
         direction TB
         subgraph C01_NODE["C-01 PerceptionSERVICE Node"]
             YOLO["<b>yolo_detector_node</b><br/><small>TensorRT FP16</small>"]
@@ -250,13 +250,14 @@ graph TB
     end
 
     subgraph DDS_OUT["📡 Inter-Robot FastDDS Domain (P2P Wire Messages)"]
-        DDS_REQ["/edgesync/handoff_request (RELIABLE)"]
-        DDS_RES["/edgesync/handoff_response (RELIABLE)"]
-        DDS_CAN["/edgesync/handoff_cancel (RELIABLE)"]
-        DDS_ACQ["/edgesync/acq_status (BEST_EFFORT · 10Hz)"]
-        DDS_CONF["/edgesync/handoff_confirm (RELIABLE)"]
-        DDS_ACK["/edgesync/handoff_confirm_ack (RELIABLE)"]
-        DDS_BEAT["/edgesync/state_heartbeat (BEST_EFFORT · 1Hz)"]
+        DDS_REQ["/{robot_id}/edgesync/handoff_request (RELIABLE)"]
+        DDS_RES["/{robot_id}/edgesync/handoff_response (RELIABLE)"]
+        DDS_CAN["/{robot_id}/edgesync/handoff_cancel (RELIABLE)"]
+        DDS_ACQ["/{robot_id}/edgesync/acq_status (BEST_EFFORT · 10Hz)"]
+        DDS_CONF["/{robot_id}/edgesync/handoff_confirm (RELIABLE)"]
+        DDS_ACK["/{robot_id}/edgesync/handoff_confirm_ack (RELIABLE)"]
+        DDS_EVT["/{robot_id}/edgesync/ownership_event (RELIABLE)"]
+        DDS_BEAT["/{robot_id}/edgesync/state_heartbeat (BEST_EFFORT · 1Hz)"]
     end
 
     %% Sensor to Process 1
@@ -265,8 +266,8 @@ graph TB
     LIDAR_IN --> C10_NODE
     ODOM_IN --> C10_NODE
 
-    %% Process 1 Internal (Zero-Copy Intra-Process)
-    YOLO -->|"/detections [zero-copy]"| TRACKER
+    %% Process 1 Internal (Method Calls)
+    YOLO -->|"/detections"| TRACKER
     TRACKER -->|"/tracks"| DEPTH_PROC
     DEPTH_PROC -->|"/target/detection_3d"| KF
     C10_NODE -->|"/robot/pose_shared (in 'map' frame - I-16)"| KF
@@ -301,9 +302,12 @@ graph TB
     NEGOT <--> DDS_CAN
     NEGOT <--> DDS_CONF
     NEGOT <--> DDS_ACK
+    NEGOT <--> DDS_EVT
     NEGOT -->|"publish ACQ_STATUS"| DDS_ACQ
     DDS_ACQ -->|"peer ACQ_STATUS: owner watchdog input (FR-55)"| NEGOT
     RECEIVER <--> DDS_BEAT
+    NEGOT -->|"/peer/telemetry (I-18)"| RECEIVER
+    NEGOT -->|"/peer/ownership_event (I-18)"| FSM
 
     %% Observability
     FSM -.->|"/events (I-13)"| C11_NODE
@@ -332,7 +336,7 @@ graph TB
     </thead>
     <tbody>
       <tr>
-        <td><code>/edgesync/handoff_request</code></td>
+        <td><code>/{robot_id}/edgesync/handoff_request</code></td>
         <td>HandoffRequest.msg</td>
         <td class="reliable">RELIABLE</td>
         <td>VOLATILE</td>
@@ -340,7 +344,7 @@ graph TB
         <td>Initiates handoff; carries 512-dim embedding and 3D kinematics. Delivery must be guaranteed.</td>
       </tr>
       <tr>
-        <td><code>/edgesync/handoff_response</code></td>
+        <td><code>/{robot_id}/edgesync/handoff_response</code></td>
         <td>HandoffResponse.msg</td>
         <td class="reliable">RELIABLE</td>
         <td>VOLATILE</td>
@@ -348,7 +352,7 @@ graph TB
         <td>Critical accept/reject commitment. FastDDS retransmission applies if packet dropped.</td>
       </tr>
       <tr>
-        <td><code>/edgesync/handoff_cancel</code></td>
+        <td><code>/{robot_id}/edgesync/handoff_cancel</code></td>
         <td>HandoffCancel.msg</td>
         <td class="reliable">RELIABLE</td>
         <td>VOLATILE</td>
@@ -356,7 +360,7 @@ graph TB
         <td>Explicit transaction termination (watchdog, timeout, Re-ID mismatch). Enforces single-owner invariant.</td>
       </tr>
       <tr>
-        <td><code>/edgesync/acq_status</code></td>
+        <td><code>/{robot_id}/edgesync/acq_status</code></td>
         <td>AcqStatus.msg</td>
         <td class="best-effort">BEST_EFFORT</td>
         <td>VOLATILE</td>
@@ -364,7 +368,7 @@ graph TB
         <td>10 Hz liveness heartbeat. Retransmission is unwanted; 3 missed heartbeats trip anti-deadlock watchdog.</td>
       </tr>
       <tr>
-        <td><code>/edgesync/handoff_confirm</code></td>
+        <td><code>/{robot_id}/edgesync/handoff_confirm</code></td>
         <td>HandoffConfirm.msg</td>
         <td class="reliable">RELIABLE</td>
         <td>VOLATILE</td>
@@ -372,7 +376,7 @@ graph TB
         <td>Receiver signals successful acquisition and Re-ID match. Carries current epoch e.</td>
       </tr>
       <tr>
-        <td><code>/edgesync/handoff_confirm_ack</code></td>
+        <td><code>/{robot_id}/edgesync/handoff_confirm_ack</code></td>
         <td>HandoffConfirmAck.msg</td>
         <td class="reliable">RELIABLE</td>
         <td>VOLATILE</td>
@@ -380,7 +384,15 @@ graph TB
         <td>Previous owner releases exclusive ownership and activates monotonic new_epoch e+1 (FR-54).</td>
       </tr>
       <tr>
-        <td><code>/edgesync/state_heartbeat</code></td>
+        <td><code>/{robot_id}/edgesync/ownership_event</code></td>
+        <td>OwnershipEvent.msg</td>
+        <td class="reliable">RELIABLE</td>
+        <td>VOLATILE</td>
+        <td>Keep Last, 10</td>
+        <td>Carries burst OWNER_CLAIM with new_epoch e+1 to satisfy T_claim gate without waiting for 1Hz telemetry.</td>
+      </tr>
+      <tr>
+        <td><code>/{robot_id}/edgesync/state_heartbeat</code></td>
         <td>StateHeartbeat.msg</td>
         <td class="best-effort">BEST_EFFORT</td>
         <td>VOLATILE</td>
