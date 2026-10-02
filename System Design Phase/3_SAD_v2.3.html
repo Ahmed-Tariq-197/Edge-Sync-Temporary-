@@ -267,7 +267,7 @@ IMU/Encoders ─────► │          ▼               │
           TRACKING    TERMINAL FAILURE</code></pre>
 <p><strong>Ownership Rule:</strong> Acceptance of a handoff request (COMMITTED) does not transfer ownership. Ownership changes only after the receiving UGV has acquired and verified the target.<br>
 <strong>SRS Mapping:</strong> FR-39–FR-48.</p>
-<p><strong>Consistency rules:</strong> (1) The previous owner stays exclusive owner until it receives HANDOFF_CONFIRM and returns HANDOFF_CONFIRM_ACK carrying epoch+1; stale-epoch messages are rejected. (2) During COMMITTED/ACQUISITION the owner monitors receiver liveness and aborts on loss of liveness (ERR_CANDIDATE_DEAD). (3) In the two-UGV baseline an abort enters RECOVERY; re-attempt occurs only if the remaining TTO still exceeds the budget and another eligible candidate exists.</p>
+<p><strong>Consistency rules:</strong> (1) The previous owner stays exclusive owner until it receives HANDOFF_CONFIRM and returns HANDOFF_CONFIRM_ACK carrying epoch+1; stale-epoch messages are rejected. (2) During COMMITTED/ACQUISITION/IDENTITY_VERIFICATION, the owner monitors receiver liveness and aborts on loss of liveness (ERR_CANDIDATE_DEAD). (3) On ACK timeout, receiver aborts and owner reclaims target after T_claim, entering STANDBY only when peer reports OWNER role. (4) In the two-UGV baseline an abort enters RECOVERY; re-attempt occurs only if the remaining T_TTO^safe exceeds the budget and another candidate exists.</p>
 </div>
 
 <h3>1.4 Layer C — Platform Observability Support</h3>
@@ -374,9 +374,10 @@ IMU/Encoders ─────► │          ▼               │
 <tr><td>I-11</td><td>C-08 &rarr; C-09</td><td>Acquisition outcome</td><td>transaction_id, success, failure, timeout, confidence, timing</td><td>FR-36–FR-38</td></tr>
 <tr><td>I-12</td><td>C-08 &harr; C-10</td><td>Acquisition movement</td><td>Advisory target point, interception constraints, motion result</td><td>FR-36, FR-50</td></tr>
 <tr><td>I-13</td><td>C-09 &rarr; local comps</td><td>State transition</td><td>transaction_id, previous state, new state, reason</td><td>FR-48</td></tr>
-<tr><td>I-14</td><td>C-08 &rarr; C-09 (&rarr; C-06 &rarr; peer C-09)</td><td>10 Hz during COMMITTED/ACQUISITION</td><td>transaction_id, ownership_epoch, status (SLEWING / SEARCHING / ACQUIRED), timestamp</td><td>FR-55</td></tr>
+<tr><td>I-14</td><td>C-08 &rarr; C-09 (&rarr; C-06 &rarr; peer C-09)</td><td>10 Hz during COMMITTED/ACQUISITION/IDENTITY_VERIFICATION</td><td>transaction_id, ownership_epoch, status (SLEWING / SEARCHING / ACQUIRED), timestamp</td><td>FR-55</td></tr>
 <tr><td>I-15</td><td>C-09 &harr; C-06</td><td>Confirmation exchange</td><td>HANDOFF_CONFIRM / HANDOFF_CONFIRM_ACK, transaction_id, ownership_epoch</td><td>FR-39–41, FR-54</td></tr>
 <tr><td>I-16</td><td>C-10 &rarr; C-02 / C-06</td><td>Pose update</td><td>Pose and covariance in shared frame, frame_id, timestamp</td><td>FR-53</td></tr>
+<tr><td>I-17</td><td>C-09 &rarr; C-08</td><td>Target acquisition control</td><td>Start / Cancel Acquisition (txn_id, spatial prior, epoch)</td><td>FR-36, FR-37</td></tr>
 </tbody>
 </table>
 

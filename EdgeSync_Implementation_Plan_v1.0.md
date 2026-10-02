@@ -258,6 +258,7 @@ gantt
   1. Implement package `edgesync_msgs` (using standard `CMakeLists.txt` for `rosidl_default_generators`).
   2. Implement `HandoffHeader.msg` enforcing protocol version, sender/receiver UUIDs, transaction ID, target ID, monotonic ownership epoch $e$, sequence numbers, and nanosecond UTC timestamps.
   3. Formulate `HandoffRequest.msg` with static array `float32[512] reid_feature_vector` and 21-element upper-triangular covariance (`float32[21] cov_upper_triangle`).
+  4. Implement `StateHeartbeat.msg` containing `uint8 role` and `uint64 ownership_epoch`.
 * **Quality Gate 2:** Validate total binary CDR payload $\le 3072\text{ bytes}$ via `ros2 topic echo` binary inspection.
 
 ##### **Sprint 3: 2D-to-3D Perception Engine & TDD Unit Testing (C-01) (Day 1)**
@@ -322,10 +323,10 @@ gantt
      * Robot B publishes `AcqStatus.msg` at 10 Hz.
      * Robot A arms timer $\tau_{hb} = 300\text{ ms}$ (injected from YAML). Upon 3 missed heartbeats $\to$ raise `ERR_CANDIDATE_DEAD`, transition to `RECOVERY`, retain sole ownership.
   6. Implement **Strict Epoch Handshake**:
-     * Robot B sends `HANDOFF_CONFIRM` with epoch $e$.
-     * Robot A replies `HANDOFF_CONFIRM_ACK` with epoch $e+1$.
-     * Robot A disarms watchdog, transitions to `PASSIVE_TRACKER`, and **only then** releases exclusive ownership.
-     * Robot B becomes exclusive `TRACKING_OWNER` upon receiving the ACK.
+     * Robot B sends `HANDOFF_CONFIRM` with epoch `e`.
+     * Robot A replies `HANDOFF_CONFIRM_ACK` with epoch `e+1`.
+     * Robot B becomes exclusive `TRACKING_OWNER` upon receiving the ACK and instantly fires an event-triggered `STATE_HEARTBEAT` with `role=OWNER`.
+     * Robot A transitions to `STANDBY` only upon receiving this heartbeat. If it is not received within `T_claim` (200ms), A reclaims ownership at epoch `e+1`.
   7. Write `pytest tests/test_fsm_transitions.py` and `test_watchdog_timeout.py`.
 * **Quality Gate 6:** Zero dual-ownership violations across 500 simulated negotiation cycles; watchdog triggers within $320\text{ ms}$ upon simulated receiver SIGKILL.
 

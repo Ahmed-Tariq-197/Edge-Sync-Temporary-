@@ -171,9 +171,13 @@ graph TD
         D2["🟢 Zone 1: T_TTO^safe > 2.50s<br/>Steady tracking &rarr; Network silence"]
         D3["🟡 Zone 2: 1.23s ≤ T_TTO^safe ≤ 2.50s<br/>Proactive Trigger &rarr; Evaluate candidates"]
         D4["🔴 Zone 3: T_TTO^safe < 1.23s<br/>No NEW handoff allowed (Math v2.3 §2.1)<br/>Continue existing transaction or solo tracking"]
-        D5["Query C-05: Hard Eligibility Gate G(j):<br/>CPU ≤ 90% AND Battery ≥ 15% AND Nav OK"]
+        D3A{"Active transaction<br/>for this target?"}
+    end
+
+    subgraph RECEIVER["🎯 C-05: ReceiverSERVICE (Eligibility & Ranking)"]
+        D5["Hard Eligibility Gate G(j):<br/>CPU ≤ 90% AND Battery ≥ 15% AND Nav OK AND link fresh"]
         D6{"G(j) == 1 &<br/>Feasible?"}
-        D7["Compute Utility:<br/>U_j = G(j)·Feasible·[0.5·Φ_feas + 0.3·Φ_FOV + 0.2·Φ_net]"]
+        D7["Utility: U_j = G(j)·Feasible·[0.5·Φ_feas + 0.3·Φ_FOV + 0.2·Φ_net]"]
         D8{"U_j > 0?"}
     end
 
@@ -190,7 +194,7 @@ graph TD
     end
 
     LOOP_BACK["🔄 Return to Perception Loop"]
-    TERMINAL(("⛔ TERMINAL FAILURE<br/>Safe-Stop Engaged"))
+    TXN_END(("Transaction closed"))
 
     START --> A1
     A1 --> A2
@@ -214,7 +218,9 @@ graph TD
     D2 --> LOOP_BACK
     D4 --> LOOP_BACK
 
-    D3 --> D5
+    D3 --> D3A
+    D3A -->|"Yes"| LOOP_BACK
+    D3A -->|"No"| D5
     D5 --> D6
     D6 -->|"No"| LOOP_BACK
     D6 -->|"Yes"| D7
@@ -227,17 +233,18 @@ graph TD
     E2 --> E3
     E3 -->|"REJECT / TIMEOUT (60ms)"| E8
     E3 -->|"ACCEPT"| E4
+    E4 -.->|"fork: owner keeps tracking at 30Hz"| LOOP_BACK
     E4 --> E5
     E5 --> E6
-    E6 -->|"Re-ID Mismatch / Watchdog Dead"| E8
+    E6 -->|"Re-ID mismatch / 3 missed heartbeats / acquisition > 700ms / T_txn > 886ms"| E8
     E6 -->|"Match confirmed"| E7
 
-    E7 --> LOOP_BACK
-    E8 --> LOOP_BACK
+    E7 --> TXN_END
+    E8 --> TXN_END
     LOOP_BACK --> A1
 
     style START fill:#059669,stroke:#34d399,color:#fff
-    style TERMINAL fill:#991b1b,stroke:#f87171,color:#fff
+    style TXN_END fill:#475569,stroke:#94a3b8,color:#fff
     style LOOP_BACK fill:#1e293b,stroke:#64748b,color:#cbd5e1
 </pre>
   </div>

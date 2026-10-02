@@ -125,16 +125,16 @@ w = (0.5, 0.3, 0.2),  w1 + w2 + w3 = 1   (configurable via C-12)</div>
 <p>The acquisition window is therefore <strong>≤ 700 ms</strong>, not 1200 ms, and no separate "1.5 s lock" exists: the transaction lock equals the acquisition hard timeout plus the confirmation allowance.</p>
 
 <h3>3.3 10 Hz Liveness Watchdog (Anti-Deadlock)</h3>
-<div class="note"><strong>Reliability patch:</strong> an owner waiting in <code>COMMITTED</code>/<code>ACQUISITION</code> would otherwise hang if the receiver suffers a hardware, power or link failure.</div>
-<p>During acquisition the receiver emits <code>ACQ_STATUS</code> (<code>SLEWING</code> / <code>SEARCHING</code> / <code>ACQUIRED</code>) at <strong>10 Hz</strong>. The owner arms a watchdog <span class="math-inline">τ_hb = 300 ms</span>; three consecutive missed heartbeats abort the transaction (<code>ERR_CANDIDATE_DEAD</code>), with worst-case detection ≈ 300–400 ms depending on phase. A DDS LIVELINESS lease of 300 ms provides a redundant transport-level signal.</p>
+<div class="note"><strong>Reliability patch:</strong> an owner waiting in <code>COMMITTED</code>, <code>ACQUISITION</code>, or <code>IDENTITY_VERIFICATION</code> would otherwise hang if the receiver suffers a hardware, power or link failure.</div>
+<p>During acquisition and verification, the receiver emits <code>ACQ_STATUS</code> (<code>SLEWING</code> / <code>SEARCHING</code> / <code>ACQUIRED</code>) at <strong>10 Hz</strong>. The owner arms a watchdog timer = last good heartbeat + 300 ms; three consecutive missed heartbeats abort the transaction (<code>ERR_CANDIDATE_DEAD</code>), with practical detection taking 300–400 ms including scheduling. This saves at most 700 − 300 = 400 ms compared to waiting for the full cutoff. A DDS LIVELINESS lease of 300 ms provides a redundant transport-level signal.</p>
 <p><strong>After an abort:</strong> the state machine enters RECOVERY and the owner keeps tracking. A new attempt is allowed only if another eligible candidate exists <em>and</em> the remaining <span class="math-inline">T_TTO^safe ≥ 1.23 s</span> (a full budget). Because detection alone costs ≈ 300 ms, a second attempt is usually infeasible in the two-UGV baseline; the abort's value is to end a doomed transaction early and return control to local recovery rather than waiting out the timeout.</p>
 
 <h3>3.4 Ownership Handshake and Epochs</h3>
 <ol>
 <li><code>HANDOFF_REQUEST</code> (epoch e) → <code>HANDOFF_RESPONSE</code>. State: <code>COMMITTED</code>; A remains the sole owner.</li>
 <li>B streams <code>ACQ_STATUS</code> at 10 Hz, acquires the target, verifies identity and establishes a local track.</li>
-<li>B sends <code>HANDOFF_CONFIRM</code> (epoch e). A replies <code>HANDOFF_CONFIRM_ACK</code> carrying epoch e+1 and only then releases exclusive ownership (continuing passive tracking).</li>
-<li>B becomes the active owner on receipt of the ACK. A lost CONFIRM is retransmitted a bounded number of times (default 3, 30 ms apart); if no ACK arrives, B aborts and A remains owner. A repeated CONFIRM for an already-acknowledged transaction is answered with the same ACK (idempotent).</li>
+<li>B sends <code>HANDOFF_CONFIRM</code> (epoch e). A replies <code>HANDOFF_CONFIRM_ACK</code> carrying epoch e+1 and only then releases exclusive ownership (continuing passive tracking). A transitions to STANDBY only when B reports role=OWNER and epoch e+1 via STATE_HEARTBEAT.</li>
+<li>B becomes the active owner on receipt of the ACK. <b>CRITICAL: B must instantly emit an event-triggered <code>STATE_HEARTBEAT</code> upon entering the TRACKING state to bypass the 1Hz delay and satisfy A's T_claim gate.</b> A lost CONFIRM is retransmitted a bounded number of times (default 3, 30 ms apart). If no ACK arrives, B aborts via HANDOFF_CANCEL(ACK_TIMEOUT) and A reclaims the target at epoch e+1 after T_claim. A repeated CONFIRM for an already-acknowledged transaction is answered with the same ACK (idempotent).</li>
 <li>Any message with a stale epoch or an unknown <code>transaction_id</code> is rejected and logged.</li>
 </ol>
 <p>This realizes SRS FR-47 and FR-54: at no time do two UGVs hold exclusive ownership, and a commitment alone never transfers ownership.</p>
@@ -183,7 +183,8 @@ float32 battery
 # AcqStatus.msg       (Header +)  uint8 status; float32 confidence
 # HandoffConfirm.msg  (Header +)  float32 reid_similarity; string frame_id;
 #                                 float32[3] position; float32[21] cov_upper_triangle
-# HandoffConfirmAck   (Header +)  uint64 new_epoch</div>
+# HandoffConfirmAck   (Header +)  uint64 new_epoch
+# StateHeartbeat.msg  (Header +)  uint8 role; uint64 ownership_epoch</div>
 <p>The request payload is dominated by the 2048-byte embedding and totals roughly <strong>2.5–3 KB</strong> including header strings. This exceeds a single Wi-Fi MTU, so FastDDS fragmentation and reliable retransmission apply; the expected transfer time (target &lt; 2 ms) is a Tier 2 measurement target, not a guarantee. If loss sensitivity requires, the embedding can be sent as FP16 or INT8 (≈ 0.5–1 KB) after verifying the accuracy impact.</p>
 <p>Spatial fields without a valid <code>frame_id</code> are rejected by the receiver.</p>
 </section>
@@ -232,14 +233,17 @@ Y_c = (v - c_y) * Z_c / f_y</div></li>
 <tr><td>Zone boundaries (T_TTO^safe)</td><td>2.50 s / 1.23 s</td><td>Tier 3 success vs. TTO margin</td></tr>
 <tr><td>Phase budgets (§3.2)</td><td>20 / 60 / 600 / 120 / 66 ms</td><td>Tier 2 component and link benchmarks</td></tr>
 <tr><td>σ_total, δ_sync, Δt_safety</td><td>120 ms, 2 ms, 364 ms</td><td>Tier 2 latency distributions; clock-offset test</td></tr>
-<tr><td>Acquisition hard timeout</td><td>700 ms</td><td>Tier 3 acquisition times</td></tr>
+<tr><td>Acquisition hard timeout</td><td>700 ms (starts at ACCEPT)</td><td>Tier 3 acquisition times</td></tr>
 <tr><td>Watchdog</td><td>10 Hz, 3 misses (300 ms)</td><td>Scenario D failure injection</td></tr>
 <tr><td>k_τ (TTO lower bound)</td><td>2</td><td>TTO interval coverage</td></tr>
 <tr><td>Eligibility gate</td><td>CPU ≤ 90%, battery ≥ 15%</td><td>Tier 2 resource profile</td></tr>
 <tr><td>Utility weights w1, w2, w3</td><td>0.5, 0.3, 0.2</td><td>Sensitivity analysis</td></tr>
 <tr><td>Request payload</td><td>≈ 2.5–3 KB</td><td>Tier 2 byte counts</td></tr>
 <tr><td>Perception rate</td><td>30 Hz target, ≥ 15 FPS acceptance</td><td>Tier 2 FPS under full load</td></tr>
-</tbody></table>
+<tr><td>Transaction &amp; Network Limits</td><td>T_txn = 886 ms | T_claim = 200 ms | Negotiation Timeout = 80 ms | CONFIRM Retry = 3x30ms</td><td>Protocol robustness</td></tr>
+<tr><td>Re-ID Similarity Threshold</td><td>0.70</td><td>Tier 3 ID switches</td></tr>
+</tbody>
+</table>
 <h3>Revision Notes — v2.3</h3>
 <ul>
 <li>Introduced the shared <code>map</code> frame and unified axis conventions; defined <span class="math-inline">T_TTO^safe</span>.</li>

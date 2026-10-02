@@ -246,6 +246,7 @@ sequenceDiagram
         participant C01A as C-01 Perception
         participant C03A as C-03 Prediction
         participant C04A as C-04 Decision
+        participant C07A as C-07 Identity (Robot A)
         participant C09A as C-09 Ownership
         participant C06A as C-06 Negotiation
     end
@@ -278,9 +279,10 @@ sequenceDiagram
 
     rect rgb(30, 58, 95)
         activate C09A
+        C07A -->> C09A: I-09: cached reid_vec[512] + reid_quality (pre-computed)
         C09A ->> C06A: I-07: Initiate negotiation with Robot B
         activate C06A
-        C06A ->> DDS: HANDOFF_REQUEST (RELIABLE, Volatile, Depth=10)<br/>{txn_id, target_id, epoch=e, tto_deadline_utc_ns, tto_remaining_ms=1850,<br/>frame_id="map", position[3], velocity[3], cov[21], sender_pose, reid_vec[512]}
+        C06A ->> DDS: HANDOFF_REQUEST (RELIABLE, Volatile, Depth=10)<br/>{txn_id, target_id, epoch=e, tto_deadline_utc_ns, tto_remaining_ms=1830,<br/>frame_id="map", position[3], velocity[3], cov[21], sender_pose, reid_vec[512]}
         Note over DDS: Binary CDR ≈ 2.5 KB (Includes 512-dim Float32 Embedding)
 
         DDS ->> C06B: Deliver HANDOFF_REQUEST
@@ -297,12 +299,15 @@ sequenceDiagram
         C06A ->> C09A: I-08: Negotiation outcome = ACCEPT
         deactivate C06A
 
-        C09A ->> C09A: State: NEGOTIATING &rarr; COMMITTED<br/><b>A REMAINS SOLE EXCLUSIVE OWNER!</b><br/>Arm Watchdog (τ_hb = 300ms) & Hard Cutoff (700ms)
+        C09A ->> C09A: State: NEGOTIATING &rarr; COMMITTED &rarr; ACQUISITION<br/><b>A REMAINS SOLE EXCLUSIVE OWNER!</b><br/>Arm Watchdog (τ_hb = 300ms) & Hard Cutoff (700ms)
     end
 
-    Note over C08B,C10B: 🟣 Acquisition Phase (Δt_acq = 600ms, ≤ 700ms cutoff) — 10Hz Liveness Active
+    Note over C08B,C10B: 🟣 Acquisition & Identity Verification Phase (Δt_acq = 600ms, ≤ 700ms cutoff)
 
     rect rgb(13, 53, 45)
+        activate C09B
+        C09B ->> C08B: I-17: Start Acquisition {txn_id, spatial prior, epoch}
+        deactivate C09B
         activate C08B
         C08B ->> C10B: I-12: Advisory motion request (Slew camera toward predicted [x,y,z])
         activate C10B
@@ -310,14 +315,20 @@ sequenceDiagram
         C10B -->> C08B: Motion active
         deactivate C10B
 
-        loop Every 100ms (10Hz Liveness Heartbeat — FR-55)
-            C08B -->> DDS: ACQ_STATUS: SLEWING / SEARCHING (BEST_EFFORT, Lease 300ms)
-            DDS -->> C09A: Heartbeat received ✓ &rarr; Reset watchdog timer (τ_hb = 300ms)
+        loop Every 100ms (10Hz Liveness Watchdog Reset — FR-55)
+            C08B ->> C09B: I-14: ACQ_STATUS (SLEWING / SEARCHING / ACQUIRED)
+            C09B ->> C06B: ACQ_STATUS
+            C06B ->> DDS: ACQ_STATUS (BEST_EFFORT, Lease 300ms)
+            DDS ->> C06A: Deliver ACQ_STATUS
+            C06A ->> C09A: Heartbeat received ✓ &rarr; Reset watchdog timer (τ_hb = 300ms)
         end
 
         C08B ->> C08B: Visual detection locks target candidate in frustum!
-        C08B -->> DDS: ACQ_STATUS = ACQUIRED (10Hz)
-        DDS -->> C09A: Target acquired notification &rarr; Owner awaits verification
+        C08B ->> C09B: I-14: ACQ_STATUS = ACQUIRED (Candidate locked)
+        C09B ->> C06B: ACQ_STATUS = ACQUIRED
+        C06B ->> DDS: ACQ_STATUS = ACQUIRED
+        DDS ->> C06A: Deliver ACQUIRED
+        C06A ->> C09A: Peer ACQUIRED &rarr; State: ACQUISITION &rarr; IDENTITY_VERIFICATION
 
         C08B ->> C07B: I-10: Verify candidate crop vs received reid_feature_vector[512]
         activate C07B
@@ -341,8 +352,8 @@ sequenceDiagram
         activate C06A
         C06A ->> C09A: Deliver Confirmation
 
+        C09A ->> C09A: State: IDENTITY_VERIFICATION &rarr; CONFIRMED<br/>Disarm Cutoff Timer
         C09A ->> C06A: Reply HANDOFF_CONFIRM_ACK {txn_id, new_epoch = e+1}
-        C09A ->> C09A: ACK sent ✓<br/>Disarm Watchdog<br/>State: COMMITTED &rarr; PASSIVE_TRACKER<br/><b>Release exclusive ownership AFTER ACK sent!</b>
         deactivate C09A
         C06A ->> DDS: HANDOFF_CONFIRM_ACK (RELIABLE)
         deactivate C06A
@@ -352,8 +363,13 @@ sequenceDiagram
         C06B ->> C09B: Deliver ACK with new_epoch = e+1
         deactivate C06B
 
-        C09B ->> C09B: State: AWAITING_ACK &rarr; <b>TRACKING_OWNER (Epoch e+1)</b><br/>Robot B is now sole exclusive tracking owner!
+        C09B ->> C09B: State: AWAITING_ACK &rarr; <b>TRACKING (Epoch e+1)</b><br/>Robot B is now active tracking owner!
+        C09B ->> DDS: STATE_HEARTBEAT {role=OWNER, ownership_epoch=e+1}
         deactivate C09B
+        DDS ->> C09A: Deliver STATE_HEARTBEAT (role=OWNER, epoch e+1)
+        activate C09A
+        C09A ->> C09A: State: CONFIRMED &rarr; <b>STANDBY (Epoch e+1)</b><br/>Robot A enters STANDBY role (FR-54)
+        deactivate C09A
     end
 
     Note over C01A,C10B: 🏆 Nominal Handoff Succeeded in 866ms &lt; 1230ms Budget — Zero Loss of Target Identity

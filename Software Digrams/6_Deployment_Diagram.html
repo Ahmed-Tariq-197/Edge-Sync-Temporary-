@@ -247,7 +247,7 @@ graph TB
     end
 
     subgraph INFRA["🌐 Network Infrastructure"]
-        ROUTER["📶 5GHz Wi-Fi Router<br/><small>PTP Time Sync Daemon (IEEE 1588v2)</small>"]
+        ROUTER["📶 5GHz Wi-Fi Router<br/><small>Time sync: PTP if HW timestamping available, else software sync; δ_sync measured in Tier 2</small>"]
     end
 
     subgraph GT_STATION["🎯 Independent Ground-Truth Testbed (Tier 3 — SRS NFR-13)"]
@@ -271,13 +271,13 @@ graph TB
     STM_B -->|"UART 115200 (Odometry/IMU)"| NODE4_B
 
     %% Process communication
-    NODE1_A <-->|"Zero-Copy Intra-Process"| NODE2_A
-    NODE2_A <-->|"Zero-Copy Intra-Process"| NODE3_A
+    NODE1_A <-->|"FastDDS shared memory, loaned msgs (inter-process)"| NODE2_A
+    NODE2_A <-->|"FastDDS shared memory (inter-process)"| NODE3_A
     NODE4_A <-->|"tf2 Map Transform & Safety"| NODE2_A
     NODE2_A <--> DDS_A
 
-    NODE1_B <-->|"Zero-Copy Intra-Process"| NODE2_B
-    NODE2_B <-->|"Zero-Copy Intra-Process"| NODE3_B
+    NODE1_B <-->|"FastDDS shared memory, loaned msgs (inter-process)"| NODE2_B
+    NODE2_B <-->|"FastDDS shared memory (inter-process)"| NODE3_B
     NODE4_B <-->|"tf2 Map Transform & Safety"| NODE2_B
     NODE2_B <--> DDS_B
 
@@ -290,7 +290,7 @@ graph TB
     TARGET -.->|"Optical Target"| CAM_B
 
     %% Ground Truth & Evaluation
-    TARGET -.->|"Fiducial Marker"| MOCAP
+    TARGET -.->|"Fiducial Marker (IR/outside RGB FOV)"| MOCAP
     UGV_A -.->|"Tracking Marker"| MOCAP
     UGV_B -.->|"Tracking Marker"| MOCAP
     MOCAP --> GT_LOGGER

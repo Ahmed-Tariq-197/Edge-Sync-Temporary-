@@ -377,6 +377,147 @@
       <line x1="1160" y1="440" x2="1160" y2="450" stroke="#38bdf8" stroke-width="2"/>
       <text x="670" y="465" fill="#38bdf8" font-size="13" font-weight="bold" text-anchor="middle">◀ TOTAL HANDOFF BUDGET: Δt_budget^max = 1230 ms (1.23 s Zone Boundary) ▶</text>
     </svg>
+
+    <div style="border-top: 1px dashed var(--line); margin: 30px 0 20px;"></div>
+    <div style="font-size: 16px; font-weight: 600; color: #f87171; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+      🚨 Failure Injection Trace: Anti-Deadlock Liveness Watchdog (Receiver B Crash at 300 ms)
+    </div>
+
+    <svg class="timing-svg" viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg" style="height: 400px;">
+      <defs>
+        <linearGradient id="gradAbortOwner" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#312e81"/>
+          <stop offset="100%" stop-color="#4338ca"/>
+        </linearGradient>
+        <linearGradient id="gradRecovery" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#991b1b"/>
+          <stop offset="100%" stop-color="#b91c1c"/>
+        </linearGradient>
+        <linearGradient id="gradSaved" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#059669" stop-opacity="0.8"/>
+          <stop offset="100%" stop-color="#10b981" stop-opacity="0.8"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Time Ruler Header -->
+      <rect x="180" y="20" width="980" height="25" fill="#0f172a" rx="4"/>
+      <!-- Millisecond Tick Lines -->
+      <g stroke="#334155" stroke-dasharray="3,3" stroke-width="1">
+        <line x1="180" y1="45" x2="180" y2="365"/>
+        <line x1="244" y1="45" x2="244" y2="365"/>
+        <line x1="323" y1="45" x2="323" y2="365"/>
+        <line x1="403" y1="45" x2="403" y2="365"/>
+        <line x1="419" y1="45" x2="419" y2="365" stroke="#f87171" stroke-width="1.5" stroke-dasharray="none"/>
+        <line x1="483" y1="45" x2="483" y2="365"/>
+        <line x1="562" y1="45" x2="562" y2="365"/>
+        <line x1="642" y1="45" x2="642" y2="365" stroke="#ef4444" stroke-width="2" stroke-dasharray="none"/>
+        <line x1="801" y1="45" x2="801" y2="365" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <line x1="1160" y1="45" x2="1160" y2="365"/>
+      </g>
+
+      <!-- Tick Labels -->
+      <g fill="#94a3b8" font-size="11" font-family="Consolas, monospace" text-anchor="middle">
+        <text x="180" y="37">0ms</text>
+        <text x="244" y="37">80ms (ACCEPT)</text>
+        <text x="323" y="37">180ms</text>
+        <text x="403" y="37">280ms</text>
+        <text x="419" y="37" fill="#f87171" font-weight="bold">300ms (Crash)</text>
+        <text x="483" y="37">380ms</text>
+        <text x="562" y="37">480ms</text>
+        <text x="642" y="37" fill="#ef4444" font-weight="bold">580ms (Abort)</text>
+        <text x="801" y="37" fill="#94a3b8">780ms (700ms cutoff)</text>
+        <text x="1160" y="37">1230ms</text>
+      </g>
+
+      <!-- SWIMLANE 1: Robot A State Progression -->
+      <text x="15" y="80" fill="#38bdf8" font-size="13" font-weight="bold">Robot A (Owner)</text>
+      <text x="15" y="95" fill="#64748b" font-size="10">Lifecycle State</text>
+
+      <rect x="180" y="65" width="16" height="32" fill="#0c4a6e" rx="3"/>
+      <text x="188" y="85" fill="#38bdf8" font-size="9" text-anchor="middle">CAND</text>
+
+      <rect x="196" y="65" width="48" height="32" fill="#1e3a8a" rx="3"/>
+      <text x="220" y="85" fill="#93c5fd" font-size="9" text-anchor="middle">NEGOT</text>
+
+      <!-- COMMITTED: Robot A is owner monitoring watchdog -->
+      <rect x="244" y="65" width="398" height="32" fill="url(#gradAbortOwner)" stroke="#818cf8" stroke-width="1.5" rx="3"/>
+      <text x="443" y="85" fill="#e0e7ff" font-size="10" font-weight="bold" text-anchor="middle">COMMITTED (Exclusive Owner · Monitoring 10Hz Watchdog)</text>
+
+      <!-- RECOVERY: Triggered at 580ms -->
+      <rect x="642" y="65" width="518" height="32" fill="url(#gradRecovery)" stroke="#ef4444" stroke-width="1.5" rx="3"/>
+      <text x="901" y="85" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle">⚠️ RECOVERY (Solo Tracking Retained · Epoch e Preserved)</text>
+
+      <!-- SWIMLANE 2: Robot B State Progression -->
+      <text x="15" y="145" fill="#818cf8" font-size="13" font-weight="bold">Robot B (Receiver)</text>
+      <text x="15" y="160" fill="#64748b" font-size="10">Lifecycle State</text>
+
+      <rect x="180" y="130" width="40" height="32" fill="#1e293b" rx="3"/>
+      <text x="200" y="150" fill="#94a3b8" font-size="9" text-anchor="middle">IDLE</text>
+
+      <rect x="220" y="130" width="24" height="32" fill="#854d0e" rx="3"/>
+      <text x="232" y="150" fill="#fde047" font-size="9" text-anchor="middle">EVAL</text>
+
+      <!-- SLEWING: 80ms to 300ms -->
+      <rect x="244" y="130" width="175" height="32" fill="#065f46" rx="3"/>
+      <text x="331" y="150" fill="#a7f3d0" font-size="10" text-anchor="middle">SLEWING (Emits 10Hz ACQ_STATUS)</text>
+
+      <!-- CRASH at 300ms -->
+      <rect x="419" y="130" width="741" height="32" fill="#262626" stroke="#f87171" stroke-width="1" stroke-dasharray="4,4" rx="3"/>
+      <text x="789" y="150" fill="#f87171" font-size="10" font-weight="bold" text-anchor="middle">💥 SILENT FAILURE / CRASHED (Offline — No heartbeats emitted)</text>
+
+      <!-- SWIMLANE 3: FastDDS Bus & Pulse Train -->
+      <text x="15" y="215" fill="#fb923c" font-size="13" font-weight="bold">FastDDS Bus</text>
+      <text x="15" y="230" fill="#64748b" font-size="10">Liveness Pulses</text>
+      <line x1="180" y1="225" x2="1160" y2="225" stroke="#475569" stroke-width="1.5"/>
+
+      <!-- REQUEST Packet -->
+      <rect x="192" y="210" width="8" height="30" fill="#38bdf8" rx="2"/>
+      <!-- ACCEPT Packet -->
+      <rect x="240" y="210" width="8" height="30" fill="#34d399" rx="2"/>
+
+      <!-- Good Heartbeats: 180ms, 280ms -->
+      <rect x="320" y="215" width="6" height="20" fill="#34d399" rx="1"/>
+      <text x="323" y="205" fill="#34d399" font-size="8" text-anchor="middle">Pulse 1</text>
+
+      <rect x="400" y="215" width="6" height="20" fill="#34d399" rx="1"/>
+      <text x="403" y="205" fill="#34d399" font-size="8" text-anchor="middle">Pulse 2 (Last)</text>
+
+      <!-- Crash Event Callout at 300ms -->
+      <circle cx="419" cy="225" r="7" fill="#ef4444"/>
+      <text x="419" y="255" fill="#f87171" font-size="10" font-weight="bold" text-anchor="middle">💥 B crash (300 ms)</text>
+
+      <!-- 3 Missed Pulses: 380ms, 480ms, 580ms -->
+      <g stroke="#ef4444" stroke-width="1.5" stroke-dasharray="2,2" fill="none">
+        <rect x="480" y="215" width="6" height="20" rx="1"/>
+        <rect x="560" y="215" width="6" height="20" rx="1"/>
+        <rect x="640" y="215" width="6" height="20" rx="1"/>
+      </g>
+      <text x="483" y="205" fill="#ef4444" font-size="8" text-anchor="middle">Miss 1</text>
+      <text x="563" y="205" fill="#ef4444" font-size="8" text-anchor="middle">Miss 2</text>
+      <text x="643" y="205" fill="#ef4444" font-size="8" text-anchor="middle">Miss 3</text>
+
+      <!-- 3 Missed Pulses Bracket -->
+      <path d="M 403,268 L 403,275 L 523,275 L 523,280 L 523,275 L 642,275 L 642,268" fill="none" stroke="#fbbf24" stroke-width="1.5"/>
+      <text x="523" y="293" fill="#fbbf24" font-size="10" font-weight="bold" text-anchor="middle">3 missed pulses (300 ms elapsed)</text>
+
+      <!-- Abort Marker at 580ms -->
+      <rect x="638" y="205" width="8" height="40" fill="#ef4444" rx="2"/>
+      <text x="642" y="195" fill="#ef4444" font-size="10" font-weight="bold" text-anchor="middle">ERR_CANDIDATE_DEAD at 580 ms</text>
+
+      <!-- SWIMLANE 4: Time Savings vs Hard Cutoff -->
+      <text x="15" y="335" fill="#34d399" font-size="13" font-weight="bold">Time Saved</text>
+      <text x="15" y="350" fill="#64748b" font-size="10">vs 700ms Cutoff</text>
+
+      <!-- Saved Interval: 580ms to 780ms (width = 159px) -->
+      <rect x="642" y="325" width="159" height="34" fill="url(#gradSaved)" stroke="#34d399" stroke-width="1.5" rx="4"/>
+      <text x="721" y="346" fill="#0f172a" font-size="11" font-weight="bold" text-anchor="middle">⚡ 200 ms SAVED</text>
+
+      <!-- Arrow indicating bypassed cutoff -->
+      <line x1="801" y1="315" x2="801" y2="365" stroke="#ef4444" stroke-width="2" stroke-dasharray="3,3"/>
+      <text x="801" y="380" fill="#ef4444" font-size="9" text-anchor="middle">700ms Cutoff (Bypassed!)</text>
+
+      <text x="960" y="346" fill="#94a3b8" font-size="11">Owner resumes tracking 200 ms before cutoff, preserving target</text>
+    </svg>
   </div>
 
   <!-- SECTION 2: MATHEMATICAL SPECIFICATIONS -->
@@ -388,7 +529,6 @@
           <th>Execution Phase</th>
           <th>Mathematical Symbol</th>
           <th>Planning Latency</th>
-          <th>Worst-Case Limit</th>
           <th>Underlying Sub-Operations & Computational Constraints</th>
         </tr>
       </thead>
@@ -397,56 +537,48 @@
           <td><strong>1. Decision & Feasibility</strong></td>
           <td><code>Δt_dec</code></td>
           <td class="num-col">20 ms</td>
-          <td>30 ms</td>
           <td>TTO interval lower bound calculation (<code>k_τ = 2</code>), hard gate G(j) evaluation, utility scoring U_j.</td>
         </tr>
         <tr>
           <td><strong>2. P2P Negotiation Round-Trip</strong></td>
           <td><code>Δt_neg</code></td>
           <td class="num-col">60 ms</td>
-          <td>80 ms</td>
           <td>FastDDS CDR serialization (≈2.5KB), 5GHz Wi-Fi transmission, candidate eligibility evaluation, ACCEPT reply.</td>
         </tr>
         <tr>
           <td><strong>3. Receiver Slew & Optical Search</strong></td>
           <td><code>Δt_acq</code></td>
-          <td class="num-col">600 ms</td>
-          <td class="num-col">≤ 700 ms (Hard Cutoff)</td>
+          <td class="num-col">600 ms (≤ 700 ms Cutoff)</td>
           <td>Mecanum rotational chassis slewing (≈300ms) + YOLO 2D/3D candidate detection & spatial prior lock (≈300ms).</td>
         </tr>
         <tr>
           <td><strong>4. Resident Re-ID Verification</strong></td>
           <td><code>Δt_id</code></td>
           <td class="num-col">120 ms</td>
-          <td>150 ms</td>
           <td>Resident OSNet TensorRT inference (512-dim embedding), cosine similarity computation + Mahalanobis gate.</td>
         </tr>
         <tr>
           <td><strong>5. Acknowledged Handshake</strong></td>
           <td><code>Δt_conf</code></td>
           <td class="num-col">66 ms</td>
-          <td>90 ms</td>
           <td>HANDOFF_CONFIRM sent &rarr; HANDOFF_CONFIRM_ACK received carrying monotonic <code>new_epoch = e+1</code> (FR-54).</td>
         </tr>
         <tr style="background: rgba(56, 189, 248, 0.08);">
           <td><strong>Nominal Execution Total</strong></td>
           <td><code>Δt_exec^max</code></td>
           <td class="num-col" style="font-size: 15px;">866 ms</td>
-          <td>1050 ms</td>
           <td>End-to-end nominal duration from trigger to completed ownership transfer.</td>
         </tr>
         <tr style="background: rgba(251, 191, 36, 0.08);">
           <td><strong>Statistical Safety Margin</strong></td>
           <td><code>Δt_safety</code></td>
           <td class="num-col" style="font-size: 15px;">364 ms</td>
-          <td>400 ms</td>
           <td>Formally: <code>3 * σ_total (120ms) + 2 * δ_sync (2ms) = 364 ms</code> (Gaussian tail / Cantelli bound).</td>
         </tr>
         <tr style="background: rgba(52, 211, 153, 0.1);">
           <td><strong>Total Budget Required</strong></td>
           <td><code>Δt_budget^max</code></td>
           <td class="num-col" style="font-size: 16px; color: #34d399;">1230 ms (1.23 s)</td>
-          <td>1450 ms</td>
           <td>Threshold separating Zone 2 (Proactive Trigger) from Zone 3 (Critical Boundary — New handoffs forbidden).</td>
         </tr>
       </tbody>
@@ -470,8 +602,8 @@
         <tr>
           <td><strong>Receiver Hardware Crash</strong> (Loss of Power / Wi-Fi)</td>
           <td>10 Hz <code>ACQ_STATUS</code> Watchdog (<code>τ_hb = 300ms</code>)</td>
-          <td class="num-col">300 – 350 ms</td>
-          <td class="num-col" style="color: #34d399;">Saved ≈ 400 ms</td>
+          <td class="num-col">≈ 300–400 ms (300 ms after last good heartbeat)</td>
+          <td class="num-col" style="color: #34d399;">Saves ≤ 400 ms vs 700 ms cutoff (200 ms for the trace below; 0 after cutoff)</td>
           <td>Owner aborts doomed transaction immediately, bypasses 700ms cutoff, enters RECOVERY solo tracking.</td>
         </tr>
         <tr>

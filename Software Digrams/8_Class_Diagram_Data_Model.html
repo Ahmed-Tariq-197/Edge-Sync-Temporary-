@@ -214,7 +214,7 @@ classDiagram
     }
 
     class EstimationSERVICE {
-        -ExtendedKalmanFilter6D ekf
+        -LinearKalmanFilter6D kf
         -Vector6D state_vector
         -Matrix6x6 state_covariance
         -string shared_frame_id
@@ -239,8 +239,6 @@ classDiagram
         -double zone2_threshold_s
         -UtilityWeights weights
         +classify_tto_zone(double tto_safe) uint8
-        +evaluate_hard_gate(PeerTelemetry peer) bool
-        +compute_utility(CandidateAssessment cand) double
         +recommend_handoff(string target_id) HandoffRecommendation
     }
 
@@ -250,6 +248,7 @@ classDiagram
         -float min_battery_gate
         +on_peer_heartbeat(StateHeartbeat msg) void
         +check_eligibility_gate(string peer_id) bool
+        +compute_utility(CandidateAssessment cand) double
         +evaluate_candidate_rank(Target3DState tgt) vector~CandidateRank~
     }
 
@@ -264,6 +263,7 @@ classDiagram
     }
 
     class IdentitySERVICE {
+        <<resident engine - loaded at startup>>
         -unique_ptr~CudaEngine~ osnet_engine
         -size_t embedding_dim
         -float similarity_threshold
@@ -289,11 +289,15 @@ classDiagram
         -string active_target_id
         -string active_transaction_id
         -TimerBase watchdog_timer
+        -TimerBase cutoff_timer
+        -TimerBase txn_timer
         -int missed_heartbeats_count
         +transition_to(uint8 new_state, string reason) void
         +arm_watchdog(int timeout_ms) void
         +on_heartbeat_received() void
         +on_watchdog_timeout() void
+        +on_confirm_received(HandoffConfirm c) void
+        +send_confirm_ack(uint64 new_epoch) void
         +send_confirmation(string peer_id) void
         +acknowledge_confirmation(uint64 new_epoch) void
     }
@@ -320,6 +324,16 @@ classDiagram
         +get_double(string param_name) double
         +get_int(string param_name) int
         +load_from_yaml(string file_path) bool
+    }
+
+    class TransportSERVICE {
+        -string rmw_implementation
+        +publish(Msg m, QosProfile q) void
+    }
+
+    class EvaluationSERVICE {
+        +aggregate_logs(string bag_dir) void
+        +compute_metrics() MetricsReport
     }
 
     PerceptionSERVICE --> EstimationSERVICE : I-01 Target Detection
@@ -405,6 +419,8 @@ classDiagram
 
     class StateHeartbeat {
         +string robot_id
+        +uint8 role
+        +uint64 ownership_epoch
         +float32 cpu_load
         +float32 battery_pct
         +uint8 nav_status
@@ -427,7 +443,7 @@ classDiagram
     HeaderCommon <|-- AcqStatus : Inherits Header
     HeaderCommon <|-- HandoffConfirm : Inherits Header
     HeaderCommon <|-- HandoffConfirmAck : Inherits Header
-    HandoffRequest *-- Target3DState : Encapsulates Kinematics
+    HandoffRequest ..> Target3DState : serialized as position, velocity, cov[21]
 </pre>
   </div>
 
@@ -534,6 +550,19 @@ classDiagram
           <td class="type-col">uint64</td>
           <td>epoch e + 1</td>
           <td>Owner release confirmation; activates ownership on Robot B (FR-54).</td>
+        </tr>
+        <tr>
+          <td rowspan="2"><code>StateHeartbeat.msg</code></td>
+          <td><code>role</code></td>
+          <td class="type-col">uint8</td>
+          <td>1=OWNER, 2=CANDIDATE, 3=STANDBY</td>
+          <td>Peer operational role; confirms active owner role at new epoch (FR-54).</td>
+        </tr>
+        <tr>
+          <td><code>ownership_epoch</code></td>
+          <td class="type-col">uint64</td>
+          <td>epoch e + 1</td>
+          <td>Current ownership epoch of transmitting robot.</td>
         </tr>
       </tbody>
     </table>

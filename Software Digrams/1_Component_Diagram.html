@@ -274,7 +274,8 @@ graph TB
 
     %% Layer C to A/B Integration (I-03, I-16)
     C10 -->|"I-03: Robot Pose & Covariance<br/>in 'map' frame (tf2)"| C03
-    C10 -->|"I-16: Shared-Frame Pose Update<br/>to Target Estimator"| C02
+    C10 -->|"I-16: Shared-Frame Pose + Covariance<br/>to Target Estimator"| C02
+    C10 -->|"I-16: sender_pose + sender_pose_cov<br/>for HANDOFF_REQUEST"| C06
 
     %% Layer A to B Trigger (I-04)
     C03 -->|"I-04: TTO Estimate & Uncertainty<br/>Predicted Trajectory in 'map'"| C04
@@ -284,7 +285,9 @@ graph TB
     C04 -->|"I-06: Handoff Recommendation<br/>Analytical Feasibility Context"| C09
     C09 -->|"I-07: Initiate Negotiation<br/>txn_id, target_id, receiver_id"| C06
     C06 -->|"I-08: Negotiation Outcome<br/>ACCEPT / REJECT / TIMEOUT"| C09
-    C09 -->|"I-09: Request Target Signature<br/>for Handoff Payload"| C07
+    C07 -->|"I-09: Cached Target Signature<br/>for Handoff Payload (txn_id)"| C09
+    C09 -->|"I-17: Start / Cancel Acquisition<br/>txn_id, spatial prior, epoch"| C08
+    C12 -.->|"Parameters: budgets, gates, thresholds"| C04
     C08 <-->|"I-10: Candidate Observation<br/>& Re-ID Verification Result"| C07
     C08 -->|"I-11: Acquisition Outcome<br/>SUCCESS / FAILURE / TIMEOUT"| C09
     C08 <-->|"I-12: Advisory Motion Request<br/>(C-10 Retains Safety Veto)"| C10
@@ -333,7 +336,7 @@ graph TB
   </div>
 
   <div class="matrix-container">
-    <div class="matrix-title">📋 Complete Architecture Interfaces Matrix (I-01 through I-16) — SAD v2.3 Aligned</div>
+    <div class="matrix-title">📋 Complete Architecture Interfaces Matrix (I-01 through I-17) — SAD v2.3 Aligned</div>
     <table>
       <thead>
         <tr>
@@ -456,6 +459,13 @@ graph TB
           <td>Pose update</td>
           <td>Robot pose & covariance in shared 'map' frame, frame_id, timestamp</td>
           <td>FR-53</td>
+        </tr>
+        <tr>
+          <td><strong>I-17</strong></td>
+          <td>C-09 &rarr; C-08</td>
+          <td>Target acquisition control</td>
+          <td>Start / Cancel Acquisition (txn_id, spatial prior, epoch)</td>
+          <td>FR-36, FR-37</td>
         </tr>
       </tbody>
     </table>

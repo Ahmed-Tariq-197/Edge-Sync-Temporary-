@@ -185,7 +185,7 @@ sequenceDiagram
         C09A ->> C09A: WATCHDOG TIMEOUT: ERR_CANDIDATE_DEAD
         C09A ->> C06A: Send HANDOFF_CANCEL (reason=CANDIDATE_DEAD)
         activate C06A
-        C06A -->> DDS: HANDOFF_CANCEL (best-effort)
+        C06A ->> DDS: HANDOFF_CANCEL (reason=CANDIDATE_DEAD, RELIABLE)
         deactivate C06A
         C09A ->> C11A: Log: HANDOFF_ABORTED (latency=300ms)
     end
@@ -193,12 +193,12 @@ sequenceDiagram
     Note over C09A: Bounded Recovery Phase (FR-56)
     rect rgb(30, 27, 75)
         C09A ->> C09A: State: COMMITTED to RECOVERY
-        alt Remaining T_TTO safe >= 1.23s AND Rank-2 exists
+        alt Eligible peer other than B AND T_TTO safe >= 1.23s
             C09A ->> C09A: State: RECOVERY to HANDOFF_CANDIDATE
-        else Two-UGV baseline: No other robot available
-            C09A ->> C09A: State: RECOVERY to TRACKING (Owner Retained)
-        else T_TTO safe < 1.23s (Zone 3 reached)
+        else Target lost
             C09A ->> C09A: State: RECOVERY to TERMINAL_FAILURE
+        else Two-UGV baseline, target visible
+            C09A ->> C09A: State: RECOVERY to TRACKING (Owner Retained, epoch e)
         end
         deactivate C09A
     end
@@ -223,7 +223,7 @@ sequenceDiagram
     participant C07B as C-07 Identity (Robot B)
     participant C09B as C-09 Ownership (Robot B)
 
-    Note over C09A,C09B: Robot B is in SEARCHING phase - Heartbeats at 10Hz
+    Note over C09A,C09B: Robot B is in SEARCHING / VERIFYING phase - Heartbeats at 10Hz
 
     rect rgb(69, 26, 3)
         activate C08B
@@ -242,24 +242,22 @@ sequenceDiagram
         deactivate C08B
         activate C09B
 
-        C09B ->> C09B: State: SEARCHING to IDLE
-        Note over C09B: Receiver reports failure via liveness channel
-        C09B ->> C06B: Report failure to owner via ACQ_STATUS
+        C09B ->> C09B: State: VERIFYING to IDLE
+        C09B ->> C06B: Send HANDOFF_CANCEL (reason=REID_MISMATCH)
         deactivate C09B
         activate C06B
 
-        C06B -->> DDS: ACQ_STATUS = FAILED (BEST_EFFORT)
+        C06B ->> DDS: HANDOFF_CANCEL (reason=REID_MISMATCH, RELIABLE)
         deactivate C06B
-        DDS -->> C09A: Failure notification received by owner watchdog
+        DDS ->> C06A: Deliver HANDOFF_CANCEL
+        activate C06A
+        C06A ->> C09A: Deliver HANDOFF_CANCEL
+        deactivate C06A
 
         activate C09A
         Note over C09A: C-09 OwnershipSERVICE is sole lifecycle authority (SAD v2.3)
         C09A ->> C09A: Disarm Watchdog and Cutoff
-        C09A ->> C06A: Issue HANDOFF_CANCEL (reason=REID_MISMATCH)
-        activate C06A
-        C06A ->> DDS: HANDOFF_CANCEL (RELIABLE)
-        deactivate C06A
-        C09A ->> C09A: State: COMMITTED to RECOVERY
+        C09A ->> C09A: State: IDENTITY_VERIFICATION to RECOVERY (owner retained, epoch e)
         C09A ->> C09A: Solo tracking continues - Wrong target avoided
         deactivate C09A
     end
@@ -268,7 +266,7 @@ sequenceDiagram
 
   <!-- Scenario 3: Negotiation Timeout -->
   <div class="section-label">⏱️ Scenario C: Negotiation Timeout (Unreachable Candidate)</div>
-  <p class="scenario-desc">Demonstrates deadline enforcement when a candidate receiver does not respond to HANDOFF_REQUEST within the allocated 60 ms budget.</p>
+  <p class="scenario-desc">Demonstrates deadline enforcement when a candidate receiver does not respond to HANDOFF_REQUEST within the allocated 80 ms budget.</p>
   <div class="diagram-container">
     <pre class="mermaid">
 %%{init: {'theme': 'dark', 'themeVariables': {'fontSize':'13px','actorTextColor':'#e2e8f0','actorBorder':'#94a3b8','actorBkg':'#1e293b','signalColor':'#94a3b8','signalTextColor':'#e2e8f0','noteBkgColor':'#1e293b','noteTextColor':'#cbd5e1','activationBorderColor':'#94a3b8','activationBkgColor':'#1e293b'}, 'sequence': {'showSequenceNumbers': true, 'mirrorActors': false}}}%%
@@ -290,17 +288,18 @@ sequenceDiagram
         C09A ->> C06A: I-07: Initiate negotiation with Robot B
         activate C06A
 
-        C06A ->> C06A: Start Negotiation Timer (delta_t_neg = 60ms)
+        C06A ->> C06A: Start Negotiation Timer (delta_t_neg = 80ms)
         C06A ->> DDS: HANDOFF_REQUEST (RELIABLE)
         Note over DDS: Wi-Fi packet dropped / Robot B off-channel
 
-        Note over C06A: 60ms elapsed... No response received!
+        Note over C06A: 80ms elapsed... No response received!
 
         C06A ->> C06A: NEGOTIATION_TIMEOUT (delta_t_neg exceeded)
+        C06A ->> DDS: HANDOFF_CANCEL (reason=TIMEOUT, RELIABLE)
         C06A ->> C09A: I-08: Negotiation FAILED (TIMEOUT)
         deactivate C06A
 
-        C09A ->> C11A: Log: NEGOTIATION_TIMEOUT (latency=60ms)
+        C09A ->> C11A: Log: NEGOTIATION_TIMEOUT (latency=80ms)
         C09A ->> C09A: State: NEGOTIATING to RECOVERY
         C09A ->> C09A: Resume tracking owner duties and evaluate alternative
         deactivate C09A

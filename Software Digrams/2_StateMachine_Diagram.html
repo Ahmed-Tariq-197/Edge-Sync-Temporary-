@@ -181,16 +181,16 @@
 
   <div class="rules-grid">
     <div class="rule-card">
-      <h3>🛡️ Invariant 1: Single Ownership</h3>
-      <p>Acceptance (<code>COMMITTED</code>) does <strong>never</strong> transfer ownership. Robot A remains sole exclusive tracking owner until explicit <code>HANDOFF_CONFIRM_ACK</code> completes. No duplicate ownership permitted (FR-47, FR-54).</p>
+      <h3>🛡️ Invariant 1: Single Ownership & Standby Handshake</h3>
+      <p>Acceptance (<code>COMMITTED</code>) <strong>never</strong> transfers ownership. Robot A remains sole exclusive tracking owner until explicit <code>HANDOFF_CONFIRM_ACK</code> completes and transitions to <code>STANDBY</code> only upon receiving telemetry indicating Robot B is active <code>OWNER</code> at epoch e+1. If ACK is lost, Robot B aborts and Robot A reclaims target after <code>T_claim</code> (FR-47, FR-54).</p>
     </div>
     <div class="rule-card">
       <h3>⏱️ Invariant 2: Bounded Time Budget</h3>
-      <p>Budget: <code>Δt_exec^max = 866ms</code>, <code>Δt_safety = 364ms</code> &rarr; <code>Δt_budget^max = 1230ms (1.23s)</code>. Acquisition hard cutoff is <strong>≤ 700ms</strong>. Zone 3 (&lt; 1.23s) strictly forbids new transactions (Math v2.3 §3.2).</p>
+      <p>Budget: <code>Δt_exec^max = 866ms</code>, <code>Δt_safety = 364ms</code> &rarr; <code>Δt_budget^max = 1230ms (1.23s)</code>. Acquisition hard cutoff is <strong>≤ 700ms</strong> (starts at ACCEPT). Zone 3 (&lt; 1.23s) strictly forbids new transactions (Math v2.3 §3.2, §7).</p>
     </div>
     <div class="rule-card">
-      <h3>🚨 Invariant 3: Anti-Deadlock Watchdog</h3>
-      <p>During acquisition, receiver streams <code>ACQ_STATUS</code> at 10 Hz. Three consecutive missed heartbeats (<code>τ_hb = 300ms</code>) trigger <code>ERR_CANDIDATE_DEAD</code> abort, saving &gt;400ms compared to waiting for the full timeout (FR-55).</p>
+      <h3>🚨 Invariant 3: Anti-Deadlock Liveness Watchdog</h3>
+      <p>During <code>ACQUISITION</code> and <code>IDENTITY_VERIFICATION</code>, receiver streams <code>ACQ_STATUS</code> at 10 Hz. Three consecutive missed heartbeats (<code>300ms</code>) trigger <code>ERR_CANDIDATE_DEAD</code> abort, preventing death lock and saving ≤400ms vs full cutoff (FR-55).</p>
     </div>
   </div>
 
@@ -207,48 +207,54 @@ stateDiagram-v2
 
     TRACKING: 🟢 TRACKING (Zone 1)
     TRACKING: Active tracking owner (epoch e)
-    TRACKING: T_TTO safe > 2.50s - Network silence
+    TRACKING: T_TTO^safe > 2.50s · Network silence
 
-    CANDIDATE: 🟡 HANDOFF_CANDIDATE (Zone 2)
-    CANDIDATE: 1.23s <= T_TTO safe <= 2.50s
-    CANDIDATE: Gate G(j) and Feasibility Check
+    HANDOFF_CANDIDATE: 🟡 HANDOFF_CANDIDATE (Zone 2)
+    HANDOFF_CANDIDATE: 1.23s <= T_TTO^safe <= 2.50s
+    HANDOFF_CANDIDATE: Gate G(j) & Feasibility Check
 
     NEGOTIATING: 🔵 NEGOTIATING
-    NEGOTIATING: P2P Request and Response (60ms)
+    NEGOTIATING: P2P Request & Response (80ms timeout)
 
     COMMITTED: 🟣 COMMITTED (Owner Retained)
-    COMMITTED: Monitoring 10Hz Watchdog (300ms) and Cutoff (700ms)
-    COMMITTED: Receiving ACQ_STATUS heartbeats from receiver
+    COMMITTED: Receiver accepted; A remains exclusive owner
 
-    AWAITING_VER: 🔍 AWAITING_CONFIRMATION
-    AWAITING_VER: Receiver reports ACQUIRED and Re-ID verified
-    AWAITING_VER: Owner awaits HANDOFF_CONFIRM message
+    ACQUISITION: 🔵 ACQUISITION
+    ACQUISITION: Monitoring 10Hz ACQ_STATUS (300ms watchdog) & 700ms cutoff
+
+    IDENTITY_VERIFICATION: 🟣 IDENTITY_VERIFICATION
+    IDENTITY_VERIFICATION: Peer Re-ID verification; 10Hz watchdog active (anti-death-lock)
 
     CONFIRMED: ✅ CONFIRMED (Epoch Handoff)
-    CONFIRMED: CONFIRM_ACK sent with epoch e+1
+    CONFIRMED: Recv CONFIRM (epoch e), reply CONFIRM_ACK (epoch e+1)
+
+    STANDBY: ⚪ STANDBY (Passive Tracking)
+    STANDBY: Transition upon STATE_HEARTBEAT(role=OWNER, epoch e+1)
 
     RECOVERY: ⚠️ RECOVERY (Local Fallback)
-    RECOVERY: Solo tracking / 2-UGV bounded failover
+    RECOVERY: Reclaim target after T_claim / Resume solo tracking
 
-    TERMINAL: ⛔ TERMINAL_FAILURE
-    TERMINAL: Zone 3 target loss recorded
+    TERMINAL_FAILURE: ⛔ TERMINAL_FAILURE
+    TERMINAL_FAILURE: Target lost & T_TTO^safe < 1.23s
 
-    TRACKING --> CANDIDATE : T_TTO safe <= 2.50s [Zone 2]
-    CANDIDATE --> TRACKING : T_TTO safe > 2.50s [Recovered]
-    CANDIDATE --> NEGOTIATING : Feasibility confirmed
-    CANDIDATE --> TRACKING : Infeasible / No receiver
+    TRACKING --> HANDOFF_CANDIDATE : T_TTO safe <= 2.50s [Zone 2]
+    HANDOFF_CANDIDATE --> TRACKING : T_TTO safe > 2.50s [Recovered]
+    HANDOFF_CANDIDATE --> NEGOTIATING : Feasibility confirmed
+    HANDOFF_CANDIDATE --> TRACKING : Infeasible / No receiver
     NEGOTIATING --> COMMITTED : Response = ACCEPT
-    NEGOTIATING --> RECOVERY : Response = REJECT or Timeout
-    COMMITTED --> AWAITING_VER : ACQ_STATUS = ACQUIRED received
-    COMMITTED --> RECOVERY : 3 Heartbeats missed (300ms)
-    COMMITTED --> RECOVERY : Timeout > 700ms
-    AWAITING_VER --> CONFIRMED : HANDOFF_CONFIRM received (epoch e)
-    AWAITING_VER --> RECOVERY : HANDOFF_CANCEL received / Re-ID Mismatch
-    CONFIRMED --> [*]
-    RECOVERY --> TRACKING : Resume solo tracking
-    RECOVERY --> CANDIDATE : Try Rank-2 (If T_TTO safe >= 1.23s)
-    RECOVERY --> TERMINAL : Target lost and T_TTO safe < 1.23s
-    TERMINAL --> [*]
+    NEGOTIATING --> RECOVERY : Response = REJECT / Timeout (80ms)
+    COMMITTED --> ACQUISITION : Peer begins acquisition (I-17)
+    ACQUISITION --> IDENTITY_VERIFICATION : ACQ_STATUS = ACQUIRED received
+    ACQUISITION --> RECOVERY : 3 missed heartbeats (300ms) / Timeout > 700ms
+    IDENTITY_VERIFICATION --> CONFIRMED : HANDOFF_CONFIRM received (epoch e)
+    IDENTITY_VERIFICATION --> RECOVERY : 3 missed heartbeats (300ms) / HANDOFF_CANCEL
+    CONFIRMED --> STANDBY : Peer reports role=OWNER & epoch e+1 (STATE_HEARTBEAT)
+    CONFIRMED --> RECOVERY : ACK lost / T_claim expired without peer heartbeat
+    STANDBY --> [*]
+    RECOVERY --> TRACKING : Resume solo tracking (reclaim target)
+    RECOVERY --> HANDOFF_CANDIDATE : Re-attempt (Rank-2 peer & T_TTO safe >= 1.23s)
+    RECOVERY --> TERMINAL_FAILURE : Target lost & T_TTO safe < 1.23s
+    TERMINAL_FAILURE --> [*]
 </pre>
   </div>
 
@@ -266,40 +272,40 @@ stateDiagram-v2
     IDLE: ⚪ IDLE / STANDBY
     IDLE: Standby tracking / 1Hz Telemetry
 
-    EVALUATING: 🟡 EVALUATING_REQUEST
-    EVALUATING: Check G(j) and Feasibility
+    EVALUATING: 🟡 EVALUATING
+    EVALUATING: Check Gate G(j) & Feasibility
 
     ACCEPTED: 🟢 ACCEPTED
     ACCEPTED: Send HANDOFF_RESPONSE = ACCEPT
 
     SLEWING: 🔵 SLEWING (10Hz Liveness)
-    SLEWING: Advisory motion to C-10
+    SLEWING: Advisory slew to C-10; emit ACQ_STATUS
 
     SEARCHING: 🔵 SEARCHING (10Hz Liveness)
-    SEARCHING: Visual search with cross-robot prior
+    SEARCHING: Visual search with spatial prior; emit ACQ_STATUS
 
-    VERIFYING: 🟣 VERIFYING_IDENTITY
-    VERIFYING: Resident OSNet Re-ID inference
+    VERIFYING: 🟣 VERIFYING (10Hz Liveness)
+    VERIFYING: Resident OSNet Re-ID; emit ACQ_STATUS (anti-death-lock)
 
     AWAITING_ACK: ⏳ AWAITING_ACK
-    AWAITING_ACK: Send CONFIRM, wait for CONFIRM_ACK
+    AWAITING_ACK: Send CONFIRM (epoch e), wait CONFIRM_ACK (3x30ms retry)
 
-    NEW_OWNER: ✅ TRACKING_OWNER (Epoch e+1)
-    NEW_OWNER: Activated upon receiving ACK
+    TRACKING: ✅ TRACKING (Epoch e+1)
+    TRACKING: Activated on ACK receipt; publish role=OWNER
 
     IDLE --> EVALUATING : HANDOFF_REQUEST received
-    EVALUATING --> ACCEPTED : Gate passed and Feasible
-    EVALUATING --> IDLE : Infeasible / Overloaded
-    ACCEPTED --> SLEWING : Motion execution started
-    SLEWING --> SEARCHING : Slew complete / In view
-    SLEWING --> IDLE : Cumulative acquisition timeout exceeds 700ms
-    SEARCHING --> VERIFYING : Candidate detected
-    SEARCHING --> IDLE : Cumulative acquisition timeout exceeds 700ms
-    VERIFYING --> AWAITING_ACK : Re-ID match >= threshold
-    VERIFYING --> IDLE : Identity mismatch
-    AWAITING_ACK --> NEW_OWNER : CONFIRM_ACK received
-    AWAITING_ACK --> IDLE : ACK timeout exceeded
-    NEW_OWNER --> [*]
+    EVALUATING --> ACCEPTED : Gate passed & Feasible
+    EVALUATING --> IDLE : Infeasible / Overloaded (send REJECT)
+    ACCEPTED --> SLEWING : Acquisition triggered (I-17)
+    SLEWING --> SEARCHING : Slew complete / Target in FOV
+    SLEWING --> IDLE : Acquisition timeout (> 700ms)
+    SEARCHING --> VERIFYING : Candidate detected (ACQUIRED)
+    SEARCHING --> IDLE : Acquisition timeout (> 700ms)
+    VERIFYING --> AWAITING_ACK : Re-ID match >= threshold (send CONFIRM)
+    VERIFYING --> IDLE : Identity mismatch (send CANCEL)
+    AWAITING_ACK --> TRACKING : CONFIRM_ACK received (epoch e+1)
+    AWAITING_ACK --> IDLE : ACK timeout (send CANCEL, abort)
+    TRACKING --> [*]
 </pre>
   </div>
 

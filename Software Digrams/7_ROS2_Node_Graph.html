@@ -204,11 +204,11 @@ graph TB
         direction TB
         subgraph C01_NODE["C-01 PerceptionSERVICE Node"]
             YOLO["<b>yolo_detector_node</b><br/><small>TensorRT FP16</small>"]
-            TRACKER["<b>target_tracker_node</b><br/><small>DeepSORT Association</small>"]
+            TRACKER["<b>target_tracker_node</b><br/><small>ByteTrack (C-12 param)</small>"]
             DEPTH_PROC["<b>depth_deproject_node</b><br/><small>Central 50% Median &rarr; 3D</small>"]
         end
         subgraph C02_NODE["C-02 EstimationSERVICE Node"]
-            KF["<b>target_kf_estimator_node</b><br/><small>6-DoF EKF in 'map' frame</small>"]
+            KF["<b>target_kf_estimator_node</b><br/><small>6-DoF constant-velocity KF in 'map', R_total from I-16, tf2</small>"]
         end
         subgraph C03_NODE["C-03 PredictionSERVICE Node"]
             PRED["<b>trajectory_predictor_node</b><br/><small>Constant Velocity Propagator</small>"]
@@ -270,7 +270,9 @@ graph TB
     TRACKER -->|"/tracks"| DEPTH_PROC
     DEPTH_PROC -->|"/target/detection_3d"| KF
     C10_NODE -->|"/robot/pose_shared (in 'map' frame - I-16)"| KF
-    KF -->|"/target/state (TargetState.msg)"| PRED
+    C10_NODE -->|"/robot/pose_shared (I-03)"| PRED
+    C10_NODE -->|"/robot/pose_shared (I-03)"| TTO
+    KF -->|"/target/state (Target3DState.msg)"| PRED
     PRED -->|"/predicted_path"| TTO
 
     %% Process 1 to Process 2
@@ -281,22 +283,26 @@ graph TB
     DECISION -->|"/handoff/recommendation (I-06)"| FSM
     FSM -->|"/handoff/initiate (I-07)"| NEGOT
     NEGOT -->|"/handoff/outcome (I-08)"| FSM
+    FSM <-->|"/protocol/tx, /protocol/rx (I-15)"| NEGOT
 
     %% Process 2 to Process 3
-    FSM -->|"/acquisition/trigger"| ACQ
+    FSM -->|"/acquisition/trigger (I-17, new)"| ACQ
+    ACQ -->|"/acq/status 10Hz (I-14)"| FSM
     ACQ <-->|"/identity/verify (IdentityVerify.srv - I-10)"| REID
     ACQ -->|"/acquisition/result (I-11)"| FSM
+    REID -->|"/identity/signature (I-09)"| FSM
 
     %% Process 3 to Process 4 (Navigation Advisory)
     ACQ -->|"/nav/goal_advisory (I-12)"| C10_NODE
 
-    %% Process 2 & 3 to DDS Wire
+    %% Process 2 to DDS Wire (Routed via NEGOT)
     NEGOT <--> DDS_REQ
     NEGOT <--> DDS_RES
-    FSM <--> DDS_CAN
-    ACQ --> DDS_ACQ
-    FSM <--> DDS_CONF
-    FSM <--> DDS_ACK
+    NEGOT <--> DDS_CAN
+    NEGOT <--> DDS_CONF
+    NEGOT <--> DDS_ACK
+    NEGOT -->|"publish ACQ_STATUS"| DDS_ACQ
+    DDS_ACQ -->|"peer ACQ_STATUS: owner watchdog input (FR-55)"| NEGOT
     RECEIVER <--> DDS_BEAT
 
     %% Observability
