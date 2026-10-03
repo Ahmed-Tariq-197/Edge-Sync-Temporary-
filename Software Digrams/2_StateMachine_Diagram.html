@@ -244,11 +244,12 @@ stateDiagram-v2
     NEGOTIATING --> COMMITTED : ACCEPT (arm watchdog t_last_good = t_ACCEPT, cutoff 700ms, T_txn 886ms)
     NEGOTIATING --> RECOVERY : Response = REJECT / Timeout (80ms)
     COMMITTED --> ACQUISITION : Peer begins acquisition (I-17)
+    COMMITTED --> RECOVERY : HANDOFF_CANCEL / Abort by A
     ACQUISITION --> IDENTITY_VERIFICATION : ACQ_STATUS = ACQUIRED received
     ACQUISITION --> RECOVERY : 3 missed heartbeats (300ms) / Timeout > 700ms
     IDENTITY_VERIFICATION --> CONFIRMED : HANDOFF_CONFIRM received (epoch e)
     IDENTITY_VERIFICATION --> RECOVERY : 3 missed heartbeats (300ms) / HANDOFF_CANCEL
-    CONFIRMED --> STANDBY : Peer OWNER_CLAIM(epoch e+1, txn T)
+    CONFIRMED --> STANDBY : OWNER_CLAIM(role=OWNER, epoch e+1)
     CONFIRMED --> RECOVERY : HANDOFF_CANCEL(ACK_TIMEOUT) or T_claim 200ms expired / reclaim at epoch e+2
     STANDBY --> IDLE_RECEIVER : (STANDBY equals IDLE of Receiver FSM)
     RECOVERY --> TRACKING : Resume solo tracking (reclaim target)

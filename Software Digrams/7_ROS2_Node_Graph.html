@@ -182,7 +182,7 @@
     <p>Composable Node Architecture, Topics, Custom Interfaces & DDS QoS Profiles · SAD v2.3, SRS v1.3 & Math v2.3</p>
     <div class="badge-bar">
       <span class="badge">ROS 2 Humble Composable Nodes</span>
-      <span class="badge">Zero-Copy Intra-Process Transport</span>
+      <span class="badge">Shared Memory 1-Copy IPC Transport</span>
       <span class="badge">FastDDS Binary CDR Serialization</span>
       <span class="badge">Complete Monotonic QoS Specs</span>
     </div>
@@ -200,7 +200,7 @@ graph TB
         ODOM_IN["/chassis/odom<br/><small>nav_msgs/Odometry (STM32)</small>"]
     end
 
-    subgraph PROCESS_1["📦 Process 1: Perception & Kinematics (30Hz Target)"]
+    subgraph PROCESS_1["📦 Process 1: Perception & Kinematics (Shared Memory 1-Copy IPC · 30Hz Target)"]
         direction TB
         subgraph C01_NODE["C-01 PerceptionSERVICE Node"]
             YOLO["<b>yolo_detector_node</b><br/><small>TensorRT FP16</small>"]
@@ -273,6 +273,7 @@ graph TB
     C10_NODE -->|"/robot/pose_shared (in 'map' frame - I-16)"| KF
     C10_NODE -->|"/robot/pose_shared (I-03)"| PRED
     C10_NODE -->|"/robot/pose_shared (I-03)"| TTO
+    C10_NODE -->|"/robot/pose_shared (sender_pose)"| NEGOT
     KF -->|"/target/state (Target3DState.msg)"| PRED
     PRED -->|"/predicted_path"| TTO
 

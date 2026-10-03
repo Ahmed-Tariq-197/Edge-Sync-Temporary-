@@ -62,7 +62,7 @@ s(k+1) = F s(k) + w,   w ~ N(0, Q_target)</div>
 J_c = ∂p_m/∂p_c ,   J_ξ = ∂p_m/∂ξ
 Q_total = Q_target                       (target acceleration noise only)</div>
 <p>This keeps the Mahalanobis gate from rejecting valid matches because of chassis motion. The deterministic transform is applied once (via <code>tf2</code>, §6); this section only propagates its uncertainty, so ego-motion is not double-counted.</p>
-<p><strong>Cross-robot gating (SRS FR-53):</strong> A's transferred covariance already contains A's localization uncertainty (via <span class="math-inline">R_{total}</span>). B's own pose uncertainty enters B's measurement <span class="math-inline">R_{total,B}</span>. The B-side Mahalanobis gate therefore uses <span class="math-inline">S = H \cdot \Sigma_{A,pred}(t_B) \cdot H^T + R_{total,B}</span>, with no extra additive pose terms.</p>
+<p><strong>Cross-robot gating (SRS FR-53):</strong> A's transferred covariance already contains A's localization uncertainty (via <span class="math-inline">R_{total}</span>). B's own pose uncertainty enters B's measurement <span class="math-inline">R_{total,B}</span>. The B-side Mahalanobis gate uses <span class="math-inline">S = H \cdot \Sigma_{A,pred}(t_B) \cdot H^T + R_{total,B}</span> without adding <span class="math-inline">\Sigma_\xi</span> directly to positions.</p>
 
 <h3>1.3 3D FOV Frustum and Time-to-Occlusion</h3>
 <p>Let <span class="math-inline">α_fov</span>, <span class="math-inline">β_fov</span> be the horizontal and vertical half-angles of the <em>effective</em> FOV (the narrower of the aligned RGB and depth FOVs):</p>
@@ -146,7 +146,7 @@ w = (0.5, 0.3, 0.2),  w1 + w2 + w3 = 1   (configurable via C-12)</div>
 <p><strong>Admission order:</strong></p>
 <ol>
 <li>Check <code>protocol_version</code>, <code>frame_id</code>, <code>receiver_id</code> (drop if not self or *).</li>
-<li>Transaction lookup: unknown &rarr; drop, <code>CLOSED</code> &rarr; drop, <code>CONFIRMED</code> + duplicate <code>CONFIRM</code> &rarr; replay stored ACK (idempotent; do NOT restart <span class="math-inline">T_{claim}</span>).</li>
+<li>Transaction lookup: unknown &rarr; If msg is HANDOFF_REQUEST, create OPEN record; else drop + log, <code>CLOSED</code> &rarr; drop, <code>CONFIRMED</code> + duplicate <code>CONFIRM</code> &rarr; replay stored ACK (idempotent; do NOT restart <span class="math-inline">T_{claim}</span>).</li>
 <li>Epoch check.</li>
 <li>Sequence check.</li>
 </ol>
@@ -196,7 +196,13 @@ float32 battery
 # HandoffConfirm.msg  (Header +)  float32 reid_similarity; string frame_id;
 #                                 float32[3] position; float32[21] cov_upper_triangle
 # HandoffConfirmAck   (Header +)  uint64 new_epoch
-# StateHeartbeat.msg  (Header +)  uint8 role; uint64 ownership_epoch</div>
+
+# StateHeartbeat.msg (1 Hz telemetry, BEST_EFFORT)
+HandoffHeader header
+uint8 role
+float32 cpu_load
+float32 battery_pct
+uint8 nav_status</div>
 <p>The request payload is dominated by the 2048-byte embedding and totals roughly <strong>2.5–3 KB</strong> including header strings. This exceeds a single Wi-Fi MTU, so FastDDS fragmentation and reliable retransmission apply; the expected transfer time (target &lt; 2 ms) is a Tier 2 measurement target, not a guarantee. If loss sensitivity requires, the embedding can be sent as FP16 or INT8 (≈ 0.5–1 KB) after verifying the accuracy impact.</p>
 <p>Spatial fields without a valid <code>frame_id</code> are rejected by the receiver.</p>
 </section>

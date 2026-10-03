@@ -427,13 +427,10 @@ classDiagram
     }
 
     class StateHeartbeat {
-        +string robot_id
         +uint8 role
-        +uint64 ownership_epoch
         +float32 cpu_load
         +float32 battery_pct
         +uint8 nav_status
-        +int64 stamp_utc_ns
     }
 
     class Target3DState {
@@ -453,6 +450,7 @@ classDiagram
     HandoffHeader *-- HandoffConfirm : header
     HandoffHeader *-- HandoffConfirmAck : header
     HandoffHeader *-- OwnershipEvent : header
+    HandoffHeader *-- StateHeartbeat : header
     HandoffRequest ..> Target3DState : serialized as position, velocity, cov[21]
 </pre>
   </div>
@@ -575,17 +573,29 @@ classDiagram
           <td>Burst transmission counter (3 copies 20ms apart) for reliable T_claim gating.</td>
         </tr>
         <tr>
-          <td rowspan="2"><code>StateHeartbeat.msg</code></td>
+          <td rowspan="4"><code>StateHeartbeat.msg</code></td>
           <td><code>role</code></td>
           <td class="type-col">uint8</td>
           <td>1=OWNER, 2=CANDIDATE, 3=STANDBY</td>
           <td>Peer operational role; confirms active owner role at new epoch (FR-54).</td>
         </tr>
         <tr>
-          <td><code>ownership_epoch</code></td>
-          <td class="type-col">uint64</td>
-          <td>epoch e + 1</td>
-          <td>Current ownership epoch of transmitting robot.</td>
+          <td><code>cpu_load</code></td>
+          <td class="type-col">float32</td>
+          <td>Percentage [0.0, 100.0]</td>
+          <td>Candidate receiver CPU load for Gate G(j) evaluation.</td>
+        </tr>
+        <tr>
+          <td><code>battery_pct</code></td>
+          <td class="type-col">float32</td>
+          <td>Percentage [0.0, 100.0]</td>
+          <td>Candidate receiver battery charge percentage for Gate G(j) evaluation.</td>
+        </tr>
+        <tr>
+          <td><code>nav_status</code></td>
+          <td class="type-col">uint8</td>
+          <td>1=AVAILABLE, 0=DEGRADED</td>
+          <td>Navigation stack availability status for Gate G(j) evaluation.</td>
         </tr>
       </tbody>
     </table>

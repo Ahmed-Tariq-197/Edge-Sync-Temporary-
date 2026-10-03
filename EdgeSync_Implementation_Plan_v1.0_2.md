@@ -398,9 +398,9 @@ flowchart TD
   2. Execute all 7 pre-registered experimental scenarios (Scenarios A through G).
   3. Run offline evaluation pipeline (`run_offline_evaluation.py`):
      * Strictly evaluate Experimental Design §8 criteria: `HSR >= 90%, IDF1 within 5 pp, median margin > 0, >= 15 FPS, memory < 80%`. No relaxations allowed.
-     * Verify Dual-Ownership Violations $\equiv 0$.
+     * Verify Dual-Ownership Violations: 0 UNBOUNDED dual-ownership violations (transient overlap <= T_claim is mathematically permitted and expected).
      * Verify Zero Loss of Target Identity.
-* **Quality Gate 10:** Complete statistical validation report with confidence intervals meeting all pre-registered success criteria in SRS v1.3 and Experimental Design v1.1.
+* **Quality Gate 10:** Complete statistical validation report with confidence intervals meeting all pre-registered success criteria in SRS v1.3 and Experimental Design v1.1, including 0 UNBOUNDED dual-ownership violations (transient overlap <= T_claim is mathematically permitted and expected).
 
 ---
 
