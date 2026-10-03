@@ -14,6 +14,7 @@ const files = [
   '7_ROS2_Node_Graph.html',
   '8_Class_Diagram_Data_Model.html',
   '9_Timing_Diagram.html',
+  '10_Boxes_Diagram.html',
 ];
 
 function getBrowserPath() {
@@ -93,3 +94,4 @@ function getBrowserPath() {
   await browser.close();
   console.log('\n🎉 ALL 9 DIAGRAMS SAVED AS HIGH-RES PNG!');
 })();
+

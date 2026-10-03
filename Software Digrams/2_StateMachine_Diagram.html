@@ -223,7 +223,7 @@ stateDiagram-v2
     ACQUISITION: Monitoring 10Hz ACQ_STATUS (300ms watchdog) & 700ms cutoff
 
     IDENTITY_VERIFICATION: 🟣 IDENTITY_VERIFICATION
-    IDENTITY_VERIFICATION: Peer Re-ID verification; 10Hz watchdog active (anti-death-lock)
+    IDENTITY_VERIFICATION: Peer Re-ID verification; 10Hz watchdog active (anti deadlock)
 
     CONFIRMED: ✅ CONFIRMED (Epoch Handoff)
     CONFIRMED: Recv CONFIRM (epoch e), reply CONFIRM_ACK (epoch e+1)
@@ -286,7 +286,7 @@ stateDiagram-v2
     SEARCHING: Visual search with spatial prior; emit ACQ_STATUS
 
     VERIFYING: 🟣 VERIFYING (10Hz Liveness)
-    VERIFYING: Resident OSNet Re-ID; emit ACQ_STATUS (anti-death-lock)
+    VERIFYING: Resident OSNet Re-ID; emit ACQ_STATUS (anti deadlock)
 
     AWAITING_ACK: ⏳ AWAITING_ACK
     AWAITING_ACK: Send CONFIRM (epoch e), wait CONFIRM_ACK (3x30ms retry)

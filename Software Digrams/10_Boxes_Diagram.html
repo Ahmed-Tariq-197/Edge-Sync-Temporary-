@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EdgeSync: System at a Glance</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f3f5f8;--card:#fff;--text:#18212b;--muted:#5b6776;--line:#c5ced9;
+--a:#0369a1;--abg:#e1f1fb;--b:#6d28d9;--bbg:#eee8fd;--c:#047857;--cbg:#dcf5ea;--d:#b45309;--dbg:#fdeed6;
+--key:#fff4cc;--keyb:#c98a00;--red:#b91c1c}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e141b;--card:#18212b;--text:#e6ecf2;--muted:#9aa7b6;--line:#34414f;
+--a:#5cc0f2;--abg:#10293a;--b:#b79cff;--bbg:#221a3d;--c:#4fd6a0;--cbg:#0f2e24;--d:#f0b25a;--dbg:#35260f;--key:#3a3010;--keyb:#e2ad2f;--red:#ff8a8a}}
+:root[data-theme="dark"]{--bg:#0e141b;--card:#18212b;--text:#e6ecf2;--muted:#9aa7b6;--line:#34414f;
+--a:#5cc0f2;--abg:#10293a;--b:#b79cff;--bbg:#221a3d;--c:#4fd6a0;--cbg:#0f2e24;--d:#f0b25a;--dbg:#35260f;--key:#3a3010;--keyb:#e2ad2f;--red:#ff8a8a}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;line-height:1.4}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 40px}
+h1{font-size:28px;margin:0 0 4px;letter-spacing:-.3px}
+.sub{color:var(--muted);margin:0 0 18px;font-size:15px}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;font-weight:600}
+.flow span.s{padding:3px 9px;border-radius:999px}
+.flow .f1{background:var(--abg);color:var(--a)}.flow .f2{background:var(--bbg);color:var(--b)}.flow .f3{background:var(--dbg);color:var(--d)}
+.flow i{font-style:normal;color:var(--muted)}
+.hw{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:18px 0 0}
+.chip{background:var(--card);border:1px dashed var(--line);border-radius:8px;padding:6px 12px;font-size:13px;color:var(--muted)}
+.dn{text-align:center;color:var(--muted);font-size:13px;margin:6px 0}
+.dn b{color:var(--text)}
+.robot{border:2px solid var(--text);border-radius:16px;padding:12px;background:var(--card)}
+.rt{font-weight:700;font-size:16px;margin:0 0 10px}
+.rt small{font-weight:400;color:var(--muted)}
+.band{border-radius:12px;padding:10px 12px;border-left:6px solid}
+.band h2{font-size:15px;margin:0 0 8px}
+.ba{background:var(--abg);border-color:var(--a)}.ba h2{color:var(--a)}
+.bb{background:var(--bbg);border-color:var(--b)}.bb h2{color:var(--b)}
+.bc{background:var(--cbg);border-color:var(--c)}.bc h2{color:var(--c)}
+.row{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px}
+.row+.row{margin-top:10px}
+.bx{flex:1 1 150px;min-width:140px;background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:8px 10px}
+.ba .bx{border-color:var(--a)}.bb .bx{border-color:var(--b)}.bc .bx{border-color:var(--c)}
+.bx .id{font-size:11.5px;color:var(--muted);font-family:Consolas,monospace}
+.bx .n{font-weight:700;font-size:15px}
+.bx .d{font-size:12.5px;color:var(--muted)}
+.bx.key{background:var(--key);border:2.5px solid var(--keyb)}
+.ar{align-self:center;color:var(--muted);font-size:20px;flex:0 0 auto}
+.lab{align-self:center;font-size:12.5px;color:var(--muted);flex:0 0 auto}
+.gap{height:8px}
+.net{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin-top:12px}
+.net .bx{border-color:var(--d);background:var(--dbg)}
+.peer{flex:1 1 220px;border:2px solid var(--text);border-radius:12px;padding:8px 12px;background:var(--card)}
+.peer .n{font-weight:700}.peer .d{font-size:12.5px;color:var(--muted)}
+.off{border-style:dashed!important;background:transparent!important}
+.zones{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px}
+.z{border-radius:10px;padding:8px 10px;font-size:13px;text-align:center}
+.z b{display:block;font-size:14px}
+.z1{background:var(--cbg);color:var(--c)}.z2{background:var(--dbg);color:var(--d)}.z3{background:var(--card);border:1.5px solid var(--red);color:var(--red)}
+.rules{margin:14px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}
+.rules li{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px}
+.rules b{color:var(--keyb)}
+.leg{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;font-size:12.5px;color:var(--muted)}
+.leg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+@media(max-width:560px){h1{font-size:22px}.zones{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>EdgeSync: System at a Glance</h1>
+<p class="sub">Every UGV runs the same 14 components. The robot that sees the target owns it until the other robot proves it has it.</p>
+
+<div class="flow" aria-label="End-to-end flow">
+<span class="s f1">1 See</span><i>→</i><span class="s f1">2 Predict time-to-loss</span><i>→</i><span class="s f2">3 Decide</span><i>→</i><span class="s f2">4 Ask Robot B</span><i>→</i><span class="s f3">5 B finds + verifies target</span><i>→</i><span class="s f3">6 Ownership moves to B</span>
+</div>
+
+<div class="hw">
+<span class="chip">📷 RGB-D camera</span><span class="chip">📡 LiDAR 2D</span><span class="chip">⚙️ IMU + wheel encoders</span><span class="chip">📶 5 GHz Wi-Fi</span>
+</div>
+<div class="dn">↓ <b>sensor data</b> ↓</div>
+
+<div class="robot">
+<p class="rt">🤖 Robot A: current owner <small>(Jetson Orin Nano, same stack on Robot B)</small></p>
+
+<div class="band ba">
+<h2>Layer A: See and predict</h2>
+<div class="row">
+<div class="bx"><div class="id">C-01</div><div class="n">Perception</div><div class="d">Detects and tracks the target (YOLO)</div></div><span class="ar">→</span>
+<div class="bx"><div class="id">C-02</div><div class="n">Estimation</div><div class="d">Target 3D position and speed in the shared map</div></div><span class="ar">→</span>
+<div class="bx"><div class="id">C-03</div><div class="n">Prediction</div><div class="d">Time-to-Occlusion (TTO): how long until it is lost</div></div>
+</div>
+</div>
+
+<div class="dn">↓ <b>TTO + uncertainty</b> ↓</div>
+
+<div class="band bb">
+<h2>Layer B: Decide and hand off</h2>
+<div class="row">
+<div class="bx"><div class="id">C-05</div><div class="n">Receiver</div><div class="d">Is Robot B available and fit?</div></div><span class="ar">→</span>
+<div class="bx"><div class="id">C-04</div><div class="n">Decision</div><div class="d">Is there enough time? Recommends handoff</div></div><span class="ar">→</span>
+<div class="bx key"><div class="id">C-09</div><div class="n">Ownership (the brain)</div><div class="d">State machine, epochs, only authority on who owns the target</div></div><span class="ar">⇄</span>
+<div class="bx"><div class="id">C-06</div><div class="n">Negotiation</div><div class="d">Request, response, confirm messages to Robot B</div></div>
+</div>
+<div class="row">
+<span class="lab">Receiver path, runs on Robot B:</span>
+<div class="bx"><div class="id">C-08</div><div class="n">Acquisition</div><div class="d">Slew, search, lock; sends 10 Hz heartbeat</div></div><span class="ar">⇄</span>
+<div class="bx"><div class="id">C-07</div><div class="n">Identity</div><div class="d">Re-ID (OSNet): is it the same person?</div></div>
+</div>
+</div>
+
+<div class="gap"></div>
+
+<div class="band bc">
+<h2>Layer C: Platform and support</h2>
+<div class="row">
+<div class="bx key"><div class="id">C-10</div><div class="n">Navigation</div><div class="d">Pose in the shared map; final motion and safe-stop authority</div></div>
+<div class="bx"><div class="id">C-11</div><div class="n">Monitoring</div><div class="d">Timestamped event and resource logs</div></div>
+<div class="bx"><div class="id">C-12</div><div class="n">Configuration</div><div class="d">All budgets and thresholds in one place</div></div>
+</div>
+</div>
+</div>
+
+<div class="dn">↕ <b>metadata only (about 2.5 KB request, no video)</b> ↕</div>
+
+<div class="net">
+<div class="bx"><div class="id">C-13</div><div class="n">Transport</div><div class="d">FastDDS peer-to-peer over Wi-Fi, no central server</div></div>
+<div class="peer"><div class="n">🤖 Robot B: candidate receiver</div><div class="d">Same C-01 to C-13. Becomes the new owner at epoch e+1.</div></div>
+<div class="bx off"><div class="id">C-14</div><div class="n">Evaluation</div><div class="d">Offline only: metrics vs motion-capture ground truth</div></div>
+</div>
+
+<div class="zones">
+<div class="z z1"><b>Zone 1: tracking</b>safe TTO above 2.50 s, no network traffic</div>
+<div class="z z2"><b>Zone 2: handoff window</b>safe TTO from 1.23 s to 2.50 s</div>
+<div class="z z3"><b>Zone 3: too late</b>below 1.23 s, no new handoff</div>
+</div>
+
+<ul class="rules">
+<li><b>Accept is not ownership.</b> Robot A stays owner until Robot B confirms and A replies with epoch e+1.</li>
+<li><b>Dead receiver detection.</b> 10 Hz heartbeat; 3 misses (300 ms) abort the handoff.</li>
+<li><b>Hard time limits.</b> Acquisition at most 700 ms; total budget 1230 ms.</li>
+<li><b>Safety stays local.</b> C-10 can veto any motion request from C-08.</li>
+</ul>
+
+<div class="leg">
+<span><i style="background:var(--a)"></i>Layer A: perception</span>
+<span><i style="background:var(--b)"></i>Layer B: coordination</span>
+<span><i style="background:var(--c)"></i>Layer C: platform</span>
+<span><i style="background:var(--d)"></i>Cross-robot</span>
+<span><i style="background:var(--keyb)"></i>Highlighted: authority</span>
+</div>
+</div>
+</body>
+</html>
