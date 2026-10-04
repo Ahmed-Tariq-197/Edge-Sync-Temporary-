@@ -1,0 +1,8 @@
+# EdgeSync Service: IdentityVerify.srv (I-10 Candidate Verification Interface)
+string transaction_id                     # Active transaction identifier
+sensor_msgs/Image candidate_crop          # Bounding-box image crop from camera
+float32[512] reference_feature_vector     # Reference Re-ID embedding from Robot A
+---
+bool match                                # True if similarity >= threshold and spatial gate passes
+float32 similarity                        # Cosine similarity score [0.0 - 1.0]
+string message                            # Status description or error reason

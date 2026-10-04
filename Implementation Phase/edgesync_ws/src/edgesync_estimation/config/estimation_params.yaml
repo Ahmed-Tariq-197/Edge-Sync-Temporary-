@@ -1,0 +1,29 @@
+# EdgeSync State Estimation and TTO Prediction Parameters
+# ZERO-HARDCODING MANDATE: All filters, process noise priors, and FOV thresholds injected via parameters.
+
+estimation_params:
+  ros__parameters:
+    # Coordinate Frames
+    shared_map_frame: "map"
+    camera_optical_frame: "camera_color_optical_frame"
+    base_link_frame: "base_link"
+
+    # 6-DoF Target EKF Kinematic Priors
+    ekf_process_accel_noise_q: 0.80     # Continuous target acceleration noise spectral density (m^2/s^3)
+    ekf_init_pos_var: 0.25              # Initial position variance prior (m^2)
+    ekf_init_vel_var: 1.00              # Initial velocity variance prior ((m/s)^2)
+    ekf_publish_rate_hz: 30.0           # EKF state estimation publish frequency
+
+    # Ego-Motion Covariance Propagation
+    enable_ego_covariance: true         # Propagate J_xi * Sigma_xi * J_xi^T into R_total
+    default_robot_pos_sigma: 0.05       # Default AMCL/SLAM planar position std dev (m)
+    default_robot_yaw_sigma_deg: 1.5    # Default AMCL/SLAM heading std dev (deg)
+
+    # Analytical TTO Frustum Predictor
+    tto_hfov_deg: 60.0                  # Effective camera horizontal FOV (deg)
+    tto_vfov_deg: 49.5                  # Effective camera vertical FOV (deg)
+    tto_min_range_m: 0.40               # Near clipping plane (m)
+    tto_max_range_m: 5.50               # Far boundary (m)
+    tto_k_tau_safety: 2.0               # Lower bound multiplier (T_safe = T_hat - k_tau * sigma)
+    tto_prediction_horizon_s: 4.0       # Forward integration horizon (s)
+    tto_dt_step_s: 0.05                 # Raycast forward projection step (s)

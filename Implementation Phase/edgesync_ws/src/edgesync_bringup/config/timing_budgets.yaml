@@ -1,0 +1,27 @@
+# EdgeSync Deterministic Timing Registers & Budgets (SAD v2.3 & Master Plan v1.0 Appendix)
+# STRICT ZERO-HARDCODING MANDATE: All nodes consume timing parameters from this file.
+
+timing_budgets:
+  ros__parameters:
+    dt_dec_ms: 20                      # Decision + feasibility budget (ms)
+    dt_neg_ms: 60                      # P2P negotiation network budget (ms)
+    t_neg_timeout_ms: 80               # Hard negotiation cutoff (ms)
+    dt_acq_ms: 600                     # Receiver slew / acquisition nominal (ms)
+    t_acq_cutoff_ms: 700               # Hard acquisition timeout (ms)
+    dt_id_ms: 120                      # Identity verification latency budget (ms)
+    dt_conf_ms: 66                     # Track establishment & CONFIRM/CONFIRM_ACK exchange (ms)
+    sigma_total_ms: 120                # Aggregate execution standard deviation (ms)
+    delta_sync_ms: 2                   # PTP clock sync maximum offset (ms)
+    t_txn_ms: 886                      # Total transaction window (ms)
+    watchdog_period_ms: 100            # Liveness heartbeat period (10 Hz = 100 ms)
+    watchdog_max_missed: 3             # 3 missed heartbeats -> cutoff (300 ms)
+    t_ack_ms: 100                      # Receiver local monotonic confirmation ACK wait window (ms)
+    t_claim_ms: 200                    # Sender local monotonic ownership claim wait window (ms)
+    confirm_retry_count: 3             # Number of CONFIRM retries
+    confirm_retry_period_ms: 30        # Spacing between CONFIRM retries (ms)
+    owner_claim_burst: 3               # Number of OWNER_CLAIM copies in burst
+    owner_claim_burst_period_ms: 20    # Spacing between OWNER_CLAIM copies (ms)
+    owner_claim_latency_budget_ms: 60  # Latency budget for claim burst delivery (ms)
+    txn_tombstone_ttl_ms: 10000        # Retention time for CLOSED transaction records (10 s)
+    peer_telemetry_max_age_ms: 2500    # Maximum staleness for peer StateHeartbeat telemetry (ms)
+    cmd_vel_watchdog_ms: 150           # STM32 FreeRTOS velocity watchdog cutoff (ms)
