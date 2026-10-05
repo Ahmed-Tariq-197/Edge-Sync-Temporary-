@@ -1,17 +1,22 @@
-"""Estimation Node (C-02 & C-03): 3D Target EKF & Analytical TTO Prediction.
+"""Estimation Node (C-02 & C-03): TF2 Coordinate Transformation, 3D Target EKF & Covariance Propagation.
 
-SOLID & Architectural Mandates:
-- Strictly executes tf2 coordinate transform to 'map' frame and ego-motion inflation exactly ONCE.
-- Depends on abstractions (BaseStateEstimator, BaseTTOPredictor) via Dependency Injection.
-- Publishes Target3DState.msg containing 3D kinematics and 6x6 full covariance.
-- ZERO magic numbers: all thresholds, noise priors, and frames injected from YAML.
+Sprint 3 Hardware Integration:
+- Uses tf2_ros Buffer and TransformListener to transform 3D observations from camera_link to map.
+- Actively looks up transform at exact message timestamp stamp_utc_ns.
+- Handles TransformException gracefully without crashing when TF tree is delayed.
+- Inflates camera measurement noise with robot ego-motion uncertainty to compute R_total.
+- Updates 6-DoF TargetEKF3D in the shared map frame.
+- Publishes filtered global state to /{robot_id}/edgesync/target/state_3d.
 """
 from typing import Optional
+import numpy as np
+
 import rclpy
 from rclpy.node import Node
+from rclpy.time import Time
+from rclpy.duration import Duration
 from geometry_msgs.msg import PointStamped, PoseWithCovarianceStamped
-from tf2_ros import Buffer, TransformListener
-import numpy as np
+from tf2_ros import Buffer, TransformListener, TransformException
 
 from edgesync_msgs.msg import Target3DState
 from ..interfaces.base_estimator import BaseStateEstimator
@@ -22,20 +27,33 @@ from ..core.ego_covariance import EgoCovariancePropagator
 
 
 class EstimationNode(Node):
-    """ROS 2 Node for 3D Target State Estimation and TTO Calculation."""
+    """ROS 2 Node for 3D Target State Estimation and TF2 Coordinate Transformation."""
 
-    def __init__(self, estimator: Optional[BaseStateEstimator] = None,
-                 tto_predictor: Optional[BaseTTOPredictor] = None):
-        super().__init__('estimation_node')
+    def __init__(self,
+                 estimator: Optional[BaseStateEstimator] = None,
+                 tto_predictor: Optional[BaseTTOPredictor] = None,
+                 node_name: str = 'estimation_node'):
+        super().__init__(node_name)
 
         # 1. Parameter Declarations (Zero Hardcoding)
+        self.declare_parameter('robot_id', 'robot_1')
+        self.robot_id = self.get_parameter('robot_id').get_parameter_value().string_value
+
+        default_centroid = f'/{self.robot_id}/edgesync/perception/target_centroid_camera'
+        default_state = f'/{self.robot_id}/edgesync/target/state_3d'
+        default_amcl = f'/{self.robot_id}/amcl_pose'
+
         self.declare_parameter('shared_map_frame', 'map')
-        self.declare_parameter('camera_optical_frame', 'camera_color_optical_frame')
-        self.declare_parameter('base_link_frame', 'base_link')
-        self.declare_parameter('centroid_topic', 'perception/target_centroid_camera')
-        self.declare_parameter('output_state_topic', 'target/state_3d')
+        self.declare_parameter('camera_frame', 'camera_link')
+        self.declare_parameter('base_link_frame', f'{self.robot_id}/base_link')
+        self.declare_parameter('centroid_topic', default_centroid)
+        self.declare_parameter('output_state_topic', default_state)
+        self.declare_parameter('amcl_pose_topic', default_amcl)
         self.declare_parameter('enable_ego_covariance', True)
         self.declare_parameter('ekf_process_accel_noise_q', 0.80)
+        self.declare_parameter('tf_timeout_sec', 0.05)
+        self.declare_parameter('target_id', 'target_human')
+
         self.declare_parameter('tto_hfov_deg', 60.0)
         self.declare_parameter('tto_vfov_deg', 49.5)
         self.declare_parameter('tto_min_range_m', 0.40)
@@ -43,11 +61,14 @@ class EstimationNode(Node):
 
         # 2. Extract Parameters
         self.map_frame = self.get_parameter('shared_map_frame').get_parameter_value().string_value
-        self.cam_frame = self.get_parameter('camera_optical_frame').get_parameter_value().string_value
+        self.camera_frame = self.get_parameter('camera_frame').get_parameter_value().string_value
         self.base_frame = self.get_parameter('base_link_frame').get_parameter_value().string_value
-        centroid_topic = self.get_parameter('centroid_topic').get_parameter_value().string_value
-        output_topic = self.get_parameter('output_state_topic').get_parameter_value().string_value
+        self.centroid_topic = self.get_parameter('centroid_topic').get_parameter_value().string_value
+        self.output_state_topic = self.get_parameter('output_state_topic').get_parameter_value().string_value
+        self.amcl_pose_topic = self.get_parameter('amcl_pose_topic').get_parameter_value().string_value
         self.enable_ego_cov = self.get_parameter('enable_ego_covariance').get_parameter_value().bool_value
+        self.tf_timeout_sec = self.get_parameter('tf_timeout_sec').get_parameter_value().double_value
+        self.target_id = self.get_parameter('target_id').get_parameter_value().string_value
         q_accel = self.get_parameter('ekf_process_accel_noise_q').get_parameter_value().double_value
 
         hfov = self.get_parameter('tto_hfov_deg').get_parameter_value().double_value
@@ -57,7 +78,9 @@ class EstimationNode(Node):
 
         # 3. Dependency Injection (SOLID: DIP)
         self.estimator: BaseStateEstimator = estimator if estimator is not None else TargetEKF3D(
-            shared_frame=self.map_frame, q_accel=q_accel
+            target_id=self.target_id,
+            shared_frame=self.map_frame,
+            q_accel=q_accel
         )
         self.tto_predictor: BaseTTOPredictor = tto_predictor if tto_predictor is not None else AnalyticalTTOCalculator(
             hfov_deg=hfov, vfov_deg=vfov, min_range_m=min_r, max_range_m=max_r
@@ -69,59 +92,110 @@ class EstimationNode(Node):
 
         # 5. Subscribers & Publishers
         self.sub_centroid = self.create_subscription(
-            PointStamped, centroid_topic, self._on_centroid_received, 10
+            PointStamped,
+            self.centroid_topic,
+            self._on_centroid_received,
+            10
+        )
+        self.sub_amcl = self.create_subscription(
+            PoseWithCovarianceStamped,
+            self.amcl_pose_topic,
+            self._on_amcl_pose,
+            10
         )
         self.pub_state = self.create_publisher(
-            Target3DState, output_topic, 10
+            Target3DState,
+            self.output_state_topic,
+            10
         )
 
         self._last_stamp_s: Optional[float] = None
-        self._robot_pose_cov = np.diag([0.02, 0.02, 0.005])  # Default prior
+        self._robot_pose_cov = np.diag([0.02, 0.02, 0.005])  # Safe prior [x, y, yaw]
 
-        self.get_logger().info("EdgeSync Estimation Node initialized successfully.")
+        self.get_logger().info(
+            f"EdgeSync Estimation Node initialized for robot '{self.robot_id}'. "
+            f"Subscribing to: '{self.centroid_topic}', Publishing to: '{self.output_state_topic}'"
+        )
+
+    def _on_amcl_pose(self, msg: PoseWithCovarianceStamped):
+        """Update robot pose uncertainty dynamically from localization."""
+        # 6x6 covariance in row-major order: index 0 is var(x), 7 is var(y), 35 is var(yaw)
+        cov = msg.pose.covariance
+        var_x = max(1e-4, float(cov[0]))
+        var_y = max(1e-4, float(cov[7]))
+        var_yaw = max(1e-4, float(cov[35]))
+        self._robot_pose_cov = np.diag([var_x, var_y, var_yaw])
 
     def _on_centroid_received(self, msg: PointStamped):
         """Process centroid observation, transform to map, inflate ego noise, and update EKF."""
-        stamp_sec = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
+        stamp_sec = float(msg.header.stamp.sec) + float(msg.header.stamp.nanosec) * 1e-9
+        stamp_utc_ns = int(msg.header.stamp.sec * 1_000_000_000 + msg.header.stamp.nanosec)
+        target_time = Time(seconds=msg.header.stamp.sec, nanoseconds=msg.header.stamp.nanosec)
+        source_frame = msg.header.frame_id if msg.header.frame_id else self.camera_frame
 
-        # Calculate time delta dt
+        # 1. TF2 Coordinate Transform: camera_link -> map at exact stamp_utc_ns
+        try:
+            tf_cam_to_map = self.tf_buffer.lookup_transform(
+                self.map_frame,
+                source_frame,
+                target_time,
+                timeout=Duration(seconds=self.tf_timeout_sec)
+            )
+        except TransformException as ex:
+            self.get_logger().warn(
+                f"TF2 lookup failure ({source_frame} -> {self.map_frame}) at {stamp_utc_ns} ns: {ex}",
+                throttle_duration_sec=2.0
+            )
+            return
+        except Exception as ex:
+            self.get_logger().warn(
+                f"Unexpected error looking up transform ({source_frame} -> {self.map_frame}): {ex}",
+                throttle_duration_sec=2.0
+            )
+            return
+
+        # 2. Extract translation and rotation quaternion
+        tx = float(tf_cam_to_map.transform.translation.x)
+        ty = float(tf_cam_to_map.transform.translation.y)
+        tz = float(tf_cam_to_map.transform.translation.z)
+        t_cam_to_map = np.array([tx, ty, tz], dtype=np.float64)
+
+        qx = float(tf_cam_to_map.transform.rotation.x)
+        qy = float(tf_cam_to_map.transform.rotation.y)
+        qz = float(tf_cam_to_map.transform.rotation.z)
+        qw = float(tf_cam_to_map.transform.rotation.w)
+
+        # 3. Apply exact Hamilton vector quaternion rotation: v' = v + 2 * (u x (u x v + w * v))
+        pt_cam = np.array([msg.point.x, msg.point.y, msg.point.z], dtype=np.float64)
+        u_vec = np.array([qx, qy, qz], dtype=np.float64)
+        cross_uv = np.cross(u_vec, pt_cam)
+        v_rot = pt_cam + 2.0 * np.cross(u_vec, cross_uv + qw * pt_cam)
+        pt_map = v_rot + t_cam_to_map
+
+        # 4. Compute Time Delta dt and Run EKF Predict Step
         if self._last_stamp_s is None:
             dt = 0.033
         else:
             dt = max(0.001, stamp_sec - self._last_stamp_s)
         self._last_stamp_s = stamp_sec
 
-        # 1. EKF Predict Step
         self.estimator.predict(dt)
 
-        # 2. Look up transform from camera frame to map frame at observation time
-        try:
-            tf_cam_to_map = self.tf_buffer.lookup_transform(
-                self.map_frame, msg.header.frame_id, msg.header.stamp,
-                timeout=rclpy.duration.Duration(seconds=0.05)
-            )
-            # Transform point to map frame
-            pt_cam = np.array([msg.point.x, msg.point.y, msg.point.z], dtype=np.float64)
-            # Extract translation and rotation
-            tx = tf_cam_to_map.transform.translation.x
-            ty = tf_cam_to_map.transform.translation.y
-            tz = tf_cam_to_map.transform.translation.z
-            t_map = np.array([tx, ty, tz], dtype=np.float64)
+        # 5. Compute Camera Measurement Covariance R_cam and Total Covariance R_total
+        z_val = max(0.40, float(pt_cam[2]))
+        var_x = ((z_val / 554.0) * 1.5) ** 2
+        var_y = ((z_val / 554.0) * 1.5) ** 2
+        var_z = (0.015 * (z_val ** 2) + 0.01) ** 2
+        r_cam = np.diag([var_x, var_y, var_z])
 
-            # Simplified rotation or quaternion rotation
-            pt_map = pt_cam + t_map  # In production: q * pt_cam + t_map
-            robot_yaw = 0.0
-        except Exception:
-            # Fallback if transform not published yet (e.g. standalone test)
-            pt_cam = np.array([msg.point.x, msg.point.y, msg.point.z], dtype=np.float64)
-            pt_map = pt_cam.copy()
-            robot_yaw = 0.0
-            t_map = np.zeros(3)
+        # Planar robot yaw in map frame extracted from quaternion
+        siny_cosp = 2.0 * (qw * qz + qx * qy)
+        cosy_cosp = 1.0 - 2.0 * (qy * qy + qz * qz)
+        robot_yaw = float(np.arctan2(siny_cosp, cosy_cosp))
 
-        # 3. Propagate Ego-Motion Covariance to compute R_total
-        r_cam = np.diag([0.02, 0.02, 0.04])
-        r_cam_to_base = np.eye(3)
-        t_cam_to_base = np.array([0.2, 0.0, 0.15])
+        # Extrinsics from camera to base_link
+        r_cam_to_base = np.eye(3, dtype=np.float64)
+        t_cam_to_base = np.array([0.20, 0.0, 0.15], dtype=np.float64)
 
         r_total = EgoCovariancePropagator.propagate_covariance(
             point_camera=pt_cam,
@@ -133,18 +207,18 @@ class EstimationNode(Node):
             enable_ego_propagation=self.enable_ego_cov
         )
 
-        # 4. EKF Measurement Update
+        # 6. EKF Measurement Update in map frame
         state, cov = self.estimator.update(pt_map, r_total)
 
-        # 5. Publish Target3DState.msg
+        # 7. Publish Filtered Global State
         out_msg = Target3DState()
-        out_msg.target_id = "target_person"
+        out_msg.target_id = self.target_id
         out_msg.frame_id = self.map_frame
         out_msg.position = [float(state[0]), float(state[1]), float(state[2])]
         out_msg.velocity = [float(state[3]), float(state[4]), float(state[5])]
-        out_msg.full_covariance = cov.flatten().tolist()
+        out_msg.full_covariance = cov.flatten().astype(np.float32).tolist()
         out_msg.confidence = float(np.clip(1.0 / (np.trace(cov[:3, :3]) + 0.1), 0.0, 1.0))
-        out_msg.stamp_ns = int(stamp_sec * 1e9)
+        out_msg.stamp_ns = stamp_utc_ns
 
         self.pub_state.publish(out_msg)
 

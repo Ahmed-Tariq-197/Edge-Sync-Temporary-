@@ -49,18 +49,34 @@ class DepthDeprojector:
         self.depth_noise_factor = depth_noise_factor
 
     def extract_central_depth(self, depth_map: np.ndarray,
-                              bbox: Tuple[float, float, float, float]) -> Tuple[Optional[float], int]:
-        """Extract median depth from the central 50% bounding box ROI.
+                              bbox: Tuple[float, float, float, float],
+                              mask: Optional[np.ndarray] = None) -> Tuple[Optional[float], int]:
+        """Extract median depth from the masked region or central 50% bounding box ROI.
 
-        Prevents background bleed by cropping out the boundary 25% on all four sides.
+        Prevents background bleed by cropping out the boundary 25% or applying mask.
 
         Args:
             depth_map: HxW float or uint16 depth image.
             bbox: (xmin, ymin, xmax, ymax) in pixel coordinates.
+            mask: Optional boolean or uint8 mask (HxW) where target > 0.
 
         Returns:
             Tuple of (median_depth_in_meters, valid_pixel_count). If no valid pixels, returns (None, 0).
         """
+        # If explicit mask is provided, sample from masked region
+        if mask is not None and mask.shape == depth_map.shape and np.any(mask > 0):
+            roi_depth = depth_map[mask > 0].astype(np.float64)
+            if depth_map.dtype == np.uint16 or np.nanmax(roi_depth) > 50.0:
+                roi_depth = roi_depth * self.intrinsics.depth_scale
+            valid_mask = (
+                np.isfinite(roi_depth) &
+                (roi_depth >= self.intrinsics.min_depth_m) &
+                (roi_depth <= self.intrinsics.max_depth_m)
+            )
+            valid_depths = roi_depth[valid_mask]
+            if valid_depths.size > 0:
+                return float(np.median(valid_depths)), int(valid_depths.size)
+
         xmin, ymin, xmax, ymax = bbox
         w = xmax - xmin
         h = ymax - ymin
@@ -147,17 +163,19 @@ class DepthDeprojector:
         return np.diag([var_x, var_y, var_z])
 
     def deproject_bbox(self, depth_map: np.ndarray,
-                       bbox: Tuple[float, float, float, float]) -> Optional[DeprojectionResult]:
+                       bbox: Tuple[float, float, float, float],
+                       mask: Optional[np.ndarray] = None) -> Optional[DeprojectionResult]:
         """Deproject a 2D bounding box and depth map to a 3D centroid observation.
 
         Args:
             depth_map: Registered depth map (HxW).
             bbox: (xmin, ymin, xmax, ymax) in pixel coordinates.
+            mask: Optional foreground mask (HxW).
 
         Returns:
             DeprojectionResult or None if depth extraction fails.
         """
-        median_depth, valid_count = self.extract_central_depth(depth_map, bbox)
+        median_depth, valid_count = self.extract_central_depth(depth_map, bbox, mask=mask)
         if median_depth is None:
             return None
 
