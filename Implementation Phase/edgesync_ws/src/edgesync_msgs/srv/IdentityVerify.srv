@@ -2,7 +2,10 @@
 string transaction_id                     # Active transaction identifier
 sensor_msgs/Image candidate_crop          # Bounding-box image crop from camera
 float32[512] reference_feature_vector     # Reference Re-ID embedding from Robot A
+float32[512] candidate_feature_vector     # Direct candidate / live embedding vector (optional)
 ---
 bool match                                # True if similarity >= threshold and spatial gate passes
 float32 similarity                        # Cosine similarity score [0.0 - 1.0]
 string message                            # Status description or error reason
+bool match_confirmed                      # True if similarity >= threshold
+float32 similarity_score                  # Cosine similarity score [0.0 - 1.0]

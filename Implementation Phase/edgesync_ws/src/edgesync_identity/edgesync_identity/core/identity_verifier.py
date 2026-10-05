@@ -29,17 +29,18 @@ class IdentityVerifier:
     @staticmethod
     def compute_cosine_similarity(vec_a: np.ndarray, vec_b: np.ndarray) -> float:
         """Compute cosine similarity between two feature vectors."""
-        a = np.asarray(vec_a, dtype=np.float32).flatten()
-        b = np.asarray(vec_b, dtype=np.float32).flatten()
+        a = np.asarray(vec_a, dtype=np.float32).reshape(-1)
+        b = np.asarray(vec_b, dtype=np.float32).reshape(-1)
 
-        norm_a = np.linalg.norm(a)
-        norm_b = np.linalg.norm(b)
+        norm_a = float(np.linalg.norm(a).item())
+        norm_b = float(np.linalg.norm(b).item())
 
         if norm_a < 1e-6 or norm_b < 1e-6:
             return 0.0
 
-        # Cosine similarity for unit vectors simplifies to dot product
-        cos_sim = float(np.dot(a / norm_a, b / norm_b))
+        # Exact cosine similarity with safe scalar conversion for NumPy 2.x
+        dot = float(np.dot(a, b).item())
+        cos_sim = dot / (norm_a * norm_b)
         return float(np.clip(cos_sim, -1.0, 1.0))
 
     @staticmethod

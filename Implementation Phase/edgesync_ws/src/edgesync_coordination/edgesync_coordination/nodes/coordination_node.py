@@ -21,7 +21,7 @@ from edgesync_msgs.msg import (
     HandoffHeader, HandoffRequest, HandoffResponse, HandoffCancel,
     AcqStatus, HandoffConfirm, HandoffConfirmAck, OwnershipEvent, StateHeartbeat
 )
-from ..fsm.ownership_fsm import OwnershipFSM, OwnershipRole
+from ..fsm.ownership_fsm import OwnershipFSM, OwnershipRole, SenderState
 from ..decision.eligibility_gate import EligibilityGate, PeerTelemetry
 from ..decision.utility_engine import UtilityEngine
 from ..protocol.liveness_watchdog import LivenessWatchdog
@@ -43,6 +43,7 @@ class CoordinationNode(Node):
         self.declare_parameter('t_claim_ms', 200)
         self.declare_parameter('watchdog_period_ms', 100)
         self.declare_parameter('watchdog_max_missed', 3)
+        self.declare_parameter('t_neg_timeout_ms', 80)  # Sprint 5 Negotiation Response Window (80ms)
 
         # Sprint 4 Decision Engine Parameters
         self.declare_parameter('max_cpu_pct', 90.0)
@@ -109,6 +110,13 @@ class CoordinationNode(Node):
         )
         self.last_evaluated_decision: Optional[Tuple[int, int, float]] = None
         self.last_calculated_utility: float = 0.0
+
+        # Sprint 5 Response Collector State (Sender side)
+        self.t_neg_timeout_ms = self.get_parameter('t_neg_timeout_ms').get_parameter_value().integer_value
+        self.selected_receiver_id: Optional[str] = None
+        self._collected_responses: list = []
+        self._negotiation_window_open: bool = False
+        self._neg_timer = None
 
         # 4. Anti-Deadlock Watchdog (300 ms cutoff)
         self.watchdog = LivenessWatchdog(
@@ -280,6 +288,7 @@ class CoordinationNode(Node):
             res.decision = HandoffResponse.DECISION_REJECT
             res.reason = reason_code
             res.est_acquisition_ms = 0
+            res.utility = 0.0
             self.last_evaluated_decision = (res.decision, res.reason, 0.0)
             self.pub_res.publish(res)
             self.get_logger().warn(f"Handoff REJECTED (Hard Gate): {gate_reason}")
@@ -291,6 +300,7 @@ class CoordinationNode(Node):
             res.decision = HandoffResponse.DECISION_REJECT
             res.reason = HandoffResponse.REASON_TIME_INSUFFICIENT
             res.est_acquisition_ms = 0
+            res.utility = 0.0
             self.last_evaluated_decision = (res.decision, res.reason, 0.0)
             self.pub_res.publish(res)
             self.get_logger().warn(
@@ -311,6 +321,7 @@ class CoordinationNode(Node):
         res.decision = HandoffResponse.DECISION_ACCEPT
         res.reason = HandoffResponse.REASON_OK
         res.est_acquisition_ms = int(self.est_acquisition_ms)
+        res.utility = float(utility)
 
         self.last_evaluated_decision = (res.decision, res.reason, utility)
         self.last_calculated_utility = utility
@@ -319,13 +330,94 @@ class CoordinationNode(Node):
             f"Handoff ACCEPTED: Utility={utility:.4f} (FOV={s_fov:.2f}, Dist={s_dist:.2f}, Batt={s_batt:.2f})"
         )
 
+    def broadcast_handoff_request(self, request_msg: Optional[HandoffRequest] = None) -> None:
+        """Broadcast HandoffRequest to candidate peer(s) and start response collection window."""
+        target_id = getattr(getattr(request_msg, 'header', None), 'target_id', 'target_0') or 'target_0'
+        txn_id = getattr(getattr(request_msg, 'header', None), 'transaction_id', f'txn_{self.get_clock().now().nanoseconds}') or f'txn_{self.get_clock().now().nanoseconds}'
+
+        if self.fsm.sender_state == SenderState.TRACKING:
+            self.fsm.trigger_candidate(target_id, txn_id)
+        if self.fsm.sender_state == SenderState.HANDOFF_CANDIDATE:
+            self.fsm.send_request()
+
+        if request_msg is not None:
+            self.pub_req.publish(request_msg)
+
+        # Open response collection window with t_neg_timeout_ms timer
+        self.start_negotiation_window()
+
+    def start_negotiation_window(self, timeout_ms: Optional[int] = None) -> None:
+        """Open negotiation collection window and arm t_neg_timeout_ms timer."""
+        self._collected_responses.clear()
+        self._negotiation_window_open = True
+        if self._neg_timer is not None:
+            self._neg_timer.cancel()
+            self.destroy_timer(self._neg_timer)
+            self._neg_timer = None
+
+        duration_ms = timeout_ms if timeout_ms is not None else self.t_neg_timeout_ms
+        period_s = max(0.001, float(duration_ms) / 1000.0)
+        self._neg_timer = self.create_timer(period_s, self._on_negotiation_timeout)
+        self.get_logger().info(f"Opened negotiation response window for {duration_ms} ms.")
+
     def _on_handoff_response(self, msg: HandoffResponse):
-        """Peer replied to our request."""
-        if msg.decision == HandoffResponse.DECISION_ACCEPT:
-            self.fsm.on_peer_accepted()
-            # Arm anti-deadlock watchdog immediately upon ACCEPT (300 ms window)
-            self.watchdog.arm()
-            self.get_logger().info("Handoff ACCEPT received. Watchdog armed at 10 Hz.")
+        """Collect incoming HandoffResponse messages during negotiation window."""
+        sender_id = msg.header.sender_id
+        utility = float(getattr(msg, 'utility', 0.0))
+        self.get_logger().info(
+            f"Received HandoffResponse from {sender_id}: decision={msg.decision}, utility={utility:.4f}"
+        )
+        if self._negotiation_window_open:
+            self._collected_responses.append(msg)
+        else:
+            # Fallback for single-peer direct invocation without active window timer
+            if msg.decision == HandoffResponse.DECISION_ACCEPT:
+                self.selected_receiver_id = sender_id
+                self.fsm.on_peer_accepted()
+                self.watchdog.arm()
+                self.get_logger().info(f"Direct Handoff ACCEPT from {sender_id}. Watchdog armed.")
+
+    def _on_negotiation_timeout(self):
+        """Close response collection window and select highest utility candidate."""
+        if self._neg_timer is not None:
+            self._neg_timer.cancel()
+            self.destroy_timer(self._neg_timer)
+            self._neg_timer = None
+        self._negotiation_window_open = False
+
+        # Filter for valid ACCEPT responses
+        valid_candidates = [
+            res for res in self._collected_responses
+            if res.decision == HandoffResponse.DECISION_ACCEPT
+        ]
+
+        if not valid_candidates:
+            self.get_logger().warn(
+                f"Negotiation timeout ({self.t_neg_timeout_ms}ms): No valid ACCEPT responses received "
+                f"(total collected: {len(self._collected_responses)}). Aborting to RECOVERY!"
+            )
+            self.fsm.abort_to_recovery(f"Negotiation timeout ({self.t_neg_timeout_ms}ms): 0 valid responses")
+            return
+
+        # Scalable selection for N robots: sort descending by utility score
+        valid_candidates.sort(key=lambda r: float(getattr(r, 'utility', 0.0)), reverse=True)
+        winner = valid_candidates[0]
+        dropped = valid_candidates[1:]
+
+        self.selected_receiver_id = winner.header.sender_id
+        winning_utility = float(getattr(winner, 'utility', 0.0))
+
+        self.get_logger().info(
+            f"Selected winning receiver: {self.selected_receiver_id} (utility={winning_utility:.4f}). "
+            f"Dropping {len(dropped)} other candidate(s)."
+        )
+
+        # Transition sender FSM to COMMITTED
+        self.fsm.on_peer_accepted()
+
+        # Arm anti-deadlock watchdog immediately upon selection (300 ms window)
+        self.watchdog.arm()
+        self.get_logger().info(f"Sender FSM committed to {self.selected_receiver_id}. Watchdog armed at 10 Hz.")
 
     def _on_acq_status(self, msg: AcqStatus):
         """Feed watchdog with 10 Hz heartbeat."""

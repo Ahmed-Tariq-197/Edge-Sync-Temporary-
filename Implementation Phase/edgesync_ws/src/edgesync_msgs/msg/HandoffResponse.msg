@@ -6,6 +6,7 @@ uint8   reason                    # Detailed admission / gate rejection reason
 int32   est_acquisition_ms        # Estimated slew & intercept latency (<= 700 ms)
 float32 cpu_load                  # Receiver CPU load percentage [0.0 - 100.0]
 float32 battery                   # Receiver battery percentage [0.0 - 100.0]
+float32 utility                   # Receiver computed utility score [0.0 - 1.0]
 
 # Decision Constants
 uint8 DECISION_ACCEPT             = 1
