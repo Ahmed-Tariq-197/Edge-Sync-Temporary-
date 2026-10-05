@@ -140,3 +140,87 @@ def test_acquisition_timeout_publishes_cancel_track_lost():
     assert cancel.reason == HandoffCancel.REASON_TRACK_LOST
 
     node.destroy_node()
+
+
+def test_p_controller_proportional_output():
+    """Verify Proportional controller calculates angular velocity and handles deadband and saturation."""
+    node = TargetAcquisitionNode(node_name="test_acq_p_controller")
+
+    # Optical center is 320.0, tolerance is 15.0 px, kp = 0.005, max_w = 1.5 rad/s
+    # 1. Target to right of center (error = +100 px) -> negative angular velocity (rotate right)
+    w_z = node.compute_p_control(centroid_x=420.0, optical_center_x=320.0, is_pixel=True)
+    assert pytest.approx(w_z, abs=1e-3) == -0.50
+
+    # 2. Target to left of center (error = -100 px) -> positive angular velocity (rotate left)
+    w_z = node.compute_p_control(centroid_x=220.0, optical_center_x=320.0, is_pixel=True)
+    assert pytest.approx(w_z, abs=1e-3) == 0.50
+
+    # 3. Target inside deadband (|error| <= 15 px) -> exactly 0.0
+    w_z = node.compute_p_control(centroid_x=325.0, optical_center_x=320.0, is_pixel=True)
+    assert w_z == 0.0
+
+    # 4. Extreme error saturates at max_angular_vel (1.5 rad/s)
+    w_z = node.compute_p_control(centroid_x=1000.0, optical_center_x=320.0, is_pixel=True)
+    assert pytest.approx(w_z, abs=1e-3) == -1.50
+
+    node.destroy_node()
+
+
+def test_p_controller_tracking_and_auto_centering():
+    """Verify apply_tracking_control rotates during SEARCHING and auto-transitions to VERIFYING when centered."""
+    node = TargetAcquisitionNode(node_name="test_acq_tracking_flow")
+
+    published_twists = []
+    node.pub_cmd_vel.publish = lambda msg: published_twists.append(msg)
+
+    # Start acquisition in SLEWING
+    node.start_acquisition(
+        prior_pos_map=(2.0, 0.0, 0.0),
+        txn_id="txn_p_ctrl",
+        epoch=1,
+        sender_id="ugv_1"
+    )
+    assert node.state == AcquisitionState.SLEWING
+
+    # 1. Tracking control with target offset: transitions SLEWING -> SEARCHING and publishes Twist
+    cmd = node.apply_tracking_control(centroid_x=400.0, is_pixel=True)
+    assert node.state == AcquisitionState.SEARCHING
+    assert cmd.angular.z < 0.0  # Rotating right toward target
+    assert len(published_twists) > 0
+
+    # 2. Centroid centered within tolerance: triggers center_and_verify -> VERIFYING and stops motion
+    published_twists.clear()
+    cmd_centered = node.apply_tracking_control(centroid_x=322.0, is_pixel=True)
+    assert node.state == AcquisitionState.VERIFYING
+    assert len(published_twists) >= 1
+    last_twist = published_twists[-1]
+    assert last_twist.angular.z == 0.0
+    assert last_twist.linear.x == 0.0
+
+    node.destroy_node()
+
+
+def test_zero_velocity_published_on_cancelled():
+    """Verify zero-velocity Twist is published on CANCELLED (via timeout and mismatch)."""
+    node = TargetAcquisitionNode(node_name="test_acq_zero_twist_cancel")
+
+    published_twists = []
+    node.pub_cmd_vel.publish = lambda msg: published_twists.append(msg)
+
+    node.start_acquisition(
+        prior_pos_map=(2.0, 0.0, 0.0),
+        txn_id="txn_cancel_twist",
+        epoch=1,
+        sender_id="ugv_1"
+    )
+
+    published_twists.clear()
+    # Trigger timeout -> transitions to CANCELLED
+    node._on_acquisition_timeout()
+    assert node.state == AcquisitionState.CANCELLED
+    assert len(published_twists) >= 1
+    assert published_twists[-1].angular.z == 0.0
+    assert published_twists[-1].linear.x == 0.0
+
+    node.destroy_node()
+

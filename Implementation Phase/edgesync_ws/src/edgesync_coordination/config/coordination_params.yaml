@@ -1,7 +1,7 @@
 # EdgeSync Coordination & P2P Protocol Parameters
 # ZERO-HARDCODING MANDATE: All state machine parameters, weights, and timeouts injected from YAML.
 
-coordination_params:
+/**:
   ros__parameters:
     robot_id: "ugv_1"
     is_initial_owner: true
@@ -34,3 +34,8 @@ coordination_params:
     utility_weight_feasibility: 0.50
     utility_weight_fov: 0.30
     utility_weight_network: 0.20
+
+    # Autonomous Handoff Trigger (Sprint 6)
+    handoff_trigger_threshold_s: 2.5
+    handoff_cooldown_s: 5.0
+

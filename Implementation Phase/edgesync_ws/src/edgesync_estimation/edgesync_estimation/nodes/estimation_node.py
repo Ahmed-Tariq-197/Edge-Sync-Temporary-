@@ -15,10 +15,10 @@ import rclpy
 from rclpy.node import Node
 from rclpy.time import Time
 from rclpy.duration import Duration
-from geometry_msgs.msg import PointStamped, PoseWithCovarianceStamped
+from geometry_msgs.msg import Point, PointStamped, PoseWithCovarianceStamped
 from tf2_ros import Buffer, TransformListener, TransformException
 
-from edgesync_msgs.msg import Target3DState
+from edgesync_msgs.msg import Target3DState, TTOEstimate
 from ..interfaces.base_estimator import BaseStateEstimator
 from ..interfaces.base_tto_predictor import BaseTTOPredictor
 from ..core.target_ekf_3d import TargetEKF3D
@@ -106,6 +106,11 @@ class EstimationNode(Node):
         self.pub_state = self.create_publisher(
             Target3DState,
             self.output_state_topic,
+            10
+        )
+        self.pub_tto = self.create_publisher(
+            TTOEstimate,
+            f'/{self.robot_id}/edgesync/tto/estimate',
             10
         )
 
@@ -221,6 +226,27 @@ class EstimationNode(Node):
         out_msg.stamp_ns = stamp_utc_ns
 
         self.pub_state.publish(out_msg)
+
+        # 8. Compute and Publish TTO Estimate (Interface I-04 / C-03 -> C-04)
+        cam_pos_map = np.array([tx, ty, tz], dtype=np.float64)
+        r_cam_map = np.array([
+            [1.0 - 2.0*(qy*qy + qz*qz), 2.0*(qx*qy - qz*qw), 2.0*(qx*qz + qy*qw)],
+            [2.0*(qx*qy + qz*qw), 1.0 - 2.0*(qx*qx + qz*qz), 2.0*(qy*qz - qx*qw)],
+            [2.0*(qx*qz - qy*qw), 2.0*(qy*qz + qx*qw), 1.0 - 2.0*(qx*qx + qy*qy)]
+        ], dtype=np.float64)
+
+        tto_res = self.tto_predictor.compute_tto(state, cov, cam_pos_map, r_cam_map)
+        tto_msg = TTOEstimate()
+        tto_msg.target_id = self.target_id
+        tto_msg.frame_id = self.map_frame
+        tto_msg.tto_hat_s = float(tto_res.tto_hat_s)
+        tto_msg.sigma_tto_s = float(tto_res.sigma_tto_s)
+        tto_msg.tto_safe_s = float(tto_res.tto_safe_s)
+        tto_msg.exit_boundary = str(tto_res.exit_boundary)
+        tto_msg.stamp_utc_ns = stamp_utc_ns
+        for pt in tto_res.predicted_trajectory:
+            tto_msg.predicted_trajectory.append(Point(x=float(pt[0]), y=float(pt[1]), z=float(pt[2])))
+        self.pub_tto.publish(tto_msg)
 
 
 def main(args=None):

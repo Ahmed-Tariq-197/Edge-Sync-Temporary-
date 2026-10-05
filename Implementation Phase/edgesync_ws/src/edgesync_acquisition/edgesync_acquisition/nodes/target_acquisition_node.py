@@ -14,7 +14,7 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, PointStamped
 from sensor_msgs.msg import Image
 
 from edgesync_msgs.msg import (
@@ -47,14 +47,32 @@ class TargetAcquisitionNode(Node):
         self.declare_parameter('similarity_threshold', 0.70)
         self.declare_parameter('service_name', '/identity/verify')
 
-        # 2. Extract Parameters
+        # Kinematics & P-Controller Parameters
         self.robot_id = self.get_parameter('robot_id').get_parameter_value().string_value
+        default_cmd_vel = f'/{self.robot_id}/edgesync/cmd_vel'
+        default_centroid = f'/{self.robot_id}/edgesync/perception/target_centroid_camera'
+
+        self.declare_parameter('cmd_vel_topic', default_cmd_vel)
+        self.declare_parameter('centroid_topic', default_centroid)
+        self.declare_parameter('kp_angular', 0.005)
+        self.declare_parameter('optical_center_x', 320.0)
+        self.declare_parameter('max_angular_vel_rad_s', 1.5)
+        self.declare_parameter('centering_tolerance_px', 15.0)
+
+        # 2. Extract Parameters
         self.peer_id = self.get_parameter('peer_id').get_parameter_value().string_value
         self.proto_ver = self.get_parameter('protocol_version').get_parameter_value().integer_value
         self.timeout_ms = self.get_parameter('acquisition_timeout_ms').get_parameter_value().integer_value
         self.slew_speed = self.get_parameter('slew_angular_speed_rad_s').get_parameter_value().double_value
         self.sim_thresh = self.get_parameter('similarity_threshold').get_parameter_value().double_value
         self.service_name = self.get_parameter('service_name').get_parameter_value().string_value
+
+        self.cmd_vel_topic = self.get_parameter('cmd_vel_topic').get_parameter_value().string_value
+        self.centroid_topic = self.get_parameter('centroid_topic').get_parameter_value().string_value
+        self.kp_angular = self.get_parameter('kp_angular').get_parameter_value().double_value
+        self.optical_center_x = self.get_parameter('optical_center_x').get_parameter_value().double_value
+        self.max_angular_vel = self.get_parameter('max_angular_vel_rad_s').get_parameter_value().double_value
+        self.centering_tolerance = self.get_parameter('centering_tolerance_px').get_parameter_value().double_value
 
         # 3. State Machine & Active Handoff Data
         self.state = AcquisitionState.IDLE
@@ -81,7 +99,7 @@ class TargetAcquisitionNode(Node):
         self.cli_verify = self.create_client(IdentityVerify, self.service_name)
 
         # 6. Publishers
-        self.pub_cmd_vel = self.create_publisher(Twist, 'cmd_vel', 10)
+        self.pub_cmd_vel = self.create_publisher(Twist, self.cmd_vel_topic, 10)
         self.pub_confirm = self.create_publisher(
             HandoffConfirm, f'/{self.peer_id}/edgesync/handoff_confirm', reliable_qos
         )
@@ -96,10 +114,84 @@ class TargetAcquisitionNode(Node):
         self.sub_request = self.create_subscription(
             HandoffRequest, f'/{self.robot_id}/edgesync/handoff_request', self._on_handoff_request, reliable_qos
         )
+        self.sub_centroid = self.create_subscription(
+            PointStamped, self.centroid_topic, self._on_target_centroid, best_effort_qos
+        )
 
         self.get_logger().info(
-            f"Target Acquisition Node initialized (robot_id={self.robot_id}, timeout={self.timeout_ms}ms, service={self.service_name})."
+            f"Target Acquisition Node initialized (robot_id={self.robot_id}, cmd_vel={self.cmd_vel_topic}, timeout={self.timeout_ms}ms)."
         )
+
+    def stop_motion(self) -> Twist:
+        """Immediately publish zero-velocity Twist to halt chassis rotation."""
+        stop_twist = Twist()
+        stop_twist.linear.x = 0.0
+        stop_twist.linear.y = 0.0
+        stop_twist.linear.z = 0.0
+        stop_twist.angular.x = 0.0
+        stop_twist.angular.y = 0.0
+        stop_twist.angular.z = 0.0
+        self.pub_cmd_vel.publish(stop_twist)
+        return stop_twist
+
+    def compute_p_control(self, centroid_x: float, optical_center_x: Optional[float] = None, is_pixel: bool = True) -> float:
+        """Calculate angular z-velocity via Proportional control.
+
+        Args:
+            centroid_x: Horizontal pixel or coordinate position.
+            optical_center_x: Reference center (default self.optical_center_x for pixel, 0.0 for metric).
+            is_pixel: True if in pixels, False if in metric camera frame coordinates.
+
+        Returns:
+            Angular z-velocity in rad/s (clamped to [-max_angular_vel, max_angular_vel]).
+        """
+        if is_pixel:
+            center = optical_center_x if optical_center_x is not None else self.optical_center_x
+            tol = self.centering_tolerance
+            kp = self.kp_angular
+        else:
+            center = optical_center_x if optical_center_x is not None else 0.0
+            tol = 0.05
+            kp = self.kp_angular * 300.0 if self.kp_angular < 0.1 else self.kp_angular
+
+        error_x = float(centroid_x - center)
+        if abs(error_x) <= tol:
+            return 0.0
+
+        # Rotate right (clockwise, negative w_z) if target is right of center (error_x > 0)
+        w_z = -float(kp * error_x)
+        w_z = float(np.clip(w_z, -self.max_angular_vel, self.max_angular_vel))
+        return w_z
+
+    def apply_tracking_control(self, centroid_x: float, is_pixel: bool = True, optical_center_x: Optional[float] = None) -> Twist:
+        """Apply P-Controller during SLEWING and SEARCHING states.
+
+        If error is within tolerance, transitions to VERIFYING and stops chassis.
+        """
+        if self.state == AcquisitionState.SLEWING:
+            self.state = AcquisitionState.SEARCHING
+            self.get_logger().info("Target detected during SLEWING. Transitioning to SEARCHING.")
+            self._publish_acq_status(AcqStatus.STATUS_SEARCHING, confidence=0.60)
+
+        if self.state != AcquisitionState.SEARCHING:
+            return self.stop_motion()
+
+        w_z = self.compute_p_control(centroid_x, optical_center_x=optical_center_x, is_pixel=is_pixel)
+
+        if abs(w_z) < 1e-4:
+            self.get_logger().info("Target centered within tolerance. Transitioning to VERIFYING.")
+            self.center_and_verify()
+            return Twist()
+
+        cmd = Twist()
+        cmd.angular.z = w_z
+        self.pub_cmd_vel.publish(cmd)
+        return cmd
+
+    def _on_target_centroid(self, msg: PointStamped):
+        """Callback for PointStamped target centroid from perception."""
+        if self.state in (AcquisitionState.SLEWING, AcquisitionState.SEARCHING):
+            self.apply_tracking_control(centroid_x=msg.point.x, is_pixel=False)
 
     def _on_handoff_request(self, msg: HandoffRequest):
         """Receive HandoffRequest with target prior and reference Re-ID vector."""
@@ -133,7 +225,7 @@ class TargetAcquisitionNode(Node):
         # Arm acquisition hard cutoff timer (700 ms)
         self._arm_timeout_timer()
 
-        # Command chassis rotation towards target
+        # Command initial chassis rotation towards target
         twist = Twist()
         twist.angular.z = float(self.slew_speed)
         self.pub_cmd_vel.publish(twist)
@@ -141,12 +233,15 @@ class TargetAcquisitionNode(Node):
         # Publish ACQ_STATUS SLEWING
         self._publish_acq_status(AcqStatus.STATUS_SLEWING, confidence=0.30)
 
-    def on_target_detected(self):
+    def on_target_detected(self, centroid_x: Optional[float] = None):
         """Target enters receiver FOV; transition from SLEWING to SEARCHING."""
         if self.state == AcquisitionState.SLEWING:
             self.state = AcquisitionState.SEARCHING
             self.get_logger().info("Target entered FOV. State: SEARCHING.")
             self._publish_acq_status(AcqStatus.STATUS_SEARCHING, confidence=0.60)
+
+        if centroid_x is not None:
+            self.apply_tracking_control(centroid_x)
 
     def center_and_verify(self, candidate_crop: Optional[Image] = None,
                           candidate_vector: Optional[np.ndarray] = None):
@@ -155,9 +250,8 @@ class TargetAcquisitionNode(Node):
             self.state = AcquisitionState.VERIFYING
             self.get_logger().info("Target centered in FOV. State: VERIFYING. Halting chassis and invoking Re-ID.")
 
-            # Stop rotation
-            stop_twist = Twist()
-            self.pub_cmd_vel.publish(stop_twist)
+            # Stop rotation immediately on entering VERIFYING
+            self.stop_motion()
 
             # Publish ACQ_STATUS ACQUIRED
             self._publish_acq_status(AcqStatus.STATUS_ACQUIRED, confidence=0.85)
@@ -200,6 +294,9 @@ class TargetAcquisitionNode(Node):
         """Evaluate Re-ID result: publish HANDOFF_CONFIRM or HANDOFF_CANCEL."""
         self.last_similarity = float(similarity)
         self._disarm_timeout_timer()
+
+        # Halt chassis rotation in all termination paths
+        self.stop_motion()
 
         if match_confirmed:
             self.state = AcquisitionState.CONFIRMED
@@ -255,6 +352,7 @@ class TargetAcquisitionNode(Node):
         self._disarm_timeout_timer()
         if self.state not in (AcquisitionState.CONFIRMED, AcquisitionState.CANCELLED, AcquisitionState.IDLE):
             self.state = AcquisitionState.CANCELLED
+            self.stop_motion()
             self.get_logger().error(f"Acquisition HARD TIMEOUT ({self.timeout_ms}ms) exceeded. Aborting with HANDOFF_CANCEL.")
             cancel_msg = HandoffCancel()
             cancel_msg.header.protocol_version = self.proto_ver

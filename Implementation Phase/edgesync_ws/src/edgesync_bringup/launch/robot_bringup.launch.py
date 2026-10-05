@@ -1,4 +1,4 @@
-"""Master Bringup Launch File for Single JetAuto UGV in EdgeSync."""
+"""Master Bringup Launch File for Single JetAuto UGV in EdgeSync (Sprint 6)."""
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -12,7 +12,8 @@ def generate_launch_description():
 
     timing_params = os.path.join(pkg_bringup, 'config', 'timing_budgets.yaml')
     algo_params = os.path.join(pkg_bringup, 'config', 'algorithm_thresholds.yaml')
-    hw_params = os.path.join(pkg_bringup, 'config', 'hardware_params.yaml')
+    hw_params = os.path.join(pkg_bringup, 'config', 'hw_params.yaml')
+    coordination_params = os.path.join(pkg_bringup, 'config', 'coordination_params.yaml')
 
     arg_robot_id = DeclareLaunchArgument('robot_id', default_value='ugv_1', description='Robot namespace/ID')
     arg_peer_id = DeclareLaunchArgument('peer_id', default_value='ugv_2', description='Peer UGV ID')
@@ -22,10 +23,30 @@ def generate_launch_description():
     peer_id = LaunchConfiguration('peer_id')
     is_owner = LaunchConfiguration('is_initial_owner')
 
+    node_namespace = [LaunchConfiguration('robot_id'), '/edgesync']
+
+    swarm_topics = [
+        'handoff_request',
+        'handoff_response',
+        'handoff_confirm',
+        'handoff_confirm_ack',
+        'handoff_cancel',
+        'ownership_event',
+        'state_heartbeat',
+    ]
+
+    global_remappings = [
+        (topic, f'/edgesync_swarm/{topic}') for topic in swarm_topics
+    ]
+    for topic in swarm_topics:
+        global_remappings.append((['/', robot_id, f'/edgesync/{topic}'], f'/edgesync_swarm/{topic}'))
+        global_remappings.append((['/', peer_id, f'/edgesync/{topic}'], f'/edgesync_swarm/{topic}'))
+
     node_perception = Node(
         package='edgesync_perception',
         executable='perception_node',
         name='perception_node',
+        namespace=node_namespace,
         parameters=[hw_params, algo_params],
         output='screen'
     )
@@ -34,7 +55,11 @@ def generate_launch_description():
         package='edgesync_estimation',
         executable='estimation_node',
         name='estimation_node',
-        parameters=[timing_params, algo_params, hw_params],
+        namespace=node_namespace,
+        parameters=[
+            timing_params, algo_params, hw_params,
+            {'robot_id': robot_id}
+        ],
         output='screen'
     )
 
@@ -42,7 +67,11 @@ def generate_launch_description():
         package='edgesync_identity',
         executable='identity_node',
         name='identity_node',
-        parameters=[algo_params],
+        namespace=node_namespace,
+        parameters=[
+            algo_params,
+            {'robot_id': robot_id}
+        ],
         output='screen'
     )
 
@@ -50,9 +79,24 @@ def generate_launch_description():
         package='edgesync_coordination',
         executable='coordination_node',
         name='coordination_node',
+        namespace=node_namespace,
+        remappings=global_remappings,
         parameters=[
-            timing_params, algo_params,
+            coordination_params, timing_params, algo_params, hw_params,
             {'robot_id': robot_id, 'peer_id': peer_id, 'is_initial_owner': is_owner}
+        ],
+        output='screen'
+    )
+
+    node_target_acquisition = Node(
+        package='edgesync_acquisition',
+        executable='target_acquisition_node',
+        name='target_acquisition_node',
+        namespace=node_namespace,
+        remappings=global_remappings,
+        parameters=[
+            timing_params, algo_params, hw_params,
+            {'robot_id': robot_id, 'peer_id': peer_id}
         ],
         output='screen'
     )
@@ -61,7 +105,13 @@ def generate_launch_description():
         package='edgesync_navigation',
         executable='safety_authority_node',
         name='safety_authority_node',
-        parameters=[timing_params, hw_params],
+        namespace=node_namespace,
+        remappings=global_remappings,
+        parameters=[
+            timing_params,
+            hw_params,
+            {'robot_id': robot_id, 'peer_id': peer_id}
+        ],
         output='screen'
     )
 
@@ -69,7 +119,12 @@ def generate_launch_description():
         package='edgesync_observability',
         executable='monitoring_node',
         name='monitoring_node',
-        parameters=[{'robot_id': robot_id}],
+        namespace=node_namespace,
+        remappings=global_remappings,
+        parameters=[
+            timing_params,
+            {'robot_id': robot_id, 'peer_id': peer_id}
+        ],
         output='screen'
     )
 
@@ -81,6 +136,7 @@ def generate_launch_description():
         node_estimation,
         node_identity,
         node_coordination,
+        node_target_acquisition,
         node_safety,
         node_monitoring,
     ])

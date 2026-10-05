@@ -19,7 +19,8 @@ from tf2_ros import Buffer, TransformListener
 
 from edgesync_msgs.msg import (
     HandoffHeader, HandoffRequest, HandoffResponse, HandoffCancel,
-    AcqStatus, HandoffConfirm, HandoffConfirmAck, OwnershipEvent, StateHeartbeat
+    AcqStatus, HandoffConfirm, HandoffConfirmAck, OwnershipEvent, StateHeartbeat,
+    TTOEstimate
 )
 from ..fsm.ownership_fsm import OwnershipFSM, OwnershipRole, SenderState
 from ..decision.eligibility_gate import EligibilityGate, PeerTelemetry
@@ -45,11 +46,15 @@ class CoordinationNode(Node):
         self.declare_parameter('watchdog_max_missed', 3)
         self.declare_parameter('t_neg_timeout_ms', 80)  # Sprint 5 Negotiation Response Window (80ms)
 
+        # Sprint 6 Autonomous Trigger Parameters
+        self.declare_parameter('handoff_trigger_threshold_s', 2.5)
+        self.declare_parameter('handoff_cooldown_s', 5.0)
+
         # Sprint 4 Decision Engine Parameters
         self.declare_parameter('max_cpu_pct', 90.0)
         self.declare_parameter('min_battery_pct', 15.0)
         self.declare_parameter('max_telemetry_age_ms', 2500.0)
-        self.declare_parameter('t_txn_ms', 886.0)  # Transaction Budget = 886ms
+        self.declare_parameter('t_txn_ms', 886)  # Transaction Budget = 886ms (int matching YAML)
         self.declare_parameter('w_fov', 0.50)
         self.declare_parameter('w_dist', 0.30)
         self.declare_parameter('w_battery', 0.20)
@@ -71,7 +76,7 @@ class CoordinationNode(Node):
         max_cpu = self.get_parameter('max_cpu_pct').get_parameter_value().double_value
         min_battery = self.get_parameter('min_battery_pct').get_parameter_value().double_value
         max_telemetry_age = self.get_parameter('max_telemetry_age_ms').get_parameter_value().double_value
-        self.t_txn_ms = self.get_parameter('t_txn_ms').get_parameter_value().double_value
+        self.t_txn_ms = float(self.get_parameter('t_txn_ms').value)
         w_fov = self.get_parameter('w_fov').get_parameter_value().double_value
         w_dist = self.get_parameter('w_dist').get_parameter_value().double_value
         w_battery = self.get_parameter('w_battery').get_parameter_value().double_value
@@ -82,6 +87,12 @@ class CoordinationNode(Node):
         self.est_acquisition_ms = self.get_parameter('est_acquisition_ms').get_parameter_value().integer_value
         self.camera_frame = self.get_parameter('camera_frame').get_parameter_value().string_value
         self.map_frame = self.get_parameter('shared_map_frame').get_parameter_value().string_value
+
+        # Sprint 6 Trigger & Cooldown Attributes
+        self.handoff_trigger_threshold_s = self.get_parameter('handoff_trigger_threshold_s').get_parameter_value().double_value
+        self.handoff_cooldown_s = self.get_parameter('handoff_cooldown_s').get_parameter_value().double_value
+        self._last_handoff_trigger_time: float = -1e9
+        self._last_tto_estimate: Optional[TTOEstimate] = None
 
         # 3. Core Coordination Components
         self.fsm = fsm if fsm is not None else OwnershipFSM(
@@ -163,8 +174,11 @@ class CoordinationNode(Node):
         self.sub_local_heartbeat = self.create_subscription(
             StateHeartbeat, f'/{self.robot_id}/edgesync/state_heartbeat', self._on_local_heartbeat, best_effort_qos
         )
+        self.sub_tto = self.create_subscription(
+            TTOEstimate, f'/{self.robot_id}/edgesync/tto/estimate', self._on_tto_estimate, best_effort_qos
+        )
 
-        # 8. Publishers (Directed to Peer)
+        # 8. Publishers (Directed to Peer & System)
         self.pub_req = self.create_publisher(
             HandoffRequest, f'/{self.peer_id}/edgesync/handoff_request', reliable_qos
         )
@@ -180,11 +194,83 @@ class CoordinationNode(Node):
         self.pub_claim = self.create_publisher(
             OwnershipEvent, f'/{self.robot_id}/edgesync/ownership_event', reliable_qos
         )
+        self.pub_heartbeat = self.create_publisher(
+            StateHeartbeat, f'/{self.robot_id}/edgesync/state_heartbeat', best_effort_qos
+        )
 
         # 9. Watchdog Check Timer (runs at 50 Hz = 20 ms)
         self.timer_wd = self.create_timer(0.02, self._check_watchdog)
 
+        # 10. FSM Lifecycle Tie-in: Initial Ownership Declaration
+        actual_is_owner = is_initial_owner if fsm is None else (self.fsm.role == OwnershipRole.OWNER)
+        if actual_is_owner:
+            self._publish_initial_ownership()
+        else:
+            self.get_logger().info(f"FSM Initialized: {self.robot_id} is in STANDBY role/state.")
+
         self.get_logger().info(f"EdgeSync Coordination Node initialized: robot_id={self.robot_id}, role={self.fsm.role.name}")
+
+    def _publish_initial_ownership(self):
+        """Declare initial authority by publishing StateHeartbeat and OwnershipEvent."""
+        now_ns = self.get_clock().now().nanoseconds
+
+        hb = StateHeartbeat()
+        hb.header.protocol_version = self.proto_ver
+        hb.header.message_type = HandoffHeader.MSG_TYPE_STATE_HEARTBEAT
+        hb.header.sender_id = self.robot_id
+        hb.header.receiver_id = "*"
+        hb.header.stamp_utc_ns = now_ns
+        hb.header.ownership_epoch = self.fsm.epoch_manager.current_epoch
+        hb.role = StateHeartbeat.ROLE_OWNER
+        hb.cpu_load = float(self._my_telemetry.cpu_load_pct)
+        hb.battery_pct = float(self._my_telemetry.battery_pct)
+        hb.nav_status = int(self._my_telemetry.nav_status)
+        self.pub_heartbeat.publish(hb)
+
+        claim = OwnershipEvent()
+        claim.header.protocol_version = self.proto_ver
+        claim.header.message_type = HandoffHeader.MSG_TYPE_OWNERSHIP_EVENT
+        claim.header.sender_id = self.robot_id
+        claim.header.receiver_id = "*"
+        claim.header.transaction_id = f"init_{now_ns}"
+        claim.header.ownership_epoch = self.fsm.epoch_manager.current_epoch
+        claim.header.stamp_utc_ns = now_ns
+        claim.role = OwnershipEvent.ROLE_OWNER
+        claim.burst_index = 1
+        self.pub_claim.publish(claim)
+
+        self.get_logger().info(
+            f"FSM Initialized: {self.robot_id} is INITIAL OWNER in TRACKING state at epoch "
+            f"{self.fsm.epoch_manager.current_epoch}. Declared authority via StateHeartbeat and OwnershipEvent."
+        )
+
+    def _on_tto_estimate(self, msg: TTOEstimate, current_time_s: Optional[float] = None):
+        """Continuously monitor TTO estimate and auto-trigger handoff when tto_safe_s drops below threshold."""
+        self._last_tto_estimate = msg
+
+        # Guard: FSM must be in TRACKING state and role must be OWNER
+        if self.fsm.sender_state != SenderState.TRACKING or self.fsm.role != OwnershipRole.OWNER:
+            return
+
+        tto_safe_s = float(msg.tto_safe_s)
+
+        # Check if tto_safe_s drops below threshold
+        if tto_safe_s < self.handoff_trigger_threshold_s:
+            now_s = current_time_s if current_time_s is not None else (self.get_clock().now().nanoseconds * 1e-9)
+            elapsed = now_s - self._last_handoff_trigger_time
+            if elapsed < self.handoff_cooldown_s:
+                self.get_logger().debug(
+                    f"TTO safe ({tto_safe_s:.2f}s) < threshold ({self.handoff_trigger_threshold_s:.2f}s), "
+                    f"but handoff is in cooldown ({elapsed:.2f}s < {self.handoff_cooldown_s:.2f}s)."
+                )
+                return
+
+            self.get_logger().warn(
+                f"AUTONOMOUS HANDOFF TRIGGER: TTO safe ({tto_safe_s:.2f}s) < threshold "
+                f"({self.handoff_trigger_threshold_s:.2f}s). Broadcasting HandoffRequest!"
+            )
+            self._last_handoff_trigger_time = now_s
+            self.broadcast_handoff_request()
 
     def _on_local_heartbeat(self, msg: StateHeartbeat):
         """Update local telemetry from onboard diagnostics/monitoring."""
@@ -333,14 +419,37 @@ class CoordinationNode(Node):
     def broadcast_handoff_request(self, request_msg: Optional[HandoffRequest] = None) -> None:
         """Broadcast HandoffRequest to candidate peer(s) and start response collection window."""
         target_id = getattr(getattr(request_msg, 'header', None), 'target_id', 'target_0') or 'target_0'
-        txn_id = getattr(getattr(request_msg, 'header', None), 'transaction_id', f'txn_{self.get_clock().now().nanoseconds}') or f'txn_{self.get_clock().now().nanoseconds}'
+        now_ns = self.get_clock().now().nanoseconds
+        txn_id = getattr(getattr(request_msg, 'header', None), 'transaction_id', f'txn_{now_ns}') or f'txn_{now_ns}'
 
         if self.fsm.sender_state == SenderState.TRACKING:
             self.fsm.trigger_candidate(target_id, txn_id)
         if self.fsm.sender_state == SenderState.HANDOFF_CANDIDATE:
             self.fsm.send_request()
 
-        if request_msg is not None:
+        if request_msg is None:
+            req = HandoffRequest()
+            req.header.protocol_version = self.proto_ver
+            req.header.message_type = HandoffHeader.MSG_TYPE_REQUEST
+            req.header.sender_id = self.robot_id
+            req.header.receiver_id = self.peer_id
+            req.header.transaction_id = txn_id
+            req.header.ownership_epoch = self.fsm.epoch_manager.current_epoch
+            req.header.stamp_utc_ns = now_ns
+            if self._last_tto_estimate is not None:
+                req.tto_deadline_utc_ns = self._last_tto_estimate.stamp_utc_ns + int(self._last_tto_estimate.tto_safe_s * 1e9)
+                req.tto_remaining_ms_at_send = int(self._last_tto_estimate.tto_safe_s * 1000)
+                req.tto_sigma_ms = float(self._last_tto_estimate.sigma_tto_s * 1000)
+                req.frame_id = self._last_tto_estimate.frame_id if self._last_tto_estimate.frame_id else self.map_frame
+                if self._last_tto_estimate.predicted_trajectory:
+                    p0 = self._last_tto_estimate.predicted_trajectory[0]
+                    req.position = [float(p0.x), float(p0.y), float(p0.z)]
+            else:
+                req.tto_remaining_ms_at_send = 2000
+                req.tto_sigma_ms = 50.0
+                req.frame_id = self.map_frame
+            self.pub_req.publish(req)
+        else:
             self.pub_req.publish(request_msg)
 
         # Open response collection window with t_neg_timeout_ms timer

@@ -15,13 +15,13 @@ def test_watchdog_feeds_prevent_timeout():
         timeout_triggered.append(True)
 
     dog = LivenessWatchdog(heartbeat_period_ms=100.0, max_missed_heartbeats=3, on_timeout_callback=on_timeout)
-    dog.arm()
+    current_time = 1000.0
+    dog.arm(current_time=current_time)
 
     # Simulate 5 consecutive 10 Hz heartbeats arriving every 100 ms
-    current_time = 1000.0
     for _ in range(5):
         current_time += 0.100
-        dog.feed()
+        dog.feed(current_time=current_time)
         assert dog.check(current_time=current_time) is False
 
     assert len(timeout_triggered) == 0
