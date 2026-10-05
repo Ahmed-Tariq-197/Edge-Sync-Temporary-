@@ -162,6 +162,16 @@ class OwnershipFSM:
             return True
         return False
 
+    def reject_request(self, reason: str = "") -> bool:
+        """Failed hard gate G(j) or utility feasibility: reject request."""
+        if self.receiver_state == ReceiverState.EVALUATING:
+            self.receiver_state = ReceiverState.IDLE
+            self.role = OwnershipRole.STANDBY
+            self.active_transaction_id = None
+            self._notify_change(f"EVALUATING -> IDLE (Request rejected: {reason})")
+            return True
+        return False
+
     def start_acquisition(self) -> bool:
         """Begin slewing toward target spatial prior."""
         if self.receiver_state == ReceiverState.ACCEPTED:
