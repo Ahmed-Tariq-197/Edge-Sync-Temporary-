@@ -59,6 +59,13 @@ class NegotiationManager:
         self._prune_tombstones()
         record = self._table.get(txn_id)
 
+        # Step 4: Monotonic epoch check (Anti-divergence FR-54)
+        if msg_epoch < current_epoch:
+            # Special idempotency case: If transaction is CONFIRMED, duplicate CONFIRM carries epoch e (while current is e+1)
+            if record is not None and record.state == TxnState.CONFIRMED:
+                return True, "Duplicate CONFIRM admitted for idempotent ACK replay"
+            return False, f"Stale epoch {msg_epoch} < current {current_epoch}"
+
         if record is None:
             if is_request:
                 # Open new transaction record
@@ -67,10 +74,6 @@ class NegotiationManager:
 
         if record.state == TxnState.CLOSED:
             return False, f"Transaction {txn_id} is CLOSED ({record.reason})"
-
-        # Step 4: Monotonic epoch check
-        if msg_epoch < current_epoch:
-            return False, f"Stale epoch {msg_epoch} < current {current_epoch}"
 
         return True, "Message admitted"
 

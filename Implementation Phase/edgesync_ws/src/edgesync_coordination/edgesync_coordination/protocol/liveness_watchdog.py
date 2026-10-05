@@ -26,10 +26,10 @@ class LivenessWatchdog:
         self._last_heartbeat_time: float = 0.0
         self._missed_count: int = 0
 
-    def arm(self):
+    def arm(self, current_time: Optional[float] = None):
         """Arm watchdog at the instant of ACCEPT."""
         self._is_armed = True
-        self._last_heartbeat_time = time.monotonic()
+        self._last_heartbeat_time = current_time if current_time is not None else time.monotonic()
         self._missed_count = 0
 
     def disarm(self):
@@ -37,10 +37,10 @@ class LivenessWatchdog:
         self._is_armed = False
         self._missed_count = 0
 
-    def feed(self):
+    def feed(self, current_time: Optional[float] = None):
         """Reset watchdog timer upon valid AcqStatus.msg heartbeat."""
         if self._is_armed:
-            self._last_heartbeat_time = time.monotonic()
+            self._last_heartbeat_time = current_time if current_time is not None else time.monotonic()
             self._missed_count = 0
 
     def check(self, current_time: Optional[float] = None) -> bool:
@@ -51,7 +51,8 @@ class LivenessWatchdog:
         now = current_time if current_time is not None else time.monotonic()
         elapsed = now - self._last_heartbeat_time
 
-        if elapsed >= self.cutoff_duration_s:
+        # Floating-point epsilon (1e-6s) to prevent IEEE 754 precision boundary misses
+        if elapsed >= (self.cutoff_duration_s - 1e-6):
             self._is_armed = False
             if self.on_timeout is not None:
                 self.on_timeout()

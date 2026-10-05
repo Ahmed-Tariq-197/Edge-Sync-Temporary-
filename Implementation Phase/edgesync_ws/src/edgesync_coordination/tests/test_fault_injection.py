@@ -79,7 +79,7 @@ def test_scenario_d_candidate_crash_and_watchdog_cutoff():
     assert robot_b.start_acquisition() is True
     assert robot_a.on_peer_acquisition_started() is True
     sim_clock += 0.100  # +100 ms
-    watchdog_a.feed()
+    watchdog_a.feed(current_time=sim_clock)
     assert watchdog_a.check(current_time=sim_clock) is False
 
     # ------------------------------------------------------------------------

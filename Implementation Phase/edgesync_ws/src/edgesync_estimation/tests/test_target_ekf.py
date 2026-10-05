@@ -22,6 +22,7 @@ def test_ekf_constant_velocity_predict():
     ekf.x[5] = 0.0
 
     dt = 0.5  # 0.5 seconds
+    p_init = ekf.P.copy()
     x_pred, p_pred = ekf.predict(dt)
 
     assert pytest.approx(x_pred[0], abs=1e-5) == 1.5   # 1.0 + 1.0 * 0.5
@@ -29,7 +30,7 @@ def test_ekf_constant_velocity_predict():
     assert pytest.approx(x_pred[2], abs=1e-5) == 0.0
 
     # Covariance must have grown after predict
-    assert np.trace(p_pred) > np.trace(ekf.P)
+    assert np.trace(p_pred) > np.trace(p_init)
 
 
 def test_ekf_measurement_update_convergence():

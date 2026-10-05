@@ -70,8 +70,8 @@ def test_identity_verifier_true_match():
     target_ref = np.random.randn(512).astype(np.float32)
     target_ref = target_ref / np.linalg.norm(target_ref)
 
-    # Slightly perturbed query (cosine sim ~ 0.95)
-    noise = np.random.normal(0, 0.1, 512).astype(np.float32)
+    # Slightly perturbed query (cosine sim ~ 0.95-0.98)
+    noise = np.random.normal(0, 0.01, 512).astype(np.float32)
     query = target_ref + noise
     query = query / np.linalg.norm(query)
 

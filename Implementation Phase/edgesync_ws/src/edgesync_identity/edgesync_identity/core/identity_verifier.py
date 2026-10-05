@@ -51,7 +51,7 @@ class IdentityVerifier:
         # Ensure positive-definiteness with regularized inversion
         s_reg = cov_combined + np.eye(3) * 1e-5
         inv_s = np.linalg.inv(s_reg)
-        d2 = float(diff.T @ inv_s @ diff)
+        d2 = float((diff.T @ inv_s @ diff).item())
         return max(0.0, d2)
 
     def verify_candidate(self,
