@@ -26,3 +26,5 @@ jobs:
           target_sync_branch: main
           target_repo_token: ${{ secrets.GITHUB_TOKEN }}
           test_mode: false
+
+          chore: remove obsolete sync workflow
