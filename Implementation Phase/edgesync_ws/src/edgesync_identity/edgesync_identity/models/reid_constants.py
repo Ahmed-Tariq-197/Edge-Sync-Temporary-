@@ -1,0 +1,11 @@
+"""Shared constants for Re-ID backbones (single source of truth, no magic numbers)."""
+
+EMBEDDING_DIM = 512
+INPUT_HEIGHT = 256
+INPUT_WIDTH = 128
+INPUT_CHANNELS = 3
+INFERENCE_BATCH_SIZE = 1
+PIXEL_MAX_VALUE = 255.0
+L2_NORM_EPSILON = 1e-6
+IMAGENET_MEAN = (0.485, 0.456, 0.406)
+IMAGENET_STD = (0.229, 0.224, 0.225)

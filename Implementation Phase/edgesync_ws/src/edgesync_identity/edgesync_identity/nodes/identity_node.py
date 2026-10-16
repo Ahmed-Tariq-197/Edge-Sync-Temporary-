@@ -13,7 +13,7 @@ import numpy as np
 
 from edgesync_msgs.srv import IdentityVerify
 from ..interfaces.base_identity_extractor import BaseIdentityExtractor
-from ..models.osnet_trt_extractor import OsnetTrtExtractor
+from ..factory.extractor_factory import BackboneType, ExtractorFactory
 from ..core.signature_smoother import SignatureSmoother
 from ..core.identity_verifier import IdentityVerifier
 
@@ -21,8 +21,9 @@ from ..core.identity_verifier import IdentityVerifier
 class IdentityNode(Node):
     """ROS 2 Node providing resident Re-ID embedding and verification services."""
 
-    def __init__(self, extractor: Optional[BaseIdentityExtractor] = None):
-        super().__init__('identity_node')
+    def __init__(self, extractor: Optional[BaseIdentityExtractor] = None,
+                 parameter_overrides: Optional[list] = None):
+        super().__init__('identity_node', parameter_overrides=parameter_overrides)
 
         # 1. Parameter Declarations (Zero Hardcoding)
         self.declare_parameter('robot_id', 'ugv_2')
@@ -31,6 +32,7 @@ class IdentityNode(Node):
         self.declare_parameter('enable_spatial_gating', True)
         self.declare_parameter('service_name', '/identity/verify')
         self.declare_parameter('engine_path', '')
+        self.declare_parameter('reid_backbone', BackboneType.OSNET.value)
 
         # 2. Extract Parameters
         self.robot_id = self.get_parameter('robot_id').get_parameter_value().string_value
@@ -39,10 +41,12 @@ class IdentityNode(Node):
         spatial_gating = self.get_parameter('enable_spatial_gating').get_parameter_value().bool_value
         service_name = self.get_parameter('service_name').get_parameter_value().string_value
         engine_path = self.get_parameter('engine_path').get_parameter_value().string_value
+        reid_backbone = self.get_parameter('reid_backbone').get_parameter_value().string_value
 
         # 3. Dependency Injection (SOLID: DIP)
-        self.extractor: BaseIdentityExtractor = extractor if extractor is not None else OsnetTrtExtractor(
-            engine_path=engine_path if engine_path else None
+        self.reid_backbone = reid_backbone
+        self.extractor: BaseIdentityExtractor = extractor if extractor is not None else ExtractorFactory().create(
+            reid_backbone, engine_path if engine_path else None
         )
 
         # 4. Core Algorithms
@@ -58,7 +62,9 @@ class IdentityNode(Node):
             IdentityVerify, service_name, self._handle_identity_verify
         )
 
-        self.get_logger().info(f"EdgeSync Identity Node initialized: service={service_name}, threshold={self.similarity_threshold:.2f}")
+        self.get_logger().info(
+            f"EdgeSync Identity Node initialized: service={service_name}, "
+            f"threshold={self.similarity_threshold:.2f}, backbone={self.reid_backbone}")
 
     def store_candidate_vector(self, vector: np.ndarray) -> None:
         """Store reference candidate vector received from HandoffRequest (Robot A)."""

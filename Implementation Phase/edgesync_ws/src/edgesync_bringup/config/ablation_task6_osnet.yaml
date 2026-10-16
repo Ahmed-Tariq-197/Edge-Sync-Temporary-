@@ -1,0 +1,8 @@
+# Task 6 ablation, baseline arm: OSNet x1.0 Re-ID backbone.
+# The engine path is supplied by the launch argument `engine_path`.
+/**:
+  ros__parameters:
+    reid_backbone: "osnet"
+    similarity_threshold: 0.70
+    smoothing_alpha: 0.20
+    enable_spatial_gating: true

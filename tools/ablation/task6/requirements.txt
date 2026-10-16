@@ -1,0 +1,8 @@
+# Workstation-side tooling for Task 6 (training and ONNX export). Not used by the ROS 2 runtime.
+torch>=2.1
+torchvision>=0.16
+onnx>=1.15
+onnxruntime>=1.16
+numpy
+pillow
+opencv-python-headless

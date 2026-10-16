@@ -22,6 +22,8 @@ setup(
     entry_points={
         'console_scripts': [
             'identity_node = edgesync_identity.nodes.identity_node:main',
+            'reid_ablation_benchmark = edgesync_identity.ablation.benchmark_extractor:main',
+            'reid_ablation_compare = edgesync_identity.ablation.compare_results:main',
         ],
     },
 )

@@ -7,45 +7,45 @@ import os
 from typing import Optional
 import numpy as np
 from ..interfaces.base_identity_extractor import BaseIdentityExtractor
+from ..runtime.base_inference_runner import BaseInferenceRunner
+from ..runtime.trt_engine_runner import TensorRTUnavailableError, TrtEngineRunner
 
 
 class OsnetTrtExtractor(BaseIdentityExtractor):
     """OSNet 512-dimensional visual embedding extractor accelerated by TensorRT."""
 
     def __init__(self, engine_path: Optional[str] = None,
-                 input_shape: tuple[int, int] = (256, 128)):
+                 input_shape: tuple[int, int] = (256, 128),
+                 runner: Optional[BaseInferenceRunner] = None):
         """Initialize OSNet extractor.
 
         Args:
             engine_path: Path to serialized osnet_x1_0.engine.
             input_shape: Re-ID standard input resolution (height=256, width=128).
+            runner: Optional pre-built inference runner (dependency injection).
         """
         self.engine_path = engine_path
         self.input_height, self.input_width = input_shape
-        self._trt_context = None
-        self._cuda_stream = None
+        self._runner: Optional[BaseInferenceRunner] = runner
 
-        if engine_path and os.path.exists(engine_path):
+        if self._runner is None and engine_path and os.path.exists(engine_path):
             self._load_resident_engine()
 
     def _load_resident_engine(self):
-        """Deserialize and pre-warm TensorRT engine in unified memory."""
+        """Deserialize and pre-warm the TensorRT engine through the shared runner."""
         try:
-            import tensorrt as trt
-            import pycuda.driver as cuda
-            import pycuda.autoinit  # noqa: F401
+            self._runner = TrtEngineRunner(self.engine_path)
+        except TensorRTUnavailableError:
+            self._runner = None
 
-            logger = trt.Logger(trt.Logger.WARNING)
-            with open(self.engine_path, "rb") as f, trt.Runtime(logger) as runtime:
-                self.engine = runtime.deserialize_cuda_engine(f.read())
-            self._trt_context = self.engine.create_execution_context()
-            self._cuda_stream = cuda.Stream()
+    @property
+    def is_hardware_backed(self) -> bool:
+        """True when a real inference runner is attached (False means mock embeddings)."""
+        return self._runner is not None
 
-            # Pre-warm with dummy tensor to lock unified memory
-            dummy_input = np.zeros((1, 3, self.input_height, self.input_width), dtype=np.float32)
-            self._execute_trt(dummy_input)
-        except ImportError:
-            self._trt_context = None
+    @property
+    def runner(self) -> Optional[BaseInferenceRunner]:
+        return self._runner
 
     def preprocess(self, crop: np.ndarray) -> np.ndarray:
         """Resize, normalize (ImageNet stats) and format to 1x3xHxW float32."""
@@ -70,9 +70,10 @@ class OsnetTrtExtractor(BaseIdentityExtractor):
         return np.ascontiguousarray(chw[None, ...])
 
     def _execute_trt(self, input_tensor: np.ndarray) -> np.ndarray:
-        """Run TensorRT inference."""
-        # Simulated or actual CUDA buffer exchange
-        return np.zeros(512, dtype=np.float32)
+        """Run TensorRT inference through the shared runner."""
+        if self._runner is None:
+            return np.zeros(512, dtype=np.float32)
+        return self._runner.infer(input_tensor)
 
     def extract_embedding(self, image_crop: np.ndarray) -> np.ndarray:
         """Extract L2-normalized 512-dim visual embedding."""
@@ -81,7 +82,7 @@ class OsnetTrtExtractor(BaseIdentityExtractor):
 
         input_batch = self.preprocess(image_crop)
 
-        if self._trt_context is not None:
+        if self._runner is not None:
             raw_embedding = self._execute_trt(input_batch)
         else:
             # Deterministic mock pseudo-embedding for testing / non-CUDA host

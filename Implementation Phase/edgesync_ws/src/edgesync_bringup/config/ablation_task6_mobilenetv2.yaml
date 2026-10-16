@@ -1,0 +1,9 @@
+# Task 6 ablation, candidate arm: MobileNetV2 Re-ID backbone (512-dim embedding head).
+# Every value except reid_backbone is identical to the baseline arm so that only the
+# backbone differs. The engine path is supplied by the launch argument `engine_path`.
+/**:
+  ros__parameters:
+    reid_backbone: "mobilenetv2"
+    similarity_threshold: 0.70
+    smoothing_alpha: 0.20
+    enable_spatial_gating: true
