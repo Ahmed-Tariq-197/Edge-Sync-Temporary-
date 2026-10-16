@@ -4,7 +4,7 @@ on:
   schedule:
     # كل يوم الساعة 3 الفجر UTC = 5 الفجر بتوقيت القاهرة
     - cron: '0 3 * * *'
-  workflow_dispatch: # تقدر تشغله يدوي من صفحة Actions
+  workflow_dispatch:
 
 jobs:
   sync:
@@ -12,6 +12,12 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout Fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Sync fork with upstream
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
         with:
@@ -19,5 +25,4 @@ jobs:
           upstream_sync_branch: main
           target_sync_branch: main
           target_repo_token: ${{ secrets.GITHUB_TOKEN }}
-          # ده اللي هيمنع الـ workflow يفشل لو فيه commits محلية
           test_mode: false
