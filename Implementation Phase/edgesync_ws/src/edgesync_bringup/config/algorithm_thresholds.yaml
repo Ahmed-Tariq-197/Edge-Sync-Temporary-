@@ -1,0 +1,38 @@
+# EdgeSync Algorithm Thresholds and Decision Policies (Math/Protocol Spec v2.3 §2 & §7)
+# ZERO-HARDCODING MANDATE: All algorithms, thresholds, and ablation flags are injected via parameters.
+
+algorithm_thresholds:
+  ros__parameters:
+    # Visual Re-ID Threshold
+    reid_similarity_threshold: 0.70    # L2-normalized cosine similarity threshold (OSNet)
+    reid_crop_min_confidence: 0.40     # Minimum detector confidence to submit candidate crop
+    reid_moving_average_alpha: 0.20    # Signature smoother alpha (f_target = alpha*f_new + (1-alpha)*f_prev)
+    reid_signature_rate_hz: 2.0        # Rate of target visual signature smoothing (Hz)
+
+    # TTO Operational Regimes & Boundaries
+    tto_zone1_steady_s: 2.50           # Zone 1 (>2.50s): Steady tracking, network silence
+    tto_zone2_trigger_s: 1.23          # Zone 2 (1.23s - 2.50s): Proactive handoff trigger zone
+    # Zone 3 (<1.23s): Critical boundary, starting new transactions is forbidden
+
+    # TTO Analytical Predictor Parameters
+    tto_k_tau_safety: 2.0              # T_safe = max(0, T_hat - k_tau * sigma_tto)
+    tto_prediction_horizon_s: 4.0      # EKF trajectory forward projection horizon (s)
+    tto_dt_step_s: 0.05                # Integration step for frustum intersection (s)
+
+    # Candidate Utility Engine Weights (w1 + w2 + w3 = 1.0)
+    utility_weight_feasibility: 0.50   # w1: Execution margin weight
+    utility_weight_fov: 0.30           # w2: Predicted target path in FOV weight
+    utility_weight_network: 0.20       # w3: Network link quality weight
+    utility_t_ref_s: 1.0               # Normalization time reference for margin (s)
+    network_rtt_max_ms: 100.0          # Normalization maximum allowable RTT (ms)
+
+    # Hard Eligibility Gate G(j) Criteria
+    candidate_gate_cpu_max_pct: 90.0   # Max CPU load permitted for candidate receiver (%)
+    candidate_gate_battery_min_pct: 15.0 # Min battery percentage required (%)
+
+    # Work Package 8b: Ablation & Baseline Evaluation Switches
+    trigger_mode: "proactive"          # Options: "proactive" | "reactive"
+    ego_cov_enabled: true              # True = propagate J_xi * Sigma_xi * J_xi^T
+    identity_mode: "multicue"          # Options: "multicue" | "appearance_only"
+    watchdog_enabled: true             # Enable 300 ms anti-deadlock watchdog
+    ack_confirm_enabled: true          # Enable 2-step atomic epoch confirm-ack
