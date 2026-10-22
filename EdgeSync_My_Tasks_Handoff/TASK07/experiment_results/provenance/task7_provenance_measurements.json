@@ -1,0 +1,646 @@
+{
+ "purpose": "reproduce every measurement quoted in TASK7_DATA_PROVENANCE.md and TASK7_WEIGHTS_PROVENANCE.md; read-only over the project tree",
+ "generated_utc": "2026-10-19T16:28:08Z",
+ "host": "3.10.11 (tags/v3.10.11:7d4cc5a, Apr  5 2023, 00:38:17) [MSC v.1929 64 bit (AMD64)]",
+ "dataset": {
+  "bounding_box_train": {
+   "jpg": 12936,
+   "distinct_pid": 751,
+   "pid_range": [
+    2,
+    1500
+   ],
+   "junk_pid_minus_1": 0,
+   "distractor_pid_0": 0,
+   "cameras": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "real_identities": 751
+  },
+  "bounding_box_test": {
+   "jpg": 19732,
+   "distinct_pid": 752,
+   "pid_range": [
+    -1,
+    1501
+   ],
+   "junk_pid_minus_1": 3819,
+   "distractor_pid_0": 2798,
+   "cameras": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "real_identities": 750
+  },
+  "query": {
+   "jpg": 3368,
+   "distinct_pid": 750,
+   "pid_range": [
+    1,
+    1501
+   ],
+   "junk_pid_minus_1": 0,
+   "distractor_pid_0": 0,
+   "cameras": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "real_identities": 750
+  },
+  "tree": {
+   "jpg_total": 61295,
+   "by_extension": {
+    ".txt": 1,
+    ".jpg": 61295,
+    ".db": 4,
+    ".mat": 6736
+   },
+   "non_image_files_in_image_dirs": [
+    "bounding_box_test\\Thumbs.db",
+    "bounding_box_train\\Thumbs.db",
+    "gt_bbox\\Thumbs.db",
+    "query\\Thumbs.db"
+   ]
+  },
+  "identity_set_algebra": {
+   "train_intersect_test": 0,
+   "train_intersect_query": 0,
+   "query_subset_of_test": true,
+   "test_minus_query": [],
+   "train_ids_ge_752": 355,
+   "test_ids_le_751": 355,
+   "missing_id_numbers_in_1_651": 310,
+   "fitting_band_1_650": {
+    "identities": 341,
+    "images": 6241
+   },
+   "calibration_band_651_751": {
+    "identities": 55,
+    "images": 1180
+   },
+   "id_band_752_1501_files": {
+    "gallery": 6226,
+    "gallery_identities": 395,
+    "query": 1774,
+    "query_identities": 395
+   }
+  }
+ },
+ "projections": {
+  "svd_projection_768_to_512.npz": {
+   "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\transreid\\svd_projection_768_to_512.npz",
+   "bytes": 1466710,
+   "sha256": "dc2b9072850c299d3525a3617a8a9179f2d85638542ef6c05dbf59d1317b63b5",
+   "keys": [
+    "mean",
+    "projection",
+    "singular_values",
+    "total_variance_ratio"
+   ],
+   "projection_shape": [
+    768,
+    512
+   ],
+   "mean_l2": 19.389999510821742,
+   "mean_abs_max": 5.877296447753906,
+   "columns_orthonormal_max_abs_deviation": 1.2494993484324368e-08,
+   "total_variance_ratio": 0.9857138991355896,
+   "singular_value_first": 584.6605834960938,
+   "singular_value_last": 23.289630889892578
+  },
+  "svd_projection_768_to_512_norm05.npz": {
+   "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\transreid\\svd_projection_768_to_512_norm05.npz",
+   "bytes": 1461626,
+   "sha256": "628b1dc6bcec1c227e4cd539f1a4dc33aa43c152dbacf681f92a73278ab07ef1",
+   "keys": [
+    "mean",
+    "normalization",
+    "projection",
+    "target_dim"
+   ],
+   "projection_shape": [
+    768,
+    512
+   ],
+   "mean_l2": 0.0,
+   "mean_abs_max": 0.0,
+   "columns_orthonormal_max_abs_deviation": 9.464141470516552e-09,
+   "total_variance_ratio": null,
+   "singular_value_first": null,
+   "singular_value_last": null
+  },
+  "svd_projection_768_to_512_norm05_centered.npz": {
+   "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\transreid\\svd_projection_768_to_512_norm05_centered.npz",
+   "bytes": 1464564,
+   "sha256": "c9bca7595cb67d63a82b5a77e02b365040ab6e95af0d6ffde370553d51deb53e",
+   "keys": [
+    "mean",
+    "normalization",
+    "projection",
+    "target_dim"
+   ],
+   "projection_shape": [
+    768,
+    512
+   ],
+   "mean_l2": 10.37291325156675,
+   "mean_abs_max": 4.873554229736328,
+   "columns_orthonormal_max_abs_deviation": 1.0784604431712808e-08,
+   "total_variance_ratio": null,
+   "singular_value_first": null,
+   "singular_value_last": null
+  },
+  "svd_projection_768_to_512_real.npz": {
+   "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\transreid\\svd_projection_768_to_512_real.npz",
+   "bytes": 1466710,
+   "sha256": "dc2b9072850c299d3525a3617a8a9179f2d85638542ef6c05dbf59d1317b63b5",
+   "keys": [
+    "mean",
+    "projection",
+    "singular_values",
+    "total_variance_ratio"
+   ],
+   "projection_shape": [
+    768,
+    512
+   ],
+   "mean_l2": 19.389999510821742,
+   "mean_abs_max": 5.877296447753906,
+   "columns_orthonormal_max_abs_deviation": 1.2494993484324368e-08,
+   "total_variance_ratio": 0.9857138991355896,
+   "singular_value_first": 584.6605834960938,
+   "singular_value_last": 23.289630889892578
+  },
+  "svd_projection_768_to_512_real_v2.npz": {
+   "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\transreid\\svd_projection_768_to_512_real_v2.npz",
+   "bytes": 1466587,
+   "sha256": "9626bea5526df5b0a9d5b4dccec1c552224b5a6da504a0ab3a69f6bbfec1dbfc",
+   "keys": [
+    "mean",
+    "projection",
+    "singular_values",
+    "total_variance_ratio"
+   ],
+   "projection_shape": [
+    768,
+    512
+   ],
+   "mean_l2": 10.372914292029659,
+   "mean_abs_max": 4.8735551834106445,
+   "columns_orthonormal_max_abs_deviation": 8.751698921116713e-09,
+   "total_variance_ratio": 0.9864118099212646,
+   "singular_value_first": 537.5874633789062,
+   "singular_value_last": 25.71208953857422
+  },
+  "svd_projection_768_to_512_real_v3_reproduce.npz": {
+   "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\transreid\\svd_projection_768_to_512_real_v3_reproduce.npz",
+   "bytes": 1466587,
+   "sha256": "9626bea5526df5b0a9d5b4dccec1c552224b5a6da504a0ab3a69f6bbfec1dbfc",
+   "keys": [
+    "mean",
+    "projection",
+    "singular_values",
+    "total_variance_ratio"
+   ],
+   "projection_shape": [
+    768,
+    512
+   ],
+   "mean_l2": 10.372914292029659,
+   "mean_abs_max": 4.8735551834106445,
+   "columns_orthonormal_max_abs_deviation": 8.751698921116713e-09,
+   "total_variance_ratio": 0.9864118099212646,
+   "singular_value_first": 537.5874633789062,
+   "singular_value_last": 25.71208953857422
+  },
+  "_relationships": {
+   "svd_projection_768_to_512_real_v3_reproduce.npz vs svd_projection_768_to_512_real_v2.npz": {
+    "byte_identical": true,
+    "max_abs_element_difference": 0.0
+   },
+   "svd_projection_768_to_512_real.npz vs svd_projection_768_to_512_real_v2.npz": {
+    "byte_identical": false,
+    "max_abs_element_difference": 0.25184596329927444
+   },
+   "svd_projection_768_to_512.npz vs svd_projection_768_to_512_real_v2.npz": {
+    "byte_identical": false,
+    "max_abs_element_difference": 0.25184596329927444
+   },
+   "svd_projection_768_to_512_norm05.npz vs svd_projection_768_to_512_real_v2.npz": {
+    "byte_identical": false,
+    "max_abs_element_difference": 0.42987602949142456
+   },
+   "svd_projection_768_to_512_norm05_centered.npz vs svd_projection_768_to_512_real_v2.npz": {
+    "byte_identical": false,
+    "max_abs_element_difference": 3.423541784286499e-05
+   }
+  }
+ },
+ "checkpoints": {
+  "transreid_checkpoint": {
+   "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\transreid\\transformer_120.pth",
+   "bytes": 414724314,
+   "sha256": "843055293e160da027d152e1b9cccb75e34c73e0a9714204012c0f2825f9c4e5",
+   "container": "OrderedDict",
+   "tensor_entries": 211,
+   "total_elements": 103661037,
+   "base_dot_entries_elements": 86583016,
+   "non_base_elements": 17078021,
+   "classifier_head_keys": [
+    "classifier.weight",
+    "classifier_1.weight",
+    "classifier_2.weight",
+    "classifier_3.weight",
+    "classifier_4.weight"
+   ],
+   "classifier_head_shapes": {
+    "classifier.weight": [
+     751,
+     768
+    ],
+    "classifier_1.weight": [
+     751,
+     768
+    ],
+    "classifier_2.weight": [
+     751,
+     768
+    ],
+    "classifier_3.weight": [
+     751,
+     768
+    ],
+    "classifier_4.weight": [
+     751,
+     768
+    ]
+   },
+   "buffer_elements": 7685,
+   "pos_embed": [
+    1,
+    211,
+    768
+   ],
+   "sie_embed": [
+    6,
+    1,
+    768
+   ],
+   "block_count": 12,
+   "arithmetic_reconciliation": 100769512
+  },
+  "osnet_checkpoint": {
+   "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\osnet\\osnet_x1_0_market1501.pth",
+   "bytes": 10399605,
+   "sha256": "2809d3227f7d078f6045f7feb874a34d0684f0e0057b264b99adccf7d4519154",
+   "tensor_entries": 567,
+   "total_elements": 2577891,
+   "buffer_elements": 23120,
+   "trainable_elements": 2554771,
+   "classifier_head_shapes": {
+    "classifier.weight": [
+     751,
+     512
+    ],
+    "classifier.bias": [
+     751
+    ]
+   }
+  },
+  "osnet_placeholder_backbone": {
+   "source": "edgesync_identity/models/osnet_torch_extractor.py:93",
+   "entries": 8,
+   "total_elements": 42945,
+   "buffer_elements": 129,
+   "trainable_elements": 42816,
+   "shapes": {
+    "features.0.weight": [
+     64,
+     3,
+     7,
+     7
+    ],
+    "features.1.weight": [
+     64
+    ],
+    "features.1.bias": [
+     64
+    ],
+    "features.1.running_mean": [
+     64
+    ],
+    "features.1.running_var": [
+     64
+    ],
+    "features.1.num_batches_tracked": [],
+    "fc.weight": [
+     512,
+     64
+    ],
+    "fc.bias": [
+     512
+    ]
+   },
+   "key_overlap_with_checkpoint": 0,
+   "strict_false_missing_keys": 7,
+   "strict_false_unexpected_keys": 567
+  },
+  "synthetic_fixture": {
+   "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_identity\\tests\\fixtures\\synthetic_transreid.pth",
+   "bytes": 414718880,
+   "sha256": "2e518f28bb5ee5019329f0a96647300fd90a47bae218cb8313bfc0960180658c"
+  }
+ },
+ "embeddings": {
+  "manifest": {
+   "path": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory\\task7_embeddings_manifest.json",
+   "bytes": 7352,
+   "sha256": "283c8c782e66869a429a6db4d63cbaa3f19d938fc68a418f2a997ba98dfe990a"
+  },
+  "manifest_assets": {
+   "transreid_checkpoint": {
+    "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\transreid\\transformer_120.pth",
+    "bytes": 414724314,
+    "sha256": "843055293e160da027d152e1b9cccb75e34c73e0a9714204012c0f2825f9c4e5"
+   },
+   "transreid_projection": {
+    "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\transreid\\svd_projection_768_to_512_real_v2.npz",
+    "bytes": 1466587,
+    "sha256": "9626bea5526df5b0a9d5b4dccec1c552224b5a6da504a0ab3a69f6bbfec1dbfc"
+   },
+   "osnet_checkpoint": {
+    "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\osnet\\osnet_x1_0_market1501.pth",
+    "bytes": 10399605,
+    "sha256": "2809d3227f7d078f6045f7feb874a34d0684f0e0057b264b99adccf7d4519154"
+   }
+  },
+  "manifest_population": {
+   "population": "directory",
+   "rules": {
+    "gallery": "pid >= 0 in bounding_box_test/ \u2014 official test gallery: distractor pid 0 is KEPT as gallery negatives, junk pid -1 is excluded",
+    "query": "pid > 0 in query/ \u2014 official query set"
+   },
+   "provenance": "Reproduces the population the recorded arm actually used (run_real_pipeline.py:488-498 \u2192 gate3_real_results_v2_corrected.json).",
+   "validity": "Valid: this is the published Market-1501 test population, taken from the directory semantics rather than from an identity-number band.",
+   "id_band": null,
+   "gallery_dir": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\data\\Market-1501-v15.09.15\\bounding_box_test",
+   "query_dir": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\data\\Market-1501-v15.09.15\\query",
+   "gallery": {
+    "files_scanned": 19732,
+    "kept": 15913,
+    "excluded": {
+     "junk_identity_-1": 3819
+    },
+    "identities": 751,
+    "distractors_pid_0": 2798,
+    "identity_number_range": [
+     0,
+     1501
+    ]
+   },
+   "query": {
+    "files_scanned": 3368,
+    "kept": 3368,
+    "excluded": {},
+    "identities": 750,
+    "identity_number_range": [
+     1,
+     1501
+    ]
+   },
+   "counts_asserted_from": "this run only \u2014 no standard dataset count is assumed"
+  },
+  "files": {
+   "transreid_768_agnostic": {
+    "path": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory\\task7_transreid_768_agnostic.npz",
+    "bytes": 55193927,
+    "sha256": "459cfbb31236d558636813d59484e626dfc7e631af752e2596599a439d226ac2",
+    "manifest_sha256": "459cfbb31236d558636813d59484e626dfc7e631af752e2596599a439d226ac2",
+    "match": true,
+    "arrays": {
+     "gallery_features": [
+      [
+       15913,
+       768
+      ],
+      "float32"
+     ],
+     "gallery_paths": [
+      [
+       15913
+      ],
+      "<U92"
+     ],
+     "gallery_pids": [
+      [
+       15913
+      ],
+      "int32"
+     ],
+     "gallery_camids": [
+      [
+       15913
+      ],
+      "int32"
+     ],
+     "gallery_latencies_ms": [
+      [
+       15913
+      ],
+      "float64"
+     ],
+     "query_features": [
+      [
+       3368,
+       768
+      ],
+      "float32"
+     ],
+     "query_paths": [
+      [
+       3368
+      ],
+      "<U80"
+     ],
+     "query_pids": [
+      [
+       3368
+      ],
+      "int32"
+     ],
+     "query_camids": [
+      [
+       3368
+      ],
+      "int32"
+     ],
+     "query_latencies_ms": [
+      [
+       3368
+      ],
+      "float64"
+     ]
+    },
+    "unit_norm_max_deviation": 37.3980598449707
+   },
+   "transreid_512_agnostic": {
+    "path": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory\\task7_transreid_512_agnostic.npz",
+    "bytes": 37094828,
+    "sha256": "cb4c8b8654ff410a12bf379ce14e01bd000efba20408c2ff63dccd6f14e671b0",
+    "manifest_sha256": "cb4c8b8654ff410a12bf379ce14e01bd000efba20408c2ff63dccd6f14e671b0",
+    "match": true,
+    "arrays": {
+     "gallery_features": [
+      [
+       15913,
+       512
+      ],
+      "float32"
+     ],
+     "gallery_paths": [
+      [
+       15913
+      ],
+      "<U92"
+     ],
+     "gallery_pids": [
+      [
+       15913
+      ],
+      "int32"
+     ],
+     "gallery_camids": [
+      [
+       15913
+      ],
+      "int32"
+     ],
+     "gallery_latencies_ms": [
+      [
+       15913
+      ],
+      "float64"
+     ],
+     "query_features": [
+      [
+       3368,
+       512
+      ],
+      "float32"
+     ],
+     "query_paths": [
+      [
+       3368
+      ],
+      "<U80"
+     ],
+     "query_pids": [
+      [
+       3368
+      ],
+      "int32"
+     ],
+     "query_camids": [
+      [
+       3368
+      ],
+      "int32"
+     ],
+     "query_latencies_ms": [
+      [
+       3368
+      ],
+      "float64"
+     ]
+    },
+    "unit_norm_max_deviation": 1.7881393432617188e-07
+   },
+   "transreid_512_sie": {
+    "path": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory\\task7_transreid_512_sie.npz",
+    "bytes": 37095723,
+    "sha256": "d2d50a8ed50fbb54b46b0229241280e8bc9f38c40c53c2a87c1239503f9ef144",
+    "manifest_sha256": "d2d50a8ed50fbb54b46b0229241280e8bc9f38c40c53c2a87c1239503f9ef144",
+    "match": true,
+    "arrays": {
+     "gallery_features": [
+      [
+       15913,
+       512
+      ],
+      "float32"
+     ],
+     "gallery_paths": [
+      [
+       15913
+      ],
+      "<U92"
+     ],
+     "gallery_pids": [
+      [
+       15913
+      ],
+      "int32"
+     ],
+     "gallery_camids": [
+      [
+       15913
+      ],
+      "int32"
+     ],
+     "gallery_latencies_ms": [
+      [
+       15913
+      ],
+      "float64"
+     ],
+     "query_features": [
+      [
+       3368,
+       512
+      ],
+      "float32"
+     ],
+     "query_paths": [
+      [
+       3368
+      ],
+      "<U80"
+     ],
+     "query_pids": [
+      [
+       3368
+      ],
+      "int32"
+     ],
+     "query_camids": [
+      [
+       3368
+      ],
+      "int32"
+     ],
+     "query_latencies_ms": [
+      [
+       3368
+      ],
+      "float64"
+     ]
+    },
+    "unit_norm_max_deviation": 1.7881393432617188e-07
+   }
+  }
+ },
+ "elapsed_s": 6.1
+}

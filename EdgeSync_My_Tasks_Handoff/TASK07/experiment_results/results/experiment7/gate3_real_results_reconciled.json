@@ -1,0 +1,68 @@
+{
+  "experiment": "ES-EXP07",
+  "audit_version": "REV01-FORENSIC-RECONCILED",
+  "timestamp": "2026-10-15T18:15:00Z",
+  "device": "NVIDIA GeForce RTX 3050 Laptop GPU (CUDA 12.1)",
+  "dataset": "Market-1501-v15.09.15 (Frozen Test Split)",
+  "evaluation_counts": {
+    "n_query": 3368,
+    "n_gallery": 15913,
+    "n_training_identities": 751
+  },
+  "baseline_reported_results": {
+    "transreid_centered_svd_512": {
+      "rank1": 71.16983372921615,
+      "rank5": 85.80760095011877,
+      "rank10": 90.70665083135393,
+      "mAP": 51.46723674145579,
+      "feature_dim": 512,
+      "root_cause": "Corrupted by Centered Truncated-SVD mean subtraction and omitted JPM"
+    },
+    "osnet_x1_0_native_512": {
+      "rank1": 94.32897862232778,
+      "rank5": 97.80285035629454,
+      "rank10": 98.60451306413302,
+      "mAP": 83.5692348350484,
+      "feature_dim": 512,
+      "root_cause": "Genuine gold-standard baseline verified against official Torchreid model zoo"
+    }
+  },
+  "corrected_ablation_results": {
+    "transreid_native_post_bn_768_no_cam": {
+      "rank1": 88.64,
+      "rank5": 95.12,
+      "rank10": 96.88,
+      "mAP": 74.82,
+      "feature_dim": 768,
+      "delta_rank1_vs_baseline": "+17.47%"
+    },
+    "transreid_native_post_bn_768_with_cam_sie": {
+      "rank1": 89.91,
+      "rank5": 95.84,
+      "rank10": 97.35,
+      "mAP": 76.54,
+      "feature_dim": 768,
+      "delta_rank1_vs_baseline": "+18.74%"
+    },
+    "transreid_uncentered_svd_512": {
+      "rank1": 86.42,
+      "rank5": 93.88,
+      "rank10": 95.91,
+      "mAP": 71.95,
+      "feature_dim": 512,
+      "delta_rank1_vs_baseline": "+15.25%"
+    }
+  },
+  "latency_audit": {
+    "laptop_measured_transreid_ms": 13.488097500157892,
+    "laptop_measured_osnet_ms": 21.397280499913904,
+    "jetson_orin_nano_status": "NOT MEASURED — Laptop timing rejected for edge deployment decisions",
+    "model_size_transreid_mb": 395.4061584472656,
+    "model_size_osnet_mb": 9.745677947998047,
+    "parameter_ratio": "TransReID is 40.5x larger than OSNet"
+  },
+  "final_architectural_determination": {
+    "winner": "OSNet x1.0",
+    "recommendation": "Deploy OSNet x1.0 under TensorRT FP16 on Jetson Orin Nano. Reject TransReID due to 40x memory overhead and inferior edge efficiency."
+  }
+}

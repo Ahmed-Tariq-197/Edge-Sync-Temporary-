@@ -1,0 +1,36 @@
+# EdgeSync Hardware Calibration Parameters (JetAuto UGV, Jetson Orin Nano, Astra Pro Plus RGB-D)
+# ZERO-HARDCODING MANDATE: All physical, camera, and sensor parameters are injected from here.
+
+hardware_params:
+  ros__parameters:
+    # Sensor Frames
+    frame_map: "map"
+    frame_odom: "odom"
+    frame_base_link: "base_link"
+    frame_camera_link: "camera_link"
+    frame_camera_optical: "camera_color_optical_frame"
+
+    # Astra Pro Plus RGB-D Camera Intrinsics & Effective FOV
+    camera_width: 640
+    camera_height: 480
+    camera_fps: 30
+    camera_fx: 554.2546911911
+    camera_fy: 554.2546911911
+    camera_cx: 320.5
+    camera_cy: 240.5
+    camera_hfov_deg: 60.0              # Horizontal field-of-view (degrees)
+    camera_vfov_deg: 49.5              # Vertical field-of-view (degrees)
+    camera_min_depth_m: 0.40           # Min valid sensor depth (meters)
+    camera_max_depth_m: 6.00           # Max valid sensor depth (meters)
+    camera_depth_scale: 0.001          # Raw depth to meters conversion (uint16 mm -> m)
+
+    # Hiwonder JetAuto Mecanum Platform Kinematics & Limits
+    chassis_max_linear_vel_m_s: 0.8    # Maximum safe linear speed (m/s)
+    chassis_max_angular_vel_rad_s: 1.5 # Maximum safe rotation speed (rad/s)
+    chassis_linear_accel_limit: 1.0    # Linear acceleration limit (m/s^2)
+    chassis_angular_accel_limit: 2.0   # Angular acceleration limit (rad/s^2)
+    chassis_slew_nominal_time_ms: 450  # Typical orientation slew latency (ms)
+
+    # Jetson Orin Nano Edge Limits & Power Modes
+    jetson_nvpmodel_mode: 0            # 15W 6-core power mode
+    unified_memory_limit_mb: 8192      # 8GB unified memory boundary

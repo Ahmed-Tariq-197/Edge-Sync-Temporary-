@@ -1,0 +1,508 @@
+{
+  "started": "2026-10-19 16:16:07",
+  "checks": {
+    "osnet_checkpoint_loading": {
+      "checkpoint": "edgesync_bringup/models/osnet/osnet_x1_0_market1501.pth",
+      "exists": true,
+      "sha256": "2809d3227f7d078f6045f7feb874a34d0684f0e0057b264b99adccf7d4519154",
+      "bytes": 10399605,
+      "state_dict_keys": 567,
+      "missing_keys": 0,
+      "unexpected_keys": 0,
+      "missing_example": [],
+      "unexpected_example": [],
+      "parameters": 2554771,
+      "eval_output_shape": [
+        1,
+        512
+      ],
+      "native_feature_dim": 512,
+      "full_coverage": true,
+      "status": "READY"
+    },
+    "transreid_checkpoint_loading": {
+      "checkpoint": "edgesync_bringup/models/transreid/transformer_120.pth",
+      "exists": true,
+      "sha256": "843055293e160da027d152e1b9cccb75e34c73e0a9714204012c0f2825f9c4e5",
+      "bytes": 414724314,
+      "checkpoint_tensor_keys": 211,
+      "checkpoint_top_level_prefixes": [
+        "b1",
+        "b2",
+        "base",
+        "bottleneck",
+        "bottleneck_1",
+        "bottleneck_2",
+        "bottleneck_3",
+        "bottleneck_4",
+        "classifier",
+        "classifier_1",
+        "classifier_2",
+        "classifier_3",
+        "classifier_4"
+      ],
+      "extractor_class": "TransReIdExtractor",
+      "parameters": 100769512,
+      "device": "cuda",
+      "input_hw": [
+        256,
+        128
+      ],
+      "projection_shape": [
+        768,
+        512
+      ],
+      "svd_mean_norm": 10.372914,
+      "real_inference_sample": [
+        {
+          "image": "0001_c1s1_001051_00.jpg",
+          "shape": [
+            512
+          ],
+          "finite": true,
+          "l2_norm": 1.0,
+          "all_zero": false,
+          "std": 0.044193
+        },
+        {
+          "image": "0001_c2s1_000301_00.jpg",
+          "shape": [
+            512
+          ],
+          "finite": true,
+          "l2_norm": 1.0,
+          "all_zero": false,
+          "std": 0.044189
+        },
+        {
+          "image": "0001_c3s1_000551_00.jpg",
+          "shape": [
+            512
+          ],
+          "finite": true,
+          "l2_norm": 1.0,
+          "all_zero": false,
+          "std": 0.044194
+        }
+      ],
+      "different_identity_cosine": 0.7089,
+      "same_image_with_sie_vs_no_sie_cosine": 0.997215,
+      "status": "READY"
+    },
+    "projection_validation": {
+      "path": "edgesync_bringup/models/transreid/svd_projection_768_to_512_real_v2.npz",
+      "exists": true,
+      "sha256": "9626bea5526df5b0a9d5b4dccec1c552224b5a6da504a0ab3a69f6bbfec1dbfc",
+      "keys": [
+        "projection",
+        "mean",
+        "total_variance_ratio",
+        "singular_values"
+      ],
+      "projection": {
+        "shape": [
+          768,
+          512
+        ],
+        "dtype": "float32",
+        "finite": true,
+        "l2_or_scalar": 22.627409
+      },
+      "mean": {
+        "shape": [
+          768
+        ],
+        "dtype": "float32",
+        "finite": true,
+        "l2_or_scalar": -0.2117884
+      },
+      "total_variance_ratio": {
+        "shape": [],
+        "dtype": "float32",
+        "finite": true,
+        "l2_or_scalar": 0.9864118
+      },
+      "singular_values": {
+        "shape": [
+          512
+        ],
+        "dtype": "float32",
+        "finite": true,
+        "l2_or_scalar": 537.5874634
+      },
+      "projection_matrix_key": "projection",
+      "total_variance_ratio_stored": 0.9864118099212646,
+      "W_frobenius_norm": 22.627409,
+      "status": "READY"
+    },
+    "dataset_readiness": {
+      "root": "edgesync_bringup/data/Market-1501-v15.09.15",
+      "exists": true,
+      "bounding_box_train": {
+        "files": 12936,
+        "unparseable": 0,
+        "junk_pid_minus1": 0,
+        "valid_observations": 12936,
+        "identities": 751,
+        "cameras": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "distractor_pid_0_present": false
+      },
+      "bounding_box_test": {
+        "files": 19732,
+        "unparseable": 0,
+        "junk_pid_minus1": 3819,
+        "valid_observations": 15913,
+        "identities": 751,
+        "cameras": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "distractor_pid_0_present": true
+      },
+      "query": {
+        "files": 3368,
+        "unparseable": 0,
+        "junk_pid_minus1": 0,
+        "valid_observations": 3368,
+        "identities": 750,
+        "cameras": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "distractor_pid_0_present": false
+      },
+      "gallery_pid_ge_0": 15913,
+      "query_pid_gt_0": 3368,
+      "reference_reconciliation": {
+        "expected_gallery": 15913,
+        "expected_query": 3368,
+        "gallery_match": true,
+        "query_match": true
+      },
+      "image_readability": {
+        "sampled": 17,
+        "unreadable": 0,
+        "example_shapes_hwc": [
+          [
+            128,
+            64,
+            3
+          ],
+          [
+            128,
+            64,
+            3
+          ],
+          [
+            128,
+            64,
+            3
+          ],
+          [
+            128,
+            64,
+            3
+          ]
+        ],
+        "note": "dataset crops are 128x64x3; extractors resize to 256x128 (HxW)"
+      },
+      "camera_partition_check": {
+        "test_cameras_present": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "group_A_cameras_1_3_complete": true,
+        "group_B_cameras_4_6_complete": true,
+        "query_cameras": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "test_obs_cam_1_3": 8161,
+        "test_obs_cam_4_6": 7752,
+        "query_obs_cam_1_3": 1915,
+        "query_obs_cam_4_6": 1453
+      },
+      "identity_and_split_provenance": {
+        "train_ids": 751,
+        "test_ids": 751,
+        "query_ids": 750,
+        "train_range": [
+          2,
+          1500
+        ],
+        "test_range": [
+          0,
+          1501
+        ],
+        "train_intersect_test": 0,
+        "query_subset_of_test_ids": true,
+        "protocol_note": "bundled split is train 0001-0751 / test 0752-1501, which is NOT the published canonical Market-1501 split. OSNet x1.0 was pretrained on the canonical split, so identity overlap and pretraining contamination are documented risks, not measured ones."
+      },
+      "status": "READY",
+      "manifest_written": "dataset_manifest_query_gallery.npy (path, pid, cam for gallery+query)"
+    },
+    "embedding_readiness": {
+      "patterns_searched": [
+        "**/*.npy",
+        "**/*.npz",
+        "**/*.pkl",
+        "**/*embedding*",
+        "**/similarity*",
+        "**/*.csv"
+      ],
+      "candidate_non_image_files": [
+        "edgesync_bringup/models/projections/svd_projection_768_to_512.npz",
+        "edgesync_bringup/models/projections/svd_projection_768_to_512_norm05_centered.npz",
+        "edgesync_bringup/models/transreid/svd_projection_768_to_512.npz",
+        "edgesync_bringup/models/transreid/svd_projection_768_to_512_norm05.npz",
+        "edgesync_bringup/models/transreid/svd_projection_768_to_512_norm05_centered.npz",
+        "edgesync_bringup/models/transreid/svd_projection_768_to_512_real.npz",
+        "edgesync_bringup/models/transreid/svd_projection_768_to_512_real_v2.npz",
+        "edgesync_bringup/models/transreid/svd_projection_768_to_512_real_v3_reproduce.npz",
+        "edgesync_identity/tests/fixtures/synthetic_svd_768_to_512.npz"
+      ],
+      "stored_query_gallery_embeddings": [],
+      "similarity_matrices": [],
+      "pair_score_files": [],
+      "handoff_decision_files": [],
+      "status": "BLOCKED",
+      "next_action": "Regenerate embeddings from the corrected production code paths carrying identity, camera, path, checkpoint hash and preprocessing provenance, then run the statistics analysis."
+    },
+    "recorded_result_files": {
+      "benchmark_latency_memory.json": {
+        "sha256": "6becced684fa149307ea57084b125a591508230739ab60bf6fe0bde5a4059387",
+        "bytes": 1125,
+        "top_keys": "list[2]"
+      },
+      "forensic_ablation_results.json": {
+        "sha256": "a283f66d554c9b94cda4a345e1e50a42482b3a973fd87e6ae5439e974354fa29",
+        "bytes": 2180,
+        "top_keys": "list[9]"
+      },
+      "gate3_real_results.json": {
+        "sha256": "fe42f9885db05c801a5357fd963b710dc6c78e71d297f6197630b13cc86cdb3a",
+        "bytes": 1557,
+        "top_keys": [
+          "experiment",
+          "evaluation_type",
+          "threshold_tau",
+          "svd_variance_retained",
+          "device",
+          "accuracy",
+          "latency",
+          "note"
+        ]
+      },
+      "gate3_real_results_reconciled.json": {
+        "sha256": "564323622381700a3a1933c32a50f6bb42e0d54a0575711bc5dc27af37ba9671",
+        "bytes": 2263,
+        "top_keys": [
+          "experiment",
+          "audit_version",
+          "timestamp",
+          "device",
+          "dataset",
+          "evaluation_counts",
+          "baseline_reported_results",
+          "corrected_ablation_results",
+          "latency_audit",
+          "final_architectural_determination"
+        ]
+      },
+      "gate3_real_results_v2_corrected.json": {
+        "sha256": "81c90c3b45b0e9e0d12086c6fc9c5d054541adf3b1790521e1aed8449ee9556b",
+        "bytes": 3247,
+        "top_keys": [
+          "experiment",
+          "evaluation_type",
+          "revision",
+          "pipeline_config",
+          "threshold_tau",
+          "threshold_tau_note",
+          "svd_variance_retained",
+          "device",
+          "accuracy",
+          "latency"
+        ]
+      },
+      "gate3_real_results_v3_reproduce.json": {
+        "sha256": "915f55547649ed205d80c6c4ac51d4d79587672e798141f6cd64b8be8e6f45cd",
+        "bytes": 1667,
+        "top_keys": [
+          "experiment",
+          "evaluation_type",
+          "revision",
+          "purpose",
+          "pipeline_config",
+          "threshold_tau",
+          "threshold_tau_note",
+          "svd_variance_retained",
+          "device",
+          "accuracy"
+        ]
+      },
+      "verification_threshold_audit.json": {
+        "sha256": "f80fd7b9ebd941d0341df1cb215b5a3d49b4e67e4370f49a7fe7af79361f5635",
+        "bytes": 1542,
+        "top_keys": "list[4]"
+      }
+    },
+    "ros2_tooling": {
+      "rclpy": {
+        "importable": false,
+        "error": "ModuleNotFoundError: No module named 'rclpy'"
+      },
+      "status": "BLOCKED",
+      "reason": "no rclpy / ros2 CLI on this host; colcon has never been run in this tree"
+    },
+    "tensorrt_engines": {
+      "tensorrt": {
+        "importable": false,
+        "error": "ModuleNotFoundError: No module named 'tensorrt'"
+      },
+      "engine_files": [],
+      "onnx_files": [],
+      "status": "BLOCKED",
+      "reason": "tensorrt unimportable; no engine or ONNX artifact exists on this host"
+    },
+    "onnx_export_capability": {
+      "torch_onnx_export": true,
+      "onnx_import": false,
+      "onnxruntime_import": false,
+      "status": "PARTIALLY READY",
+      "note": "torch.onnx.export can run; independent graph validation and parity checks need onnx / onnxruntime"
+    },
+    "configuration": {
+      "yaml_root_keys": [
+        "algorithm_thresholds"
+      ],
+      "tau": 0.7,
+      "reid_model_type": "transreid",
+      "checkpoint": "models/transreid/transformer_120.pth",
+      "projection": "models/transreid/svd_projection_768_to_512_real_v2.npz",
+      "engine": "",
+      "keys_seen": [
+        "ack_confirm_enabled",
+        "candidate_gate_battery_min_pct",
+        "candidate_gate_cpu_max_pct",
+        "ego_cov_enabled",
+        "identity_mode",
+        "network_rtt_max_ms",
+        "reid_checkpoint_path",
+        "reid_crop_min_confidence",
+        "reid_engine_path",
+        "reid_model_type",
+        "reid_moving_average_alpha",
+        "reid_projection_path",
+        "reid_signature_rate_hz",
+        "reid_similarity_threshold",
+        "trigger_mode",
+        "tto_dt_step_s",
+        "tto_k_tau_safety",
+        "tto_prediction_horizon_s",
+        "tto_zone1_steady_s",
+        "tto_zone2_trigger_s",
+        "utility_t_ref_s",
+        "utility_weight_feasibility",
+        "utility_weight_fov",
+        "utility_weight_network"
+      ],
+      "status": "READY"
+    },
+    "statistics_dependencies": {
+      "scipy": {
+        "importable": true,
+        "version": "1.15.3"
+      },
+      "numpy": {
+        "importable": true,
+        "version": "1.26.4"
+      },
+      "status": "READY",
+      "note": "exact McNemar via scipy.stats.binomtest when available"
+    }
+  },
+  "dependencies": {
+    "torch": {
+      "importable": true,
+      "version": "2.5.1+cu121"
+    },
+    "torchvision": {
+      "importable": false,
+      "error": "RuntimeError: operator torchvision::nms does not exist"
+    },
+    "cv2": {
+      "importable": true,
+      "version": "4.11.0"
+    },
+    "numpy": {
+      "importable": true,
+      "version": "1.26.4"
+    },
+    "scipy": {
+      "importable": true,
+      "version": "1.15.3"
+    },
+    "onnx": {
+      "importable": false,
+      "error": "ModuleNotFoundError: No module named 'onnx'"
+    },
+    "onnxruntime": {
+      "importable": false,
+      "error": "ModuleNotFoundError: No module named 'onnxruntime'"
+    },
+    "tensorrt": {
+      "importable": false,
+      "error": "ModuleNotFoundError: No module named 'tensorrt'"
+    },
+    "rclpy": {
+      "importable": false,
+      "error": "ModuleNotFoundError: No module named 'rclpy'"
+    },
+    "torchreid": {
+      "importable": false,
+      "error": "RuntimeError: operator torchvision::nms does not exist"
+    },
+    "sklearn": {
+      "importable": true,
+      "version": "1.7.2"
+    },
+    "yaml": {
+      "importable": true,
+      "version": "6.0.3"
+    }
+  },
+  "environment": {
+    "python": "3.10.11",
+    "os": "Windows 10 AMD64",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "device": "NVIDIA GeForce RTX 3050 Laptop GPU",
+    "device_total_gb": 4.0,
+    "device_class": "local laptop GPU - NOT Jetson, NOT TensorRT, NOT robot"
+  },
+  "finished": "2026-10-19 16:16:22"
+}

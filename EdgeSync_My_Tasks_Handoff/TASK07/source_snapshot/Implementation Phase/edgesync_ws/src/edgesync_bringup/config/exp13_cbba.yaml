@@ -1,0 +1,149 @@
+# Experiment 13 — CBAA (bundle length L = 1) task-allocation negotiator
+#
+# ALGORITHM LABEL, STATED BEFORE THE KEYS
+# This file configures CBAA: CBBA restricted to bundle length L = 1. It is NOT full CBBA.
+# The in-repo specification docs/experiments/exp13/CBBA-VARIANT-DECISION-RECORD.md §1/§5 forbids
+# the "CBBA" label in a report, config key or log line, which is why the selector value below is
+# 'cbba' (the filename the team execution guide assigns) while every human-readable string says
+# CBAA / L = 1. The deliverable filename cbba_negotiator.py is retained from that guide; the file
+# name is not the algorithm name.
+#
+# HOW THIS FILE IS ACTUALLY LOADED — READ THIS BEFORE ASSUMING IT IS LIVE
+# It is loaded by ONE launch path: `exp13_bringup.launch.py`, which passes this file to
+# `exp13_coordination_node` (node name `exp13_coordination_node`, executable
+# `edgesync_coordination/exp13_coordination_node`). It is NOT loaded by `robot_bringup.launch.py`,
+# which still passes only its original four YAML files to `coordination_node`
+# (edgesync_bringup/launch/robot_bringup.launch.py:148-151) and is byte-identical to the pre-Exp-13
+# snapshot. So: baseline runs are unaffected by anything in here, and an Exp-13 run must be started
+# with the Exp-13 launch file — starting the baseline launch with this file named in a terminal is
+# not a way to run Experiment 13.
+#
+# The two approvals this file used to describe are now resolved by construction rather than by
+# editing a shared file:
+#   A1. the selector. `coordination_node` still declares no `negotiation_protocol` (24 parameters,
+#       edgesync_coordination/nodes/coordination_node.py:39-66) and still will not. The subclass in
+#       edgesync_coordination/nodes/exp13_coordination_node.py declares it, defaulting to 'cnp', and
+#       dispatches on it; an unknown value raises at startup instead of falling back.
+#   A2. `exp_id`. Declared by the Exp-13 node, so `exp_id: "EXP13"` below reaches a real parameter
+#       and a real log line — on the Exp-13 node only.
+#
+# Executed status of each channel: the unit tests and the unit benchmark read this file through
+# PyYAML and pass the values into CBBANegotiator / Exp13CbbaAdapter (measured, no ROS graph). The
+# launch path above is implemented and statically verified in this build; it has NOT been executed,
+# because rclpy and colcon are not installed on this host. See EXP13_TEST_AND_VALIDATION_REPORT_*.
+#
+# Namespace: '/**' matches every node, same structure as config/coordination_params.yaml, so the
+# file stays a valid ROS 2 parameter file. Because '/**' is a wildcard, the Exp-13 launch remaps
+# this file onto the Exp-13 node name only; do not add it to a launch that also starts
+# coordination_node.
+#
+# ZERO-HARDCODING: every negotiator parameter below is read from this file. cbba_negotiator.py
+# carries defaults only so that it is constructible in a test; the harness always overrides them
+# from here, and a bid never uses a substitute utility when an input is missing (it abstains).
+
+/**:
+  ros__parameters:
+
+    # ── Experiment identification ──
+    exp_id: "EXP13"                       # declared by exp13_coordination_node; not read by the
+                                          # baseline node, which declares no exp_id at all
+    negotiation_protocol: "cbba"          # the selector token the assignment fixes. The algorithm
+                                          # is CBAA (L = 1) — see the label note at the top
+    algorithm_variant: "CBAA (CBBA with bundle length L = 1)"   # for logs/reports, never a selector
+
+    # ── Required by CBBANegotiator.__init__ and Exp13CbbaAdapter (no default exists) ──
+    # agent_id is supplied per-process by the launch (robot_id: 'ugv_1' / 'ugv_2'): a shared file
+    # cannot name which UGV is reading it. The participant SET is shared and identical on both,
+    # because it is configuration, not discovery — the adapter refuses to start if it disagrees with
+    # swarm_participant_count, and a declared participant that stays silent fails the episode instead
+    # of being dropped from the quorum (design decision D4).
+    participant_ids: ["ugv_1", "ugv_2"]   # the consensus set; |P| must equal the count below
+    swarm_participant_count: 2            # |P|; agreement requires a belief from every member
+    target_count: 1                       # one handoff opportunity per episode (IBBM-1)
+
+    # ── Bundle geometry ──
+    max_bundle_size: 1                    # MUST be 1. cbba_negotiator raises ValueError above 1:
+                                          # candidate lists and the CBBA path-bid consistency trim
+                                          # are not implemented, so L > 1 would be a false label.
+    max_rounds: 4                         # declared round bound; never derived from a per-round ms
+                                          # figure (round-to-millisecond projection is prohibited)
+    convergence_threshold: 2              # consecutive locally unchanged rounds that raise
+                                          # LOCAL_STABLE. Diagnostic only; LOCAL_STABLE is NOT
+                                          # agreement and is_converged() is False for it.
+    bid_epsilon: 0.000001                 # strict positive-improvement margin for taking/releasing
+    utility_precision: 4                  # decimal places for bid comparison, matching
+                                          # UtilityEngine.compute_receiver_utility's round(..., 4)
+
+    # ── Deadline ──
+    # Written as a number of seconds, compared against time.monotonic() inside ONE process.
+    # It is not a cross-host budget: belief timestamps are sender-local monotonic and are never
+    # used for an elapsed-time calculation. null means "bounded only by max_rounds".
+    deadline_s: 1.0
+
+    # ── Round driving and the commit window (Exp13CbbaAdapter) ──
+    # Both are transport-side timings: they decide *when the node acts*, not what the algorithm
+    # concludes. They are parameters rather than constants because a launch has to be able to slow
+    # a run down for observation without editing code.
+    belief_round_period_ms: 250           # wall-clock period of the node's round timer. 4 rounds
+                                          # x 250 ms = 1 s, i.e. one full max_rounds budget per
+                                          # episode inside the negotiation window
+    commit_grace_ms: 500                  # how long the node keeps waiting for peer agreement
+                                          # reports after its own episode reaches AGREED. When the
+                                          # window closes with a peer silent, arm_commit() returns
+                                          # ABORT and no transfer happens (design decision D3/D4)
+    require_distributed_agreement: true   # the safe contract: COMMIT needs this agent's agreement
+                                          # AND an agreement report from every declared participant.
+                                          # Set false ONLY for benchmark arm B, and then say so in
+                                          # the report — a run with this false is not the safety
+                                          # contract the design decisions record
+    # TIMING BUDGET, STATED SO IT CAN BE CHALLENGED: a full episode can take
+    # max_rounds x belief_round_period_ms + commit_grace_ms = 4 x 250 + 500 = 1500 ms. The handoff
+    # candidate window in the baseline FSM opens at a TTO of 1.23 s (ownership_fsm.py:60), so a slow
+    # episode is expected to be cut short by the node's own negotiation timeout rather than to
+    # finish. That is the safe outcome (abort, no transfer), but these two figures are NOT tuned
+    # against a measured window on this host — no ROS 2 clock has run them. Re-derive them from
+    # measured t_neg on the robot before quoting any success-rate number that used them.
+
+    # ── Measurement definitions used by the Exp-13 comparison ──
+    # Recorded here because the report's numbers are meaningless without them.
+    message_count_unit: "belief_builds_counted_at_publish"   # beliefs_published; a censored round
+                                          # (MAX_ROUNDS / TIMEOUT / already-terminal) emits nothing
+                                          # ONE boundary for both arms of run_exp13_unit_benchmark.py:
+                                          # an application-level protocol message produced by a
+                                          # participant and handed to its transport inside the
+                                          # episode (baseline: 1 request + 1 ACCEPT per answering
+                                          # candidate). DDS packets / network bytes are NOT MEASURED
+                                          # — no transport exists in the harness process.
+    convergence_time_unit: "s,monotonic,single-process"      # first belief -> AGREED, else null.
+                                          # Never reported as 0.0 for a censored episode. A 0.0 that
+                                          # does occur means "agreed inside one host clock tick"
+                                          # (15.625 ms here), i.e. duration-blind, not instantaneous
+    ingestion_count_unit: "payloads_examined_at_receive"   # baseline: every receipt the collector
+                                          # loop read; exp13: the real inbox lengths passed to
+                                          # run_round(). Counted, not computed as rounds x (N - 1)
+
+    # ── Protocol constants that are deliberately NOT parameters ──
+    # cbba_negotiator.py fixes MIN_AGREEMENT_ROUND = 2 (AGREEMENT_REACHED clause iv: agreement needs
+    # a real exchange, not a content match in round 1) and BELIEF_SCHEMA_VERSION = 3. Version 3 added
+    # agreement_established, the acknowledgement leg of design decision D3; version 2 carried
+    # ownership_epoch and version 1 neither. A belief built by a different schema is refused as
+    # UNSUPPORTED_SCHEMA, never reinterpreted — which is why the schema is a constant and not a key
+    # a run could set to 2 to make an old artifact look comparable. Neither constant is exposed here
+    # on purpose: a tunable that could be set to 1 or 0 would weaken a correctness clause to chase a
+    # benchmark number, and the zero-hardcoding promise above covers negotiator *parameters*, not
+    # protocol identity.
+
+    # ── Telemetry inputs the negotiator needs but must NOT be configured ──
+    # battery_pct has no key here. The node feeds the adapter from its live battery parameter and
+    # calls set_telemetry() only with a real reading; until then the negotiator abstains from bidding
+    # rather than scoring with a substitute. The baseline node's own
+    # declare_parameter('battery_pct', 85.0) (coordination_node.py:62) is deliberately not inherited
+    # or mirrored: an injected stand-in battery must not decide an allocation (DEF-01). A key with
+    # value null was removed — a float-typed ROS parameter given a null is a type violation waiting
+    # to crash the node, and absence carries the same instruction with no failure mode.
+
+    # ── Deliberately absent ──
+    # No w_fov / w_dist / w_battery override: the CBAA arm bids with the SAME UtilityEngine the
+    # baseline uses, so the comparison isolates the allocator, not the scoring weights.
+    # No t_neg_timeout_ms / t_txn_ms override: the baseline timing budgets stay in effect, so the
+    # experiment changes one mechanism at a time.

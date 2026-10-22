@@ -1,0 +1,70 @@
+# Experiment 7 — TransReID Re-Identification (ES-EXP07, Task 7)
+#
+# HOW THIS FILE IS ACTUALLY LOADED (ES-EXP07 §4.2, implemented in robot_bringup.launch.py)
+#
+# The launch file reads this overlay through the Python resolver — the single channel that decides
+# what identity_node receives:
+#
+#     EDGESYNC_EXPERIMENT_CONFIG=<abs path to this file> \
+#         ros2 launch edgesync_bringup robot_bringup.launch.py
+#
+# robot_bringup.launch.py calls
+# edgesync_bringup.reid_launch_defaults.resolve_reid_config(shared, experiment), which reads the
+# shared algorithm_thresholds.yaml FIRST and this file SECOND, so only the keys defined here
+# override the shared values. The resolved reid_model_type, asset paths, reid_model alias,
+# reid_camera_id and exp_id become the DeclareLaunchArgument defaults and the injected parameter
+# dictionary; an explicit reid_model_type:=... on the command line still overrides them.
+#
+# Why the selector is not a launch argument: generate_launch_description() builds every
+# DeclareLaunchArgument default before the CLI is parsed, so an `experiment_config:=...` value
+# would either be invisible to the resolver or arrive through a second channel (a ROS 2 parameter
+# file) whose precedence necessarily conflicts with the injected dictionary that carries the
+# resolved values. One channel, one precedence order.
+#
+# Therefore: `ros2 launch edgesync_bringup robot_bringup.launch.py experiment_config:=...` is NOT a
+# supported invocation. This launch file declares no `experiment_config` argument (its eight
+# arguments are robot_id, peer_id, is_initial_owner, reid_model_type, reid_checkpoint_path,
+# reid_projection_path, reid_engine_path, exp_id), so that form selects nothing.
+# EDGESYNC_EXPERIMENT_CONFIG above is the only selector this file responds to.
+#
+# This file still uses valid ROS 2 parameter-file structure ('/**' matches every node) so that
+# `ros2 launch … --params-file` style consumption or a future append would read the same values.
+# (algorithm_thresholds.yaml uses the root key 'algorithm_thresholds', which matches no node in
+# robot_bringup.launch.py; that project-wide namespace defect is documented in the Task 7
+# implementation report and is deliberately NOT changed here, per §4.2 "do not broadly refactor
+# every bringup YAML".)
+#
+# Parameter names below are restricted to those identity_node actually declares. Keys that no
+# node declares are silently ignored by ROS 2, so they are not listed here.
+#
+# Threshold tau = 0.70 is UNCHANGED from the project baseline; it is not overridden by this file.
+
+/**:
+  ros__parameters:
+    # ── Experiment identification (§4.4) — STRING parameter, reaches the node and the logs ──
+    exp_id: "EXP07"
+
+    # ── Experiment 7 extractor selection ──
+    # Registered identifier resolved through edgesync_identity BACKBONE_REGISTRY.
+    # 'transreid' selects TransReIdExtractor (PyTorch ViT-B/16 + host-side SVD projection).
+    # 'transreid_trt' is the device-side TensorRT arm and requires reid_engine_path; no engine
+    # exists on this host, so it is NOT selected here.
+    reid_model_type: "transreid"
+
+    # ── Approved assets, reused from the shared configuration (paths are package-share
+    #    relative and resolved by identity_node's TR-05 asset resolver) ──
+    reid_checkpoint_path: "models/transreid/transformer_120.pth"
+    reid_projection_path: "models/transreid/svd_projection_768_to_512_real_v2.npz"
+
+    # Left empty: no TransReID TensorRT engine has been built. The TRT arm fails closed rather
+    # than degrading to a pseudo-embedding.
+    reid_engine_path: ""
+
+    # ── Camera conditioning (SIE) — INTEGER parameter ──
+    # 0  = camera-agnostic (the deployed arm: transreid_512_agnostic)
+    # 1..6 = apply the Side Information Embedding of that training camera
+    # Written as a YAML integer on purpose: identity_node declares reid_camera_id with
+    # declare_parameter('reid_camera_id', 0), and a string substitution delivered through a
+    # launch parameter dictionary would arrive with the wrong type (§4.2.8). Override on the
+    # command line with: --ros-args -p reid_camera_id:=3
+    reid_camera_id: 0

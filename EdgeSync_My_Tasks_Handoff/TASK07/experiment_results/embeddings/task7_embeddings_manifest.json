@@ -1,0 +1,168 @@
+{
+  "experiment": "ES-EXP07 Task 7 embeddings",
+  "generated_utc": "2026-10-19T14:47:29Z",
+  "elapsed_s": 956.4,
+  "host": {
+    "platform": "Windows-10-10.0.26300-SP0",
+    "python": "3.10.11",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "device_name": "NVIDIA GeForce RTX 3050 Laptop GPU"
+  },
+  "assets": {
+    "transreid_checkpoint": {
+      "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\transreid\\transformer_120.pth",
+      "bytes": 414724314,
+      "sha256": "843055293e160da027d152e1b9cccb75e34c73e0a9714204012c0f2825f9c4e5"
+    },
+    "transreid_projection": {
+      "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\transreid\\svd_projection_768_to_512_real_v2.npz",
+      "bytes": 1466587,
+      "sha256": "9626bea5526df5b0a9d5b4dccec1c552224b5a6da504a0ab3a69f6bbfec1dbfc"
+    },
+    "osnet_checkpoint": {
+      "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\osnet\\osnet_x1_0_market1501.pth",
+      "bytes": 10399605,
+      "sha256": "2809d3227f7d078f6045f7feb874a34d0684f0e0057b264b99adccf7d4519154"
+    }
+  },
+  "extractor_checkpoint_coverage": {
+    "checkpoint_keys": 211,
+    "keys_after_filter": 210,
+    "dropped_by_filter": [
+      "classifier.weight"
+    ],
+    "model_parameter_entries": 206,
+    "missing_keys": [],
+    "unexpected_keys": [
+      "classifier_1.weight",
+      "classifier_2.weight",
+      "classifier_3.weight",
+      "classifier_4.weight"
+    ],
+    "coverage_pct": 100.0,
+    "torch_parameters": 100769512
+  },
+  "extractor_failure_counts": {},
+  "extractor_embedding_count": 19281,
+  "extractor_last_failure": null,
+  "population": {
+    "population": "directory",
+    "rules": {
+      "gallery": "pid >= 0 in bounding_box_test/ \u2014 official test gallery: distractor pid 0 is KEPT as gallery negatives, junk pid -1 is excluded",
+      "query": "pid > 0 in query/ \u2014 official query set"
+    },
+    "provenance": "Reproduces the population the recorded arm actually used (run_real_pipeline.py:488-498 \u2192 gate3_real_results_v2_corrected.json).",
+    "validity": "Valid: this is the published Market-1501 test population, taken from the directory semantics rather than from an identity-number band.",
+    "id_band": null,
+    "gallery_dir": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\data\\Market-1501-v15.09.15\\bounding_box_test",
+    "query_dir": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\data\\Market-1501-v15.09.15\\query",
+    "gallery": {
+      "files_scanned": 19732,
+      "kept": 15913,
+      "excluded": {
+        "junk_identity_-1": 3819
+      },
+      "identities": 751,
+      "distractors_pid_0": 2798,
+      "identity_number_range": [
+        0,
+        1501
+      ]
+    },
+    "query": {
+      "files_scanned": 3368,
+      "kept": 3368,
+      "excluded": {},
+      "identities": 750,
+      "identity_number_range": [
+        1,
+        1501
+      ]
+    },
+    "counts_asserted_from": "this run only \u2014 no standard dataset count is assumed"
+  },
+  "parity_tolerance": 2e-05,
+  "parity_check": {
+    "images_cross_checked": {
+      "gallery": 15913,
+      "query": 3368
+    },
+    "every_nth": 1,
+    "result": "PASS \u2014 for every image checked, the production extract_embedding() output equalled the independently re-derived center->SVD->L2 contract within the tolerance; a violation aborts the run",
+    "note": "the check compares the deployed extractor against this script's own implementation of the documented math contract, on the same decoded crop"
+  },
+  "osnet_factory_attempt": {
+    "result": "FAILED \u2014 recorded, not repaired (charter \u00a73B): RuntimeError: operator torchvision::nms does not exist",
+    "effect_on_comparison": "no OSNet embeddings => no paired per-query outcomes for the OSNet arm => a paired test (e.g. exact McNemar) is NOT APPLICABLE on this host; the TransReID-vs-OSNet comparison must be reported NOT MEASURED here and re-run where torchreid imports"
+  },
+  "osnet_status": "ARM NOT REQUESTED",
+  "arms": {
+    "transreid_768_agnostic": {
+      "dim": 768,
+      "gallery_kept": 15913,
+      "query_kept": 3368,
+      "gallery_excluded": 0,
+      "query_excluded": 0,
+      "gallery_exclusion_reasons": {},
+      "query_exclusion_reasons": {},
+      "gallery_identities": 751,
+      "query_identities": 750,
+      "unit_norm_max_deviation": null,
+      "mean_norm": null,
+      "any_zero_row": false,
+      "latency_mean_ms": 15.776978528054041,
+      "latency_semantics": "backbone forward only; the 512-D arms reuse the same forward, the SVD matvec is not timed separately"
+    },
+    "transreid_512_agnostic": {
+      "dim": 512,
+      "gallery_kept": 15913,
+      "query_kept": 3368,
+      "gallery_excluded": 0,
+      "query_excluded": 0,
+      "gallery_exclusion_reasons": {},
+      "query_exclusion_reasons": {},
+      "gallery_identities": 751,
+      "query_identities": 750,
+      "unit_norm_max_deviation": 1.7881393432617188e-07,
+      "mean_norm": 1.0,
+      "any_zero_row": false,
+      "latency_mean_ms": 15.776978528054041,
+      "latency_semantics": "backbone forward only; the 512-D arms reuse the same forward, the SVD matvec is not timed separately"
+    },
+    "transreid_512_sie": {
+      "dim": 512,
+      "gallery_kept": 15913,
+      "query_kept": 3368,
+      "gallery_excluded": 0,
+      "query_excluded": 0,
+      "gallery_exclusion_reasons": {},
+      "query_exclusion_reasons": {},
+      "gallery_identities": 751,
+      "query_identities": 750,
+      "unit_norm_max_deviation": 1.7881393432617188e-07,
+      "mean_norm": 1.0,
+      "any_zero_row": false,
+      "latency_mean_ms": 15.989644214496506,
+      "latency_semantics": "backbone forward only; the 512-D arms reuse the same forward, the SVD matvec is not timed separately"
+    }
+  },
+  "latency_note": "latencies_ms is incidental bookkeeping on a 4 GB laptop GPU without a warm-up/repeat protocol. It is NOT a deployment benchmark and must not be reported as Jetson Orin Nano latency.",
+  "files": {
+    "transreid_768_agnostic": {
+      "path": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory\\task7_transreid_768_agnostic.npz",
+      "bytes": 55193927,
+      "sha256": "459cfbb31236d558636813d59484e626dfc7e631af752e2596599a439d226ac2"
+    },
+    "transreid_512_agnostic": {
+      "path": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory\\task7_transreid_512_agnostic.npz",
+      "bytes": 37094828,
+      "sha256": "cb4c8b8654ff410a12bf379ce14e01bd000efba20408c2ff63dccd6f14e671b0"
+    },
+    "transreid_512_sie": {
+      "path": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory\\task7_transreid_512_sie.npz",
+      "bytes": 37095723,
+      "sha256": "d2d50a8ed50fbb54b46b0229241280e8bc9f38c40c53c2a87c1239503f9ef144"
+    }
+  }
+}

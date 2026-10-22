@@ -1,0 +1,416 @@
+{
+  "started": "2026-10-19 16:25:13",
+  "transreid_state_dict_coverage": {
+    "checkpoint_top_level_keys": 211,
+    "keys_after_extractor_filter": 210,
+    "dropped_by_filter": [
+      "classifier.weight"
+    ],
+    "dropped_count": 1,
+    "missing_keys": [],
+    "unexpected_keys": [
+      "classifier_1.weight",
+      "classifier_2.weight",
+      "classifier_3.weight",
+      "classifier_4.weight"
+    ],
+    "missing_count": 0,
+    "unexpected_count": 4,
+    "model_total_keys": 206,
+    "coverage_pct": 100.0,
+    "unused_checkpoint_branches": [
+      "b1",
+      "b2",
+      "base",
+      "bottleneck",
+      "bottleneck_1",
+      "bottleneck_2",
+      "bottleneck_3",
+      "bottleneck_4",
+      "classifier",
+      "classifier_1",
+      "classifier_2",
+      "classifier_3",
+      "classifier_4"
+    ],
+    "forward_uses": [
+      "base.* (patch_embed/cls/pos/sie/blocks/norm)",
+      "bottleneck (BNNeck)"
+    ],
+    "pre_bn_dim": [
+      1,
+      768
+    ],
+    "post_bn_dim": [
+      1,
+      768
+    ],
+    "base_fc_present_in_checkpoint": true,
+    "sie_embed_present": true,
+    "status": "PARTIALLY READY"
+  },
+  "projection_family": {
+    "files": [
+      {
+        "path": "edgesync_bringup/models/transreid/svd_projection_768_to_512.npz",
+        "bytes": 1466710,
+        "sha256": "dc2b9072850c299d",
+        "keys": [
+          "mean",
+          "projection",
+          "singular_values",
+          "total_variance_ratio"
+        ],
+        "mtime": "2026-10-15 17:30:04",
+        "projection": {
+          "shape": [
+            768,
+            512
+          ],
+          "dtype": "float32",
+          "value": null
+        },
+        "mean": {
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "value": null
+        },
+        "total_variance_ratio": {
+          "shape": [],
+          "dtype": "float32",
+          "value": 0.9857139
+        },
+        "singular_values": {
+          "shape": [
+            512
+          ],
+          "dtype": "float32",
+          "value": null
+        },
+        "proj_l2": 22.627407,
+        "mean_l2": 19.389999,
+        "approved_by_config": false
+      },
+      {
+        "path": "edgesync_bringup/models/transreid/svd_projection_768_to_512_norm05.npz",
+        "bytes": 1461626,
+        "sha256": "628b1dc6bcec1c22",
+        "keys": [
+          "mean",
+          "normalization",
+          "projection",
+          "target_dim"
+        ],
+        "mtime": "2026-10-15 20:08:40",
+        "projection": {
+          "shape": [
+            768,
+            512
+          ],
+          "dtype": "float32",
+          "value": null
+        },
+        "mean": {
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "value": null
+        },
+        "proj_l2": 22.627407,
+        "mean_l2": 0.0,
+        "approved_by_config": false
+      },
+      {
+        "path": "edgesync_bringup/models/transreid/svd_projection_768_to_512_norm05_centered.npz",
+        "bytes": 1464564,
+        "sha256": "c9bca7595cb67d63",
+        "keys": [
+          "mean",
+          "normalization",
+          "projection",
+          "target_dim"
+        ],
+        "mtime": "2026-10-15 21:13:26",
+        "projection": {
+          "shape": [
+            768,
+            512
+          ],
+          "dtype": "float32",
+          "value": null
+        },
+        "mean": {
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "value": null
+        },
+        "proj_l2": 22.627411,
+        "mean_l2": 10.372913,
+        "approved_by_config": false
+      },
+      {
+        "path": "edgesync_bringup/models/transreid/svd_projection_768_to_512_real.npz",
+        "bytes": 1466710,
+        "sha256": "dc2b9072850c299d",
+        "keys": [
+          "mean",
+          "projection",
+          "singular_values",
+          "total_variance_ratio"
+        ],
+        "mtime": "2026-10-15 16:38:02",
+        "projection": {
+          "shape": [
+            768,
+            512
+          ],
+          "dtype": "float32",
+          "value": null
+        },
+        "mean": {
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "value": null
+        },
+        "total_variance_ratio": {
+          "shape": [],
+          "dtype": "float32",
+          "value": 0.9857139
+        },
+        "singular_values": {
+          "shape": [
+            512
+          ],
+          "dtype": "float32",
+          "value": null
+        },
+        "proj_l2": 22.627407,
+        "mean_l2": 19.389999,
+        "approved_by_config": false
+      },
+      {
+        "path": "edgesync_bringup/models/transreid/svd_projection_768_to_512_real_v2.npz",
+        "bytes": 1466587,
+        "sha256": "9626bea5526df5b0",
+        "keys": [
+          "mean",
+          "projection",
+          "singular_values",
+          "total_variance_ratio"
+        ],
+        "mtime": "2026-10-15 19:47:52",
+        "projection": {
+          "shape": [
+            768,
+            512
+          ],
+          "dtype": "float32",
+          "value": null
+        },
+        "mean": {
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "value": null
+        },
+        "total_variance_ratio": {
+          "shape": [],
+          "dtype": "float32",
+          "value": 0.9864118
+        },
+        "singular_values": {
+          "shape": [
+            512
+          ],
+          "dtype": "float32",
+          "value": null
+        },
+        "proj_l2": 22.627409,
+        "mean_l2": 10.372914,
+        "approved_by_config": true
+      },
+      {
+        "path": "edgesync_bringup/models/transreid/svd_projection_768_to_512_real_v3_reproduce.npz",
+        "bytes": 1466587,
+        "sha256": "9626bea5526df5b0",
+        "keys": [
+          "mean",
+          "projection",
+          "singular_values",
+          "total_variance_ratio"
+        ],
+        "mtime": "2026-10-15 20:38:10",
+        "projection": {
+          "shape": [
+            768,
+            512
+          ],
+          "dtype": "float32",
+          "value": null
+        },
+        "mean": {
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "value": null
+        },
+        "total_variance_ratio": {
+          "shape": [],
+          "dtype": "float32",
+          "value": 0.9864118
+        },
+        "singular_values": {
+          "shape": [
+            512
+          ],
+          "dtype": "float32",
+          "value": null
+        },
+        "proj_l2": 22.627409,
+        "mean_l2": 10.372914,
+        "approved_by_config": false
+      }
+    ],
+    "count": 6,
+    "approved_path_in_algorithm_thresholds_yaml": "models/transreid/svd_projection_768_to_512_real_v2.npz",
+    "identical_sha256_groups": 4,
+    "max_abs_diff_vs_approved": {
+      "edgesync_bringup/models/transreid/svd_projection_768_to_512.npz": 0.251846,
+      "edgesync_bringup/models/transreid/svd_projection_768_to_512_norm05.npz": 0.429876,
+      "edgesync_bringup/models/transreid/svd_projection_768_to_512_norm05_centered.npz": 3.4e-05,
+      "edgesync_bringup/models/transreid/svd_projection_768_to_512_real.npz": 0.251846,
+      "edgesync_bringup/models/transreid/svd_projection_768_to_512_real_v3_reproduce.npz": 0.0
+    }
+  },
+  "evaluation_population": {
+    "documented_band_752_1501": {
+      "gallery_obs": 6226,
+      "gallery_ids": 395,
+      "query_obs": 1774,
+      "query_ids": 395,
+      "distractors_pid_le_0_present": 0
+    },
+    "directory_semantics": {
+      "gallery_obs_pid_ge_0": 15913,
+      "gallery_ids_pid_gt_0": 750,
+      "distractor_pid_0_obs": 2798,
+      "junk_pid_minus1_excluded": 3819,
+      "query_obs": 3368,
+      "query_ids": 750,
+      "matches_published_counts_15913_3368": true
+    },
+    "excluded_by_band": {
+      "gallery_obs": 9687,
+      "query_obs": 1594,
+      "test_ids_dropped": 355,
+      "pct_gallery_kept": 39.13,
+      "pct_query_kept": 52.67
+    },
+    "id_band_assumption_invalid": {
+      "train_ids_span": [
+        2,
+        1500
+      ],
+      "train_id_count": 751,
+      "train_ids_ge_752": 355,
+      "test_ids_lt_752": 355,
+      "train_intersect_test_ids": 0,
+      "conclusion": "pretraining/test identity sets are disjoint BY FOLDER, not by the documented 0001-0751 / 0752-1501 ID bands; the bands interleave."
+    },
+    "svd_fitting_population_under_documented_band": {
+      "train_obs_in_1_650": 6241,
+      "train_ids_in_1_650": 341,
+      "train_obs_in_651_751": 1180,
+      "train_ids_in_651_751": 55,
+      "note": "fitting population is drawn from bounding_box_train, which is disjoint from the evaluation folder, so refitting is not required by contamination - only by protocol change."
+    }
+  },
+  "recorded_results": {
+    "benchmark_latency_memory.json": {
+      "sha256_16": "6becced684fa1493",
+      "bytes": 1125,
+      "fields": {}
+    },
+    "forensic_ablation_results.json": {
+      "sha256_16": "a283f66d554c9b94",
+      "bytes": 2180,
+      "fields": {}
+    },
+    "gate3_real_results.json": {
+      "sha256_16": "fe42f9885db05c80",
+      "bytes": 1557,
+      "fields": {
+        "evaluation_type": "Offline Market-1501 (Real Weights)",
+        "threshold_tau": 0.7
+      }
+    },
+    "gate3_real_results_reconciled.json": {
+      "sha256_16": "564323622381700a",
+      "bytes": 2263,
+      "fields": {}
+    },
+    "gate3_real_results_v2_corrected.json": {
+      "sha256_16": "81c90c3b45b0e9e0",
+      "bytes": 3247,
+      "fields": {
+        "evaluation_type": "Offline Market-1501 (Real Weights)",
+        "threshold_tau": 0.7,
+        "threshold_tau_note": "Reported Rank-1/mAP are threshold-free retrieval metrics; tau is not applied anywhere in this script."
+      }
+    },
+    "gate3_real_results_v3_reproduce.json": {
+      "sha256_16": "915f55547649ed20",
+      "bytes": 1667,
+      "fields": {
+        "evaluation_type": "Offline Market-1501 (Real Weights)",
+        "threshold_tau": 0.7,
+        "threshold_tau_note": "tau is not applied anywhere in this script; Rank-1/mAP are threshold-free retrieval metrics.",
+        "latency": "not measured here -- see out/phase8_latency_*.json (idle GPU, 3 trials)"
+      }
+    },
+    "verification_threshold_audit.json": {
+      "sha256_16": "f80fd7b9ebd941d0",
+      "bytes": 1542,
+      "fields": {}
+    }
+  },
+  "deployment_capability": {
+    "onnx_export_via_torch": true,
+    "onnx_import": [
+      false,
+      "ModuleNotFoundError: No module named 'onnx'"
+    ],
+    "onnxruntime_import": [
+      false,
+      "ModuleNotFoundError: No module named 'onnxruntime'"
+    ],
+    "tensorrt_import": [
+      false,
+      "ModuleNotFoundError: No module named 'tensorrt'"
+    ],
+    "engine_files": [],
+    "onnx_files": [],
+    "trtexec_on_path": false,
+    "jetson_access": {
+      "ssh_binary": true,
+      "ros2_docs_mentions": "see ES-EXP07-AUDIT-FORENSIC-01.md - no device host/credential in repo",
+      "reachable": false,
+      "reason": "no Jetson host, address or credential exists in the project or this environment"
+    },
+    "gpu": {
+      "name": "NVIDIA GeForce RTX 3050 Laptop GPU",
+      "capability_class": "laptop discrete GPU - NOT Jetson Orin Nano"
+    },
+    "cuda_toolkit": "12.1",
+    "torch_version": "2.5.1+cu121"
+  }
+}

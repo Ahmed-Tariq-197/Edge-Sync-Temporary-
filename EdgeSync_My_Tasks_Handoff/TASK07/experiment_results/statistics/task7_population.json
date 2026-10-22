@@ -1,0 +1,250 @@
+{
+  "population_rules": {
+    "population": "directory",
+    "rules": {
+      "gallery": "pid >= 0 in bounding_box_test/ \u2014 official test gallery: distractor pid 0 is KEPT as gallery negatives, junk pid -1 is excluded",
+      "query": "pid > 0 in query/ \u2014 official query set"
+    },
+    "provenance": "Reproduces the population the recorded arm actually used (run_real_pipeline.py:488-498 \u2192 gate3_real_results_v2_corrected.json).",
+    "validity": "Valid: this is the published Market-1501 test population, taken from the directory semantics rather than from an identity-number band.",
+    "id_band": null,
+    "gallery_dir": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\data\\Market-1501-v15.09.15\\bounding_box_test",
+    "query_dir": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\data\\Market-1501-v15.09.15\\query",
+    "gallery": {
+      "files_scanned": 19732,
+      "kept": 15913,
+      "excluded": {
+        "junk_identity_-1": 3819
+      },
+      "identities": 751,
+      "distractors_pid_0": 2798,
+      "identity_number_range": [
+        0,
+        1501
+      ]
+    },
+    "query": {
+      "files_scanned": 3368,
+      "kept": 3368,
+      "excluded": {},
+      "identities": 750,
+      "identity_number_range": [
+        1,
+        1501
+      ]
+    },
+    "counts_asserted_from": "this run only \u2014 no standard dataset count is assumed"
+  },
+  "derived_from_arrays": {
+    "transreid_768_agnostic": {
+      "gallery": {
+        "rows": 15913,
+        "identities_unique": 751,
+        "identity_number_range": [
+          0,
+          1501
+        ],
+        "junk_pid_minus_1": 0,
+        "distractor_pid_0": 2798,
+        "cameras_present": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "zero_rows": 0,
+        "non_finite_rows": 0,
+        "norm_note": "raw post-BNNeck 768-D features, deliberately not unit-norm; cosine is computed after normalisation",
+        "manifest_agreement": {
+          "rows": true,
+          "identities": true,
+          "distractors_pid_0": true,
+          "identity_number_range": true,
+          "scan_accounting": true
+        },
+        "manifest_counts_claimed": true
+      },
+      "query": {
+        "rows": 3368,
+        "identities_unique": 750,
+        "identity_number_range": [
+          1,
+          1501
+        ],
+        "junk_pid_minus_1": 0,
+        "distractor_pid_0": 0,
+        "cameras_present": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "zero_rows": 0,
+        "non_finite_rows": 0,
+        "norm_note": "raw post-BNNeck 768-D features, deliberately not unit-norm; cosine is computed after normalisation",
+        "manifest_agreement": {
+          "rows": true,
+          "identities": true,
+          "distractors_pid_0": null,
+          "identity_number_range": true,
+          "scan_accounting": true
+        },
+        "manifest_counts_claimed": true
+      },
+      "arm": "transreid_768_agnostic"
+    },
+    "transreid_512_agnostic": {
+      "gallery": {
+        "rows": 15913,
+        "identities_unique": 751,
+        "identity_number_range": [
+          0,
+          1501
+        ],
+        "junk_pid_minus_1": 0,
+        "distractor_pid_0": 2798,
+        "cameras_present": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "zero_rows": 0,
+        "non_finite_rows": 0,
+        "unit_norm_max_deviation": 1.3248880670335694e-07,
+        "mean_norm": 1.000000000199223,
+        "manifest_agreement": {
+          "rows": true,
+          "identities": true,
+          "distractors_pid_0": true,
+          "identity_number_range": true,
+          "scan_accounting": true
+        },
+        "manifest_counts_claimed": true
+      },
+      "query": {
+        "rows": 3368,
+        "identities_unique": 750,
+        "identity_number_range": [
+          1,
+          1501
+        ],
+        "junk_pid_minus_1": 0,
+        "distractor_pid_0": 0,
+        "cameras_present": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "zero_rows": 0,
+        "non_finite_rows": 0,
+        "unit_norm_max_deviation": 1.2477772171060053e-07,
+        "mean_norm": 1.0000000000182114,
+        "manifest_agreement": {
+          "rows": true,
+          "identities": true,
+          "distractors_pid_0": null,
+          "identity_number_range": true,
+          "scan_accounting": true
+        },
+        "manifest_counts_claimed": true
+      },
+      "arm": "transreid_512_agnostic"
+    },
+    "transreid_512_sie": {
+      "gallery": {
+        "rows": 15913,
+        "identities_unique": 751,
+        "identity_number_range": [
+          0,
+          1501
+        ],
+        "junk_pid_minus_1": 0,
+        "distractor_pid_0": 2798,
+        "cameras_present": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "zero_rows": 0,
+        "non_finite_rows": 0,
+        "unit_norm_max_deviation": 1.3504487839099966e-07,
+        "mean_norm": 1.0000000009672065,
+        "manifest_agreement": {
+          "rows": true,
+          "identities": true,
+          "distractors_pid_0": true,
+          "identity_number_range": true,
+          "scan_accounting": true
+        },
+        "manifest_counts_claimed": true
+      },
+      "query": {
+        "rows": 3368,
+        "identities_unique": 750,
+        "identity_number_range": [
+          1,
+          1501
+        ],
+        "junk_pid_minus_1": 0,
+        "distractor_pid_0": 0,
+        "cameras_present": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "zero_rows": 0,
+        "non_finite_rows": 0,
+        "unit_norm_max_deviation": 1.1966979007738132e-07,
+        "mean_norm": 0.9999999999591991,
+        "manifest_agreement": {
+          "rows": true,
+          "identities": true,
+          "distractors_pid_0": null,
+          "identity_number_range": true,
+          "scan_accounting": true
+        },
+        "manifest_counts_claimed": true
+      },
+      "arm": "transreid_512_sie"
+    }
+  },
+  "integrity": {
+    "transreid_768_agnostic": {
+      "path": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory\\task7_transreid_768_agnostic.npz",
+      "exists": true,
+      "manifest_sha256": "459cfbb31236d558636813d59484e626dfc7e631af752e2596599a439d226ac2",
+      "now_sha256": "459cfbb31236d558636813d59484e626dfc7e631af752e2596599a439d226ac2",
+      "match": true
+    },
+    "transreid_512_agnostic": {
+      "path": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory\\task7_transreid_512_agnostic.npz",
+      "exists": true,
+      "manifest_sha256": "cb4c8b8654ff410a12bf379ce14e01bd000efba20408c2ff63dccd6f14e671b0",
+      "now_sha256": "cb4c8b8654ff410a12bf379ce14e01bd000efba20408c2ff63dccd6f14e671b0",
+      "match": true
+    },
+    "transreid_512_sie": {
+      "path": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory\\task7_transreid_512_sie.npz",
+      "exists": true,
+      "manifest_sha256": "d2d50a8ed50fbb54b46b0229241280e8bc9f38c40c53c2a87c1239503f9ef144",
+      "now_sha256": "d2d50a8ed50fbb54b46b0229241280e8bc9f38c40c53c2a87c1239503f9ef144",
+      "match": true
+    }
+  }
+}

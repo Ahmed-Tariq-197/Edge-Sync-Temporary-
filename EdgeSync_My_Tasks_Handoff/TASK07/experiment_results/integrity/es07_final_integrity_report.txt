@@ -1,0 +1,47 @@
+baseline entries: 253   tracked now: 243
+UNCHANGED (recomputed sha256 == baseline): 244
+CHANGED: 8   MISSING: 1   NEW: 29
+
+== CHANGED (baseline -> current) ==
+  Implementation Phase/edgesync_ws/src/edgesync_bringup/config/algorithm_thresholds.yaml  3592->4513 B  5879b513fb43f686 -> 3576df5a194e491b
+  Implementation Phase/edgesync_ws/src/edgesync_bringup/launch/robot_bringup.launch.py  6024->6879 B  c3ddc747f7be2727 -> 64749d07e4efb8f5
+  Implementation Phase/edgesync_ws/src/edgesync_bringup/models/transreid/transformer_120.pth  414724314->414724314 B  LARGE -> 843055293e160da0
+  Implementation Phase/edgesync_ws/src/edgesync_identity/edgesync_identity/models/extractor_factory.py  4785->5894 B  6ffe1d7841f0cf1f -> e539e6696d3286bd
+  Implementation Phase/edgesync_ws/src/edgesync_identity/edgesync_identity/models/transreid_extractor.py  9713->14229 B  6e88686eec02e750 -> 5b97db3135f60363
+  Implementation Phase/edgesync_ws/src/edgesync_identity/edgesync_identity/nodes/identity_node.py  14880->19729 B  0ec42509383c9689 -> 2d4890746f3c8d29
+  Implementation Phase/edgesync_ws/src/edgesync_identity/scripts/evaluate_offline.py  13759->25948 B  d04f5c85fb39b09e -> e341653663cea613
+  Implementation Phase/edgesync_ws/src/edgesync_identity/tests/fixtures/synthetic_transreid.pth  414718880->414718880 B  LARGE -> 2e518f28bb5ee501
+
+== MISSING from tree (in baseline, gone) ==
+  __DATASET_JPG_COUNT__  61295 B  
+
+== NEW (tracked now, absent from baseline) ==
+  ES-EXP07-EXECUTION-AND-CHANGE-LOG.md  86131 B  3f9ba5f10296baeb
+  ES-EXP07-TASK7-PROPOSAL-01-REV02.md  67939 B  0ac7a79a29276d31
+  ES-EXP07-TASK7-REPORT-01-REV02.md  52908 B  67e119b2994d75d1
+  ES-EXP07-TRANSREID-PREFLIGHT-REPORT.md  34373 B  928cbf74d7a512a5
+  Implementation Phase/edgesync_ws/src/edgesync_bringup/edgesync_bringup/reid_launch_defaults.py  3776 B  6a8f85dc5748c9bb
+  Implementation Phase/edgesync_ws/src/edgesync_bringup/tests/test_reid_launch_defaults.py  6514 B  35cbe8a3a930f4f2
+  Implementation Phase/edgesync_ws/src/edgesync_identity/edgesync_identity/core/reid_input_adapter.py  6413 B  14ac3d4358ee2d6e
+  Implementation Phase/edgesync_ws/src/edgesync_identity/edgesync_identity/models/transreid_trt_extractor.py  19753 B  f090f477b7896531
+  Implementation Phase/edgesync_ws/src/edgesync_identity/scripts/analyze_task7_statistics.py  61798 B  6c0cb21fd30c3975
+  Implementation Phase/edgesync_ws/src/edgesync_identity/scripts/benchmark_transreid_jetson.py  19598 B  d7f4b0236ddb5696
+  Implementation Phase/edgesync_ws/src/edgesync_identity/scripts/build_transreid_trt_engine.py  22046 B  45621317687f3356
+  Implementation Phase/edgesync_ws/src/edgesync_identity/scripts/export_transreid_onnx.py  28184 B  65c74dce235718d2
+  Implementation Phase/edgesync_ws/src/edgesync_identity/scripts/generate_task7_embeddings.py  21932 B  0a406b5bd057cb20
+  Implementation Phase/edgesync_ws/src/edgesync_identity/tests/test_analyze_task7_statistics.py  41031 B  4ac045e75caf7515
+  Implementation Phase/edgesync_ws/src/edgesync_identity/tests/test_evaluate_offline_population.py  14406 B  86bf8c0530eac8de
+  Implementation Phase/edgesync_ws/src/edgesync_identity/tests/test_export_transreid_onnx.py  13582 B  c0903de34ed35faf
+  Implementation Phase/edgesync_ws/src/edgesync_identity/tests/test_extractor_factory_transreid_trt.py  9192 B  508896cc7b20d80a
+  Implementation Phase/edgesync_ws/src/edgesync_identity/tests/test_identity_node_transreid_integration.py  17186 B  a0e0238be26494a8
+  Implementation Phase/edgesync_ws/src/edgesync_identity/tests/test_transreid_extractor_guardrails.py  10833 B  33b03d4d0d27b1f5
+  Implementation Phase/edgesync_ws/src/edgesync_identity/tests/test_transreid_input_adapter.py  8106 B  06807494a96f1574
+  Implementation Phase/edgesync_ws/src/edgesync_identity/tests/test_transreid_trt_extractor.py  24799 B  09586faacf4bd37e
+  TASK7_DATA_PROVENANCE.md  14965 B  0ab868cbc84a3bc9
+  TASK7_PROPOSAL_RESULTS_CONSISTENCY_AUDIT.md  38038 B  7d235fb5c9c10bf6
+  TASK7_WEIGHTS_PROVENANCE.md  13677 B  acb1f73e865ccd4b
+  docs/experiments/exp07/execution/evidence/preflight_probe.json  14653 B  2c47e0e00704cbf7
+  docs/experiments/exp07/execution/evidence/pytest_baseline_prefix.txt  1725 B  d02887ec616051ed
+  docs/experiments/exp07/execution/evidence/transreid_probe2.json  11641 B  cc092707665d8e15
+  docs/experiments/exp07/execution/preflight_probe.py  16689 B  513c98b2512ec046
+  docs/experiments/exp07/execution/transreid_probe2.py  11846 B  c7a34f33051eb03e

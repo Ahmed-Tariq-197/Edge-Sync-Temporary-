@@ -1,0 +1,28 @@
+[
+  {
+    "model": "TransReID ViT-Base/16 (with SVD 512-D)",
+    "parameters": 100769512,
+    "parameter_mb": 384.4051818847656,
+    "checkpoint_file_size_mb": 395.511926651001,
+    "peak_runtime_gpu_memory_mb": 410.7265625,
+    "backbone_latency_median_ms": 56.770099996356294,
+    "backbone_latency_mean_ms": 42.613726500057965,
+    "backbone_latency_p95_ms": 57.915520000096876,
+    "full_pipeline_latency_median_ms": 58.718050000607036,
+    "full_pipeline_latency_mean_ms": 58.782483500108356,
+    "full_pipeline_latency_p95_ms": 59.57224499215954
+  },
+  {
+    "model": "OSNet x1.0 (Native 512-D)",
+    "parameters": 2169508,
+    "parameter_mb": 8.276016235351562,
+    "checkpoint_file_size_mb": 9.91783618927002,
+    "peak_runtime_gpu_memory_mb": 413.26025390625,
+    "backbone_latency_median_ms": 24.78759999939939,
+    "backbone_latency_mean_ms": 25.317961999753607,
+    "backbone_latency_p95_ms": 31.08194499873207,
+    "full_pipeline_latency_median_ms": 28.16894999705255,
+    "full_pipeline_latency_mean_ms": 31.308644500459195,
+    "full_pipeline_latency_p95_ms": 50.39790499940863
+  }
+]

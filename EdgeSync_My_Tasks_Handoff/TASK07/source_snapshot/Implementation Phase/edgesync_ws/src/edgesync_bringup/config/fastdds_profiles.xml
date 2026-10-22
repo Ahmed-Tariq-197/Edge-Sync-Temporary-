@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<dds xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+    <profiles>
+        <!-- Default Transport Descriptor for Shared Memory & Low Latency UDP -->
+        <transport_descriptors>
+            <transport_descriptor>
+                <transport_id>shm_transport</transport_id>
+                <type>SHM</type>
+                <maxMessageSize>65536</maxMessageSize>
+            </transport_descriptor>
+            <transport_descriptor>
+                <transport_id>udp_transport</transport_id>
+                <type>UDPv4</type>
+                <sendBufferSize>1048576</sendBufferSize>
+                <receiveBufferSize>1048576</receiveBufferSize>
+                <maxMessageSize>65536</maxMessageSize>
+            </transport_descriptor>
+        </transport_descriptors>
+
+        <!-- Participant Profile for EdgeSync Nodes -->
+        <participant profile_name="edgesync_participant" is_default_profile="true">
+            <rtps>
+                <userTransports>
+                    <transport_id>shm_transport</transport_id>
+                    <transport_id>udp_transport</transport_id>
+                </userTransports>
+                <useBuiltinTransports>false</useBuiltinTransports>
+                <name>EdgeSyncNode</name>
+            </rtps>
+        </participant>
+
+        <!-- Reliable Handoff Protocol Profile -->
+        <data_writer profile_name="edgesync_reliable_writer">
+            <qos>
+                <reliability>
+                    <kind>RELIABLE</kind>
+                </reliability>
+                <durability>
+                    <kind>VOLATILE</kind>
+                </durability>
+                <historyQos>
+                    <kind>KEEP_LAST</kind>
+                    <depth>10</depth>
+                </historyQos>
+            </qos>
+            <times>
+                <heartbeatPeriod>
+                    <sec>0</sec>
+                    <nanosec>10000000</nanosec> <!-- 10 ms heartbeat -->
+                </heartbeatPeriod>
+                <nackResponseDelay>
+                    <sec>0</sec>
+                    <nanosec>1000000</nanosec>  <!-- 1 ms response -->
+                </nackResponseDelay>
+            </times>
+        </data_writer>
+
+        <data_reader profile_name="edgesync_reliable_reader">
+            <qos>
+                <reliability>
+                    <kind>RELIABLE</kind>
+                </reliability>
+                <durability>
+                    <kind>VOLATILE</kind>
+                </durability>
+                <historyQos>
+                    <kind>KEEP_LAST</kind>
+                    <depth>10</depth>
+                </historyQos>
+            </qos>
+        </data_reader>
+
+        <!-- 10 Hz AcqStatus Liveness Heartbeat Profile with 300ms lease -->
+        <data_writer profile_name="edgesync_acq_status_writer">
+            <qos>
+                <reliability>
+                    <kind>BEST_EFFORT</kind>
+                </reliability>
+                <durability>
+                    <kind>VOLATILE</kind>
+                </durability>
+                <historyQos>
+                    <kind>KEEP_LAST</kind>
+                    <depth>1</depth>
+                </historyQos>
+                <deadline>
+                    <period>
+                        <sec>0</sec>
+                        <nanosec>150000000</nanosec> <!-- 150 ms deadline -->
+                    </period>
+                </deadline>
+                <liveliness>
+                    <kind>MANUAL_BY_TOPIC</kind>
+                    <lease_duration>
+                        <sec>0</sec>
+                        <nanosec>300000000</nanosec> <!-- 300 ms lease -->
+                    </lease_duration>
+                </liveliness>
+            </qos>
+        </data_writer>
+
+        <data_reader profile_name="edgesync_acq_status_reader">
+            <qos>
+                <reliability>
+                    <kind>BEST_EFFORT</kind>
+                </reliability>
+                <durability>
+                    <kind>VOLATILE</kind>
+                </durability>
+                <historyQos>
+                    <kind>KEEP_LAST</kind>
+                    <depth>1</depth>
+                </historyQos>
+                <deadline>
+                    <period>
+                        <sec>0</sec>
+                        <nanosec>150000000</nanosec>
+                    </period>
+                </deadline>
+                <liveliness>
+                    <kind>MANUAL_BY_TOPIC</kind>
+                    <lease_duration>
+                        <sec>0</sec>
+                        <nanosec>300000000</nanosec>
+                    </lease_duration>
+                </liveliness>
+            </qos>
+        </data_reader>
+    </profiles>
+</dds>

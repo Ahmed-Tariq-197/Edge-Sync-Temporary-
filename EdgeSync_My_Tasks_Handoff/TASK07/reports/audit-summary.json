@@ -1,0 +1,610 @@
+{
+  "audit_id": "ES-EXP07-AUDIT-FORENSIC-01",
+  "timestamp_utc": "2026-10-19T12:35:29Z",
+  "timestamp_local": "2026-10-19 15:35:29 +0300",
+  "subject": "EdgeSync Experiment 7 (ES-EXP07 / Task 7) - OSNet vs TransReID Re-ID ablation, assigned to Abanob",
+  "audit_type": "read-only forensic verification; no source, config, test, dataset, model, result, proposal or report file was modified",
+  "repository": {
+    "root": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main",
+    "code_root": "Implementation Phase\\edgesync_ws\\src",
+    "git": {
+      "available": false,
+      "exit_code": 128,
+      "stdout_or_stderr": [
+        "fatal: not a git repository (or any of the parent directories): .git"
+      ],
+      "branch": null,
+      "commit_sha": null,
+      "note": "No .git exists anywhere in the tree (confirmed again by this probe). Committed-vs-working-tree and authorship are UNVERIFIED; provenance is SHA-256 based (blocker B-18)."
+    }
+  },
+  "environment": {
+    "python": "3.10.11",
+    "os": "Windows-10 (AMD64)",
+    "shell": "Git Bash (POSIX sh)",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true,
+    "gpu": "NVIDIA GeForce RTX 3050 Laptop GPU",
+    "gpu_total_gb": 4.0,
+    "tensorrt_importable": false,
+    "tensorrt_error": "ModuleNotFoundError: No module named 'tensorrt'",
+    "rclpy_importable": false,
+    "rclpy_error": "ModuleNotFoundError: No module named 'rclpy'",
+    "torchreid_importable": false,
+    "torchreid_error": "RuntimeError: operator torchvision::nms does not exist"
+  },
+  "final_recommendation": {
+    "outcome_code": 3,
+    "outcome": "IMPLEMENTATION OR INTEGRATION WORK REMAINS BEFORE HARDWARE TESTING",
+    "software_readiness": "NOT READY - SOFTWARE DEFECTS REMAIN",
+    "jetson_benchmark_readiness": "NOT READY - INTEGRATION DEFECTS REMAIN + BLOCKED (no Jetson, no TensorRT, no engine)",
+    "full_robot_readiness": "BLOCKED - requires hardware, the Class-1 fixes and decision G.5",
+    "can_proceed_directly_to_physical_experiment": false,
+    "reason": "Positive evidence of unmet requirements: the shipped ROS 2 path selects a mock by default (B-04), TensorRT arms are hard-coded zero vectors or absent (B-01/B-02), the OSNet torch extractor loads a random-weight placeholder (B-03), and the headline accuracy belongs to an arm the frozen interface cannot reach (B-06, measured -4.632/-7.801 pp)."
+  },
+  "status_counts": {
+    "traceability_matrix": {
+      "rows": 42,
+      "by_status": {
+        "FAIL — VERIFIED": 16,
+        "PASS — VERIFIED": 15,
+        "UNVERIFIED CLAIM": 3,
+        "PARTIAL": 3,
+        "BLOCKED": 2,
+        "NOT TESTED": 2,
+        "NOT APPLICABLE": 1
+      }
+    },
+    "closing_dimension_table": {
+      "rows": 23,
+      "by_status": {
+        "VERIFIED COMPLETE": 3,
+        "FAILED": 8,
+        "PARTIAL": 8,
+        "BLOCKED": 3,
+        "UNVERIFIED": 1
+      },
+      "entries": [
+        [
+          "TransReID PyTorch extractor is real and functional",
+          "VERIFIED COMPLETE (laptop GPU)"
+        ],
+        [
+          "TransReID TensorRT extractor",
+          "FAILED"
+        ],
+        [
+          "OSNet baseline path is valid",
+          "FAILED (as shipped) / VERIFIED COMPLETE (architecture)"
+        ],
+        [
+          "OSNet TensorRT baseline",
+          "FAILED"
+        ],
+        [
+          "Preprocessing and embedding contract",
+          "VERIFIED COMPLETE"
+        ],
+        [
+          "Projection 768→512 provenance and consistency",
+          "PARTIAL"
+        ],
+        [
+          "Camera/SIE conditioning through the shipped interface",
+          "FAILED"
+        ],
+        [
+          "Configuration and ROS 2 integration",
+          "FAILED"
+        ],
+        [
+          "Relevant unit tests pass",
+          "PARTIAL"
+        ],
+        [
+          "Failure handling is acceptable",
+          "FAILED"
+        ],
+        [
+          "Dataset and split identified, leakage documented",
+          "VERIFIED COMPLETE"
+        ],
+        [
+          "Metrics and threshold correctly implemented",
+          "PARTIAL"
+        ],
+        [
+          "Cross-robot verification metrics + statistics",
+          "FAILED (absent)"
+        ],
+        [
+          "Results reproducible or clearly classified as historical",
+          "PARTIAL"
+        ],
+        [
+          "The same logic is used in benchmark and production",
+          "PARTIAL"
+        ],
+        [
+          "Required model artifacts and dependencies identified",
+          "PARTIAL"
+        ],
+        [
+          "Target device available and compatible runtime present",
+          "BLOCKED"
+        ],
+        [
+          "Lab protocol defined and arms runnable comparably",
+          "PARTIAL"
+        ],
+        [
+          "Measurement scripts and output paths ready",
+          "PARTIAL"
+        ],
+        [
+          "Experiment 7 report / evidence completeness",
+          "UNVERIFIED (as a deliverable)"
+        ],
+        [
+          "No critical unresolved defect would make the measurements misleading",
+          "FAILED"
+        ],
+        [
+          "Physical Jetson measurement",
+          "BLOCKED"
+        ],
+        [
+          "Multi-robot handoff experiment",
+          "BLOCKED"
+        ]
+      ]
+    },
+    "deliverable_placeholder_audit": {
+      "fill_tokens": 110,
+      "choice_or_other_slots": 7,
+      "total_unfilled": 117,
+      "measured_by": "grep -o '<fill>' | wc -l plus a token census of angle-bracket placeholders"
+    }
+  },
+  "critical_blockers": [
+    {
+      "id": "B-01",
+      "class": 1,
+      "defect": "TensorRT baseline inference is a hard-coded zero vector",
+      "location": "`osnet_trt_extractor.py:72-75` (`return np.zeros(512)`), plus `:47-48` silent ImportError and `:89-90` mean-tiled mock",
+      "impact": "any TRT/`osnet_mock` arm measures nothing; τ decisions on zeros are arbitrary; mocked tests still pass"
+    },
+    {
+      "id": "B-02",
+      "class": 1,
+      "defect": "TransReID TensorRT extractor missing entirely",
+      "location": "no `transreid_trt_extractor.py`; `engines/` empty; no `.onnx`; no builder",
+      "impact": "the candidate arm the experiment exists to test cannot run under the approved precision; A4/A5/A7 unmeasurable"
+    },
+    {
+      "id": "B-03",
+      "class": 1,
+      "defect": "OSNet PyTorch extractor: wrong exception guard + placeholder fallback with random weights",
+      "location": "`osnet_torch_extractor.py:64`, `:74` (catches `ImportError`, actual is `RuntimeError`), `:93-124` (`strict=False`, 0/567 keys)",
+      "impact": "selecting the honest baseline key either crashes or silently returns noise; blocks a valid A3/A6 comparison"
+    },
+    {
+      "id": "B-04",
+      "class": 1,
+      "defect": "Launch dictionary silently overrides the YAML and ships a **mock** as the default model",
+      "location": "`robot_bringup.launch.py:22` + `:84-93`; `identity_node.py:57` default `osnet_mock`; `algorithm_thresholds.yaml:41` says `transreid`",
+      "impact": "as shipped, the identity service compares mock embeddings; every handoff-level number taken this way is invalid"
+    },
+    {
+      "id": "B-05",
+      "class": 1,
+      "defect": "Asset paths are relative and never resolved through the package share directory",
+      "location": "`algorithm_thresholds.yaml:42-43`; no `get_package_share_directory()` in `identity_node.py`",
+      "impact": "node fails to start (factory fail-fast) unless launched from an exact CWD; the YAML documents this but does not fix it"
+    },
+    {
+      "id": "B-06",
+      "class": 2,
+      "defect": "Camera/SIE unreachable through the frozen interface; headline accuracy belongs to an unreachable arm",
+      "location": "`identity_node.py:266-272`; `base_identity_extractor.py:27`; `IdentityVerify.srv`",
+      "impact": "reproduced −4.632 pp Rank-1 / −7.801 pp mAP penalty; H7a flips sign for the deployed arm; needs G.5 decision"
+    },
+    {
+      "id": "B-07",
+      "class": 2,
+      "defect": "No `sensor_msgs/Image` encoding check at the node boundary",
+      "location": "`identity_node.py:266-272`",
+      "impact": "quantified: wrong channel order costs 35.2 Rank-1 points on a stratified population and drives same-image cosine to 0.606, silently"
+    },
+    {
+      "id": "B-08",
+      "class": 2,
+      "defect": "Failures become valid-looking embeddings; the detector of that is broken",
+      "location": "`osnet_torch_extractor.py:187-189`; `identity_node.py:280`; `identity_node.py:296` reads `_zero_streak` (real attribute `_zero_streak_count`) → observability constant −1",
+      "impact": "a zeros embedding passes the finite/512 checks; the one field meant to reveal it always reports −1"
+    },
+    {
+      "id": "B-09",
+      "class": 2,
+      "defect": "Required acceptance statistics not implemented",
+      "location": "proposal measurement plan (McNemar, Holm α=0.05, Wilson) — absent repo-wide",
+      "impact": "the experiment cannot declare a statistically supported conclusion even with perfect device data"
+    },
+    {
+      "id": "B-10",
+      "class": 2,
+      "defect": "Cross-robot verification metrics (false-handoff rate, matched-TAR FMR) not implemented",
+      "location": "report §4.4 tables; no code",
+      "impact": "report cannot be completed; ambiguity with Task 13 scope (matrix R-34)"
+    },
+    {
+      "id": "B-11",
+      "class": 2,
+      "defect": "τ = 0.70 operating point recorded without any pair population or counts; reproduced TransReID FNMR is high",
+      "location": "`verification_threshold_audit.json`; `identity_verifier.py:92-96`",
+      "impact": "FNMR swings 0.021 %→18.70 %→93.98 % purely by population; conclusions at fixed τ are unattributable. τ must not be re-tuned on test (standing rule) → needs a declared calibration population"
+    },
+    {
+      "id": "B-12",
+      "class": 2,
+      "defect": "Two incompatible evaluation populations coexist; the narrower one is hard-coded without an override",
+      "location": "`evaluate_offline.py:65` (`id_min=752, id_max=1501`, no CLI) vs `run_real_pipeline.py:489-498` (unfiltered 15,913/3,368)",
+      "impact": "the same \"Rank-1\" label can mean two different measurements; proposal P5 confirmed open"
+    },
+    {
+      "id": "B-13",
+      "class": 2,
+      "defect": "Observability script manufactures Jetson-looking success and writes it into config",
+      "location": "`profile_edge_latency.py:53`, `:83-87`, `:274`, `+18.0` fudge, Quality Gate 9 → `update_timing_budgets_yaml()`",
+      "impact": "produces \"PASSED\" + simulated °C/MB on any host and mutates `timing_budgets.yaml`; highest-severity misleading-success indicator in the repo. **Not executed by this audit** (would modify project files)"
+    },
+    {
+      "id": "B-14",
+      "class": 3,
+      "defect": "In-repo latency harness measures synthetic noise with a hard-coded `cam_label=0`",
+      "location": "`run_real_pipeline.py:566`, `:570`; no idle gate",
+      "impact": "numbers not comparable to production; one of the four conflicting latency sets"
+    },
+    {
+      "id": "B-15",
+      "class": 3,
+      "defect": "Harness cannot run on device as written",
+      "location": "`run_real_pipeline.py:33` (deleted absolute root), `:717-724` (Windows `sys.prefix` path)",
+      "impact": "blocks a faithful device re-run of the offline pipeline"
+    },
+    {
+      "id": "B-16",
+      "class": 3,
+      "defect": "Packaging never exercised; third-party deps undeclared",
+      "location": "`setup.py` install_requires; `package.xml`",
+      "impact": "`colcon build` has never been run in this tree; aarch64 torch/opencv unstated"
+    },
+    {
+      "id": "B-17",
+      "class": 4,
+      "defect": "Report is a skeleton: 110 `<fill>`, no hashes, no populations, stale `setup.py` claim, reproduction instructions pointing at non-existent `tools/ablation/task7/run_task7_benchmark.sh` and `results/experiment7/task7/`",
+      "location": "report §2, §3, §4.x, §5-§8",
+      "impact": "the deliverable that supervisor review reads is not evidence yet"
+    },
+    {
+      "id": "B-18",
+      "class": 4,
+      "defect": "No version control: 0 commits, no branch, no attribution",
+      "location": "absence of `.git`",
+      "impact": "\"committed vs working tree\" and authorship are permanently **UNVERIFIED**; provenance must be SHA-256 based"
+    },
+    {
+      "id": "B-19",
+      "class": 5,
+      "defect": "`load_state_dict(..., strict=False)` return values discarded; projection loader asserts shape only (no dtype/finite/device)",
+      "location": "`transreid_extractor.py:128`, `:75-93`",
+      "impact": "latent silent-partial-load risk; hardening, not currently observed to misbehave"
+    },
+    {
+      "id": "B-20",
+      "class": 5,
+      "defect": "Dedicated ablation configs/launch absent (D-11/D-12) and guide-vs-proposal naming conflict unresolved",
+      "location": "`config/`, `launch/`",
+      "impact": "workflow ergonomics; blocked on the naming decision, not on hardware"
+    }
+  ],
+  "blocker_class_key": {
+    "1": "must fix before going to the lab",
+    "2": "must fix before measuring valid results",
+    "3": "resolvable during the lab session",
+    "4": "documentation-only",
+    "5": "follow-up outside approved scope"
+  },
+  "minimum_gate_to_enter_lab": [
+    "B-04 (launch override)",
+    "B-05 (asset path resolution)",
+    "B-03 (OSNet placeholder)",
+    "B-01 or B-02 (a non-mock TRT path, or no TRT claim)",
+    "B-07 (encoding assert)",
+    "B-08 (silent zeros + _zero_streak typo)",
+    "written decision for B-06 (camera/SIE reachability)"
+  ],
+  "lab_readiness": {
+    "isolated_jetson_benchmark_can_start_today": false,
+    "jetson_only_no_robot_benchmark": "BLOCKED - no device in this session, tensorrt unimportable, engines/ empty",
+    "full_robot_experiment": "BLOCKED - hardware plus open owner decisions G.5, G.7, G-j",
+    "work_completable_without_robot": [
+      "all Class-1 and Class-2 software fixes",
+      "ROS 2 host smoke tests (not on this host)",
+      "acceptance statistics + cross-robot metric implementations",
+      "harness hardening",
+      "report sections 3 hashes / 4.1 accuracy / 6 threats"
+    ],
+    "requires_robot_or_jetson": [
+      "arms A2/A3/A5/A6 device latency and memory",
+      "A4/A7 TensorRT arms",
+      "end-to-end TTO and handoff numbers",
+      "tegrastats memory evidence",
+      "cross-robot false-handoff rates",
+      "power-mode/clock attestation"
+    ]
+  },
+  "integrity": {
+    "baseline_manifest_entries": 247,
+    "unchanged": 242,
+    "mtime_only_cache_changes": 5,
+    "source_config_test_dataset_model_result_proposal_report_modified": 0,
+    "deleted_or_moved": 0,
+    "git_state": "untouched (no repository)",
+    "hardware_robot_ros2_commands_executed": 0,
+    "timing_budgets_yaml": "unchanged - mtime 2026-10-14 19:30:54, 2031 bytes (proves profile_edge_latency.py never ran)",
+    "new_files_outside_audit_dir": 6,
+    "new_files_detail": "all .pytest_cache/** byproducts of running the project's own suite (5 under edgesync_estimation, 1 under edgesync_identity); .pytest_cache is not in .gitignore",
+    "artifacts_written_by_this_audit": "docs/experiments/exp07/audit/** only"
+  },
+  "evidence_limitations": [
+    "Zero device measurements exist; no Jetson was reachable in this session.",
+    "TensorRT: NOT TESTED - the module is unimportable and no engine or ONNX artifact exists.",
+    "ROS 2 runtime: NOT TESTED - no rclpy, no ros2 CLI, colcon never run in this tree.",
+    "profile_edge_latency.py was read but deliberately not executed because it writes into timing_budgets.yaml; B-13 rests on static evidence at :53, :83-87, :274 and the write-back path.",
+    "Latency and memory claims were not regenerated; four mutually inconsistent recorded latency sets exist and two harness outputs live outside the repo.",
+    "FNMR/FMR/EER could not be regenerated: no pair-generation script and no population counts are recorded, and re-tuning tau on test is prohibited by the standing rule.",
+    "Authorship and committed-vs-working-tree status are permanently unanswerable (no Git); every attribution to Abanob is labelled UNVERIFIED CLAIM.",
+    "The Team Execution Guide is not in the repository; guide obligations were checked through JETSON-RUN-SHEET-PREP-01-REV01.md.",
+    "The run sheet's root path differs from this audited tree, and run_real_pipeline.py:33 hard-codes the now-missing path; results may differ between trees.",
+    "One accuracy arm remains unverified: the 768-D reconciled arms carry 2-decimal values unlike every measured value and were not regenerated.",
+    "Audit reproduction scripts ran outside the project tree (C:/Users/PC/AppData/Local/Temp/es07_repro2); copies are in evidence/."
+  ],
+  "measurements": {
+    "environment_label": "local laptop GPU (RTX 3050, CUDA, PyTorch fp32) - NOT Jetson, NOT TensorRT, NOT robot",
+    "dataset_root": "Implementation Phase/edgesync_ws/src/edgesync_bringup/data/Market-1501-v15.09.15",
+    "dataset_counts_measured": {
+      "files_under_data": 68036,
+      "bounding_box_train_images": 12936,
+      "train_identities": 751,
+      "bounding_box_test_images": 19732,
+      "junk_pid_minus1": 3819,
+      "distractor_pid_0000": 2798,
+      "test_identities": 750,
+      "query_images": 3368,
+      "query_identities": 750,
+      "gallery_after_harness_filter": 15913,
+      "train_intersection_test": 0
+    },
+    "transreid_production_extractor": {
+      "artifact": "TransReID ViT-B/16 + centered truncated SVD 768->512, reproduced through the PRODUCTION extractor",
+      "provenance": "Transcribed verbatim from stdout captured in evidence/repro_transreid_both_arms.log. The script's own json.dump failed at the final line (FileNotFoundError on the literal path /tmp/es07_repro/repro_results.json under Windows), so REAL_EXIT=1; all measurement output preceding that failure succeeded and is what is transcribed here. No number in this file was recomputed or edited.",
+      "audit_note_on_exit_code": "REAL_EXIT=1 refers to the audit script's output-writing step only, NOT to inference or evaluation.",
+      "environment": {
+        "python": "3.10.11",
+        "torch": "2.5.1+cu121",
+        "cuda_available": true,
+        "device": "NVIDIA GeForce RTX 3050 Laptop GPU (4.29 GB VRAM)",
+        "precision": "fp32 (PyTorch, NOT TensorRT, NOT Jetson)",
+        "os": "Windows-10-10.0.26300-SP0 AMD64"
+      },
+      "code_under_test": {
+        "extractor": "edgesync_identity.models.transreid_extractor.TransReIdExtractor (instantiated via models/extractor_factory.create_extractor)",
+        "log_line": "extractor: TransReIdExtractor device: cuda; params=100,769,512",
+        "evaluation_metric_code": "run_real_pipeline.compute_cmc_map (repo harness function, imported not reimplemented)",
+        "population": "unfiltered gallery pid>=0 from bounding_box_test, query pid>0 from query",
+        "n_gallery": 15913,
+        "n_query": 3368,
+        "images_embedded": 19281,
+        "zero_embedding_rows": 0,
+        "feature_dim": 512
+      },
+      "assets_verified_by_sha256": {
+        "transformer_120.pth": "843055293e160da027d152e1b9cccb75e34c73e0a9714204012c0f2825f9c4e5 (414,724,314 B)",
+        "svd_projection_768_to_512_real_v2.npz": "9626bea5526df5b0a9d5b4dccec1c552224b5a6da504a0ab3a69f6bbfec1dbfc (1,466,587 B)",
+        "osnet_x1_0_market1501.pth": "2809d3227f7d078f6045f7feb874a34d0684f0e0057b264b99adccf7d4519154 (10,399,605 B)"
+      },
+      "arms": {
+        "WITH_CAM_SIE": {
+          "rank1": 93.37885985748218,
+          "rank5": 97.95130641330167,
+          "rank10": 98.87173396674585,
+          "mAP": 85.12520406484964,
+          "n": 19281,
+          "seconds": 342.3,
+          "zero_rows": 0,
+          "dim": 512,
+          "recorded_reference": "gate3_real_results_v3_reproduce.json accuracy/transreid",
+          "reproduced_bit_identical": true
+        },
+        "NO_CAM_deployed_path": {
+          "rank1": 88.74703087885986,
+          "rank5": 96.14014251781472,
+          "rank10": 97.8622327790974,
+          "mAP": 77.32400426241038,
+          "n": 19281,
+          "seconds": 367.5,
+          "zero_rows": 0,
+          "dim": 512,
+          "why_deployed_path": "identity_node.py:266-272 calls extract_embedding(crop) with no cam_label; IdentityVerify.srv carries no camera field; base_identity_extractor.py signature has no cam_label parameter",
+          "recorded_reference_for_comparison": "gate3_real_results_reconciled.json corrected_ablation_results.transreid_native_post_bn_768_no_cam reports rank1 88.64 / mAP 74.82 (768-D, no SVD) — a DIFFERENT arm, not this one"
+        }
+      },
+      "deltas": {
+        "no_cam_minus_with_cam_rank1_pp": -4.63182897862232,
+        "no_cam_minus_with_cam_mAP_pp": -7.80119980243926,
+        "no_cam_minus_recorded_osnet_rank1_pp": -5.58194774346792,
+        "no_cam_minus_recorded_osnet_mAP_pp": -6.24523057263802,
+        "with_cam_minus_recorded_osnet_rank1_pp": -0.9501187648456,
+        "with_cam_minus_recorded_osnet_mAP_pp": 1.55596922980124
+      },
+      "consequence_for_hypothesis_H7a": "H7a states accuracy increases. For the only arm the shipped ROS 2 runtime can reach (no SIE), reproduced TransReID is BELOW the reproduced OSNet baseline on every metric. H7a is contradicted for the deployed configuration and holds on mAP only (+1.56 pp) with SIE, while Rank-1 is still -0.95 pp."
+    },
+    "osnet_full_population": {
+      "osnet_reproduced_rgb_route": {
+        "order": "RGB",
+        "rank1": 94.32897862232778,
+        "rank5": 97.80285035629454,
+        "rank10": 98.60451306413302,
+        "mAP": 83.5692348350484,
+        "n": 19281,
+        "dim": 512,
+        "zero_rows": 0,
+        "seconds": 537.5
+      },
+      "route": "torchreid osnet.py via sys.prefix path (run_real_pipeline.py:718-731)",
+      "preprocess": "BGR->RGB, resize (128,256), ImageNet mean/std (run_real_pipeline.py:274-285)",
+      "recorded_reference": {
+        "rank1": 94.32897862232778,
+        "rank5": 97.80285035629454,
+        "rank10": 98.60451306413302,
+        "mAP": 83.5692348350484
+      },
+      "prior_flawed_run": {
+        "rank1": 10.243467933491686,
+        "note": "fed BGR pixels into RGB-ordered ImageNet stats; audit-script defect, see bgr-order-run.json"
+      }
+    },
+    "channel_order_diagnostic": {
+      "mini_population": {
+        "gallery": 600,
+        "query": 281
+      },
+      "rgb": {
+        "rank1": 84.82758620689656,
+        "rank5": 94.48275862068965,
+        "rank10": 95.86206896551724,
+        "mAP": 88.6288731383559,
+        "n": 881
+      },
+      "bgr": {
+        "rank1": 49.6551724137931,
+        "rank5": 74.48275862068967,
+        "rank10": 81.37931034482759,
+        "mAP": 59.1790431683047,
+        "n": 881
+      },
+      "cosine_rgb_vs_bgr_same_image": {
+        "mean": 0.6062065269565474,
+        "min": 0.32869184017181396,
+        "max": 0.9902685880661011,
+        "p10": 0.4679720401763916
+      },
+      "note": "same image, same weights; only the channel order fed to the model differs"
+    },
+    "osnet_backbone_equivalence": {
+      "missing_keys": null,
+      "unexpected_keys": null,
+      "cosine_mean": null,
+      "identical": null,
+      "train_mode_batch1_probe": null
+    },
+    "bit_identical_to_recorded": [
+      {
+        "value": "93.37885985748218 / 85.12520406484964",
+        "file": "results/experiment7/gate3_real_results_v3_reproduce.json"
+      },
+      {
+        "value": "94.32897862232778 / 83.5692348350484",
+        "file": "results/experiment7/gate3_real_results.json (+ _v2_corrected, _v3_reproduce, _reconciled)"
+      }
+    ],
+    "deployed_arm_sie_penalty_measured": {
+      "rank1_pp": -4.632,
+      "mAP_pp": -7.801,
+      "with_cam": [
+        93.37885985748218,
+        85.12520406484964
+      ],
+      "no_cam": [
+        88.74703087885986,
+        77.32400426241038
+      ],
+      "consequence": "H7a contradicted for the only arm reachable through IdentityVerify.srv"
+    },
+    "NOT_reproduced": [
+      "all latency numbers (4 mutually inconsistent recorded sets)",
+      "all memory numbers",
+      "FNMR/FMR/EER (no pair population recorded)",
+      "the 768-D reconciled arms (2-decimal values)",
+      "every Jetson/robot measurement (none exist)"
+    ]
+  },
+  "tests": {
+    "python -m pytest tests/ -q": {
+      "exit_code": 2,
+      "result": "Interrupted: 1 error during collection (tests/test_identity_service.py -> ModuleNotFoundError: No module named 'rclpy'); 0 tests ran",
+      "evidence": "evidence/pytest_full.log",
+      "reused_historical": false
+    },
+    "python -m pytest tests/ -q --ignore=tests/test_identity_service.py": {
+      "exit_code": 0,
+      "result": "56 passed, 3 warnings in 9.89 s",
+      "inference": "mocked / synthetic tensors - no checkpoint loaded",
+      "evidence": "evidence/pytest_ignored.log",
+      "reused_historical": false
+    },
+    "integration tests (test_identity_service.py, 5)": {
+      "status": "NOT TESTED",
+      "reason": "no rclpy on this host"
+    },
+    "real-inference reproductions": {
+      "count": 6,
+      "exit_codes": {
+        "R-1": 1,
+        "R-2": 0,
+        "R-3": 0,
+        "R-4": 0,
+        "R-5": 0,
+        "R-6": 0
+      },
+      "note": "R-1 exit 1 is the script's final json.dump to a literal /tmp path; all measurements completed and were captured from stdout"
+    }
+  },
+  "deliverables": {
+    "ES-EXP07-AUDIT-FORENSIC-01.md": {
+      "bytes": 101495,
+      "sha256": "e6102534fc349ca00fa7ea446e81f5b36f16a1f5eeebd2a3f79a372f44da65ad"
+    },
+    "artifact-inventory.md": {
+      "bytes": 15245,
+      "sha256": "caaf0748e4be91dd1566f8ed67cb88868563d8a6a49a8fe37d2b38481302e796"
+    },
+    "lab-readiness-checklist.md": {
+      "bytes": 13827,
+      "sha256": "8d22445582032ffc118b0449cc6862bfce14114ab87e6906b23b53c7dccc28b7"
+    },
+    "requirement-traceability-matrix.csv": {
+      "bytes": 15600,
+      "sha256": "fc2901497ebfd22413d3f0f0dfbc917403778f5fd748b63edf93f7d8a2a90093"
+    },
+    "test-execution-log.md": {
+      "bytes": 13069,
+      "sha256": "ea318236b0e0ce6f662c883e3e98ee076b4436835b31bb7d0f1c4a50ee75658e"
+    }
+  },
+  "counts": {
+    "blockers_total": 20,
+    "blockers_class_1": 5,
+    "blockers_class_2": 8,
+    "blockers_class_3": 3,
+    "blockers_class_4": 2,
+    "blockers_class_5": 2,
+    "evidence_files": 16,
+    "inventory_files_hashed_and_matched": 54,
+    "inventory_hash_mismatches": 0
+  },
+  "deliverables_note": "Hashes computed at write time. audit-summary.json cannot contain its own hash; artifact-inventory.md section 9 lists evidence/ hashes. A file's own hash is obtained with `sha256sum docs/experiments/exp07/audit/*` after this file is written.",
+  "format_deviation": "The charter asks the report to END with the dimension table. Under '# Overall verdict' the table is present as the report's final table, followed by five verdict lines. Restructuring the finished report was blocked by the read-only file policy, so the deviation is recorded here instead: dimension table = rows starting 'TransReID PyTorch extractor is real and functional', verdict lines follow it.",
+  "revision_note": "Rev 2. Rev 1 was written earlier in this same session and mis-parsed four rows of the closing dimension table (statuses carrying a qualifier such as 'VERIFIED COMPLETE (laptop GPU)'). No project file other than this audit's own deliverables was touched by either revision."
+}

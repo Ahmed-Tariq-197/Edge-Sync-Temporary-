@@ -1,0 +1,803 @@
+{
+  "experiment": "ES-EXP07 TR-09",
+  "evaluation_type": "ONNX export, graph validation and Torch<->ONNX numerical parity",
+  "generated_utc": "2026-10-19T15:11:35Z",
+  "invocation": {
+    "argv": [
+      "scripts/export_transreid_onnx.py",
+      "--checkpoint",
+      "../edgesync_bringup/models/transreid/transformer_120.pth",
+      "--projection",
+      "../edgesync_bringup/models/transreid/svd_projection_768_to_512_real_v2.npz",
+      "--market1501",
+      "../edgesync_bringup/data/Market-1501-v15.09.15",
+      "--out-dir",
+      "C:/Users/PC/edgesync_es07_runs/onnx_trt09_rerun",
+      "--parity-n",
+      "8",
+      "--reference-device",
+      "cpu"
+    ],
+    "cwd": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_identity",
+    "settings": {
+      "checkpoint": "../edgesync_bringup/models/transreid/transformer_120.pth",
+      "projection": "../edgesync_bringup/models/transreid/svd_projection_768_to_512_real_v2.npz",
+      "market1501": "../edgesync_bringup/data/Market-1501-v15.09.15",
+      "out_dir": "C:/Users/PC/edgesync_es07_runs/onnx_trt09_rerun",
+      "opset": 17,
+      "parity_n": 8,
+      "parity_tolerance": 0.002,
+      "cosine_floor": 0.9999,
+      "reference_device": "cpu",
+      "skip_dynamic_batch": false,
+      "dynamo": false
+    }
+  },
+  "host": {
+    "python": "3.10.11",
+    "torch": "2.5.1+cu121",
+    "cuda_available": true
+  },
+  "assets": {
+    "checkpoint": {
+      "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\transreid\\transformer_120.pth",
+      "bytes": 414724314,
+      "sha256": "843055293e160da027d152e1b9cccb75e34c73e0a9714204012c0f2825f9c4e5"
+    },
+    "projection": {
+      "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\transreid\\svd_projection_768_to_512_real_v2.npz",
+      "bytes": 1466587,
+      "sha256": "9626bea5526df5b0a9d5b4dccec1c552224b5a6da504a0ab3a69f6bbfec1dbfc"
+    }
+  },
+  "shape_assumptions": {
+    "input": "NCHW float32; contract is 1x3x256x128 with only the batch axis dynamic",
+    "pos_embed": "the checkpoint carries (1, 211, 768); 256x128 with patch 16 / stride 12 gives exactly 210 patches + CLS, so no interpolation path is exercised. Other resolutions change the token count and are recorded as off-contract, not silently re-shaped.",
+    "preprocessing": "resize 256x128, /255, mean=std=[0.5,0.5,0.5], HWC->CHW, RGB uint8 in",
+    "projection": "SVD 768->512 stays OUTSIDE the graph (fitted artefact, own provenance); the graph ends at the post-BNNeck 768-D CLS feature"
+  },
+  "reference_extractor": {
+    "class": "TransReIdExtractor",
+    "load_device": "cuda",
+    "checkpoint_coverage": {
+      "checkpoint_keys": 211,
+      "keys_after_filter": 210,
+      "dropped_by_filter": [
+        "classifier.weight"
+      ],
+      "model_parameter_entries": 206,
+      "missing_keys": [],
+      "unexpected_keys": [
+        "classifier_1.weight",
+        "classifier_2.weight",
+        "classifier_3.weight",
+        "classifier_4.weight"
+      ],
+      "coverage_pct": 100.0,
+      "torch_parameters": 100769512
+    },
+    "torch_parameters": 100769512
+  },
+  "reference_device_used": "cpu",
+  "exports": {
+    "agnostic": {
+      "status": "OK",
+      "seconds": 9.9,
+      "input_names": [
+        "image"
+      ],
+      "opset": 17,
+      "dynamo": false
+    },
+    "sie": {
+      "status": "OK",
+      "seconds": 5.2,
+      "input_names": [
+        "image",
+        "cam_label"
+      ],
+      "opset": 17,
+      "dynamo": false
+    }
+  },
+  "graph_validation": {
+    "agnostic": {
+      "path": "C:\\Users\\PC\\edgesync_es07_runs\\onnx_trt09_rerun\\transreid_feature_agnostic.onnx",
+      "bytes": 343380183,
+      "sha256": "318b6857585d5d7c4882a42156a7080c11be37f84a53957b05fb1b0a9aa82b22",
+      "checker": "PASS (onnx.checker.check_model)",
+      "ir_version": 8,
+      "opset_imports": {
+        "ai.onnx": 17
+      },
+      "n_nodes": 779,
+      "op_type_histogram": {
+        "Constant": 205,
+        "Add": 85,
+        "Gather": 74,
+        "Unsqueeze": 73,
+        "MatMul": 72,
+        "Shape": 39,
+        "Mul": 37,
+        "Transpose": 37,
+        "Concat": 27,
+        "Reshape": 26,
+        "LayerNormalization": 25,
+        "Cast": 24,
+        "Div": 24,
+        "Erf": 12,
+        "Softmax": 12,
+        "BatchNormalization": 1,
+        "ConstantOfShape": 1,
+        "Conv": 1,
+        "Equal": 1,
+        "Expand": 1,
+        "Slice": 1,
+        "Where": 1
+      },
+      "inputs": [
+        {
+          "name": "image",
+          "dtype": "FLOAT",
+          "shape": [
+            "batch",
+            3,
+            256,
+            128
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "feature_768",
+          "dtype": "FLOAT",
+          "shape": [
+            "batch",
+            "BatchNormalizationfeature_768_dim_1"
+          ]
+        }
+      ],
+      "output_symbolic_dims": {
+        "feature_768": [
+          "batch",
+          "BatchNormalizationfeature_768_dim_1"
+        ]
+      },
+      "n_initializers": 154,
+      "initializer_float32_bytes": 343249920,
+      "external_data_tensors": [],
+      "input_contract_violations": []
+    },
+    "sie": {
+      "path": "C:\\Users\\PC\\edgesync_es07_runs\\onnx_trt09_rerun\\transreid_feature_sie.onnx",
+      "bytes": 343399114,
+      "sha256": "2cd8ccc774c5933771e5b6b653d593de3862faddfd59b471b9cecccf4bda4362",
+      "checker": "PASS (onnx.checker.check_model)",
+      "ir_version": 8,
+      "opset_imports": {
+        "ai.onnx": 17
+      },
+      "n_nodes": 783,
+      "op_type_histogram": {
+        "Constant": 206,
+        "Add": 86,
+        "Gather": 75,
+        "Unsqueeze": 73,
+        "MatMul": 72,
+        "Shape": 39,
+        "Mul": 38,
+        "Transpose": 37,
+        "Concat": 27,
+        "Reshape": 26,
+        "LayerNormalization": 25,
+        "Cast": 24,
+        "Div": 24,
+        "Erf": 12,
+        "Softmax": 12,
+        "BatchNormalization": 1,
+        "ConstantOfShape": 1,
+        "Conv": 1,
+        "Equal": 1,
+        "Expand": 1,
+        "Slice": 1,
+        "Where": 1
+      },
+      "inputs": [
+        {
+          "name": "image",
+          "dtype": "FLOAT",
+          "shape": [
+            "batch",
+            3,
+            256,
+            128
+          ]
+        },
+        {
+          "name": "cam_label",
+          "dtype": "INT64",
+          "shape": [
+            "batch"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "feature_768",
+          "dtype": "FLOAT",
+          "shape": [
+            "batch",
+            "BatchNormalizationfeature_768_dim_1"
+          ]
+        }
+      ],
+      "output_symbolic_dims": {
+        "feature_768": [
+          "batch",
+          "BatchNormalizationfeature_768_dim_1"
+        ]
+      },
+      "n_initializers": 155,
+      "initializer_float32_bytes": 343268352,
+      "external_data_tensors": [],
+      "input_contract_violations": []
+    }
+  },
+  "runtime_checks": {
+    "agnostic": {
+      "dynamic_batch_1": "OK, output shape (1, 768)",
+      "feature_width_observed": 768,
+      "dynamic_batch_2": "OK, output shape (2, 768)",
+      "off_contract_128x64": "refused by the graph: InvalidArgument"
+    },
+    "sie": {
+      "dynamic_batch_1": "OK, output shape (1, 768)",
+      "feature_width_observed": 768,
+      "dynamic_batch_2": "OK, output shape (2, 768)",
+      "off_contract_128x64": "refused by the graph: InvalidArgument"
+    }
+  },
+  "parity": {
+    "population": "directory",
+    "n_images_selected": 8,
+    "images": [
+      {
+        "path": "../edgesync_bringup/data/Market-1501-v15.09.15\\bounding_box_test\\0000_c1s1_000151_01.jpg",
+        "pid": 0,
+        "camid": 1,
+        "cam_label": 0,
+        "agnostic_vs_sie_arm": {
+          "max_abs": 0.027122327126562595,
+          "mean_abs": 0.0031811443556186703,
+          "rmse": 0.004692755511305857,
+          "cosine": 0.9943623801242172,
+          "l2_dist": 0.1061849358238373
+        },
+        "production_extract_embedding_vs_torch_agnostic": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000002,
+          "l2_dist": 0.0
+        },
+        "production_extract_embedding_vs_torch_sie": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 0.9999999999999998,
+          "l2_dist": 0.0
+        },
+        "agnostic": {
+          "feature_768": {
+            "max_abs": 7.867813110351562e-06,
+            "mean_abs": 1.8157419011307259e-06,
+            "rmse": 2.306322891693689e-06,
+            "cosine": 0.9999999999983817,
+            "l2_dist": 6.391469483316228e-05
+          },
+          "feature_512_after_contract": {
+            "max_abs": 3.6135315895080566e-07,
+            "mean_abs": 6.080915682105115e-08,
+            "rmse": 7.781007600853471e-08,
+            "cosine": 0.9999999999984515,
+            "l2_dist": 1.7606410364888188e-06
+          }
+        },
+        "sie": {
+          "feature_768": {
+            "max_abs": 7.867813110351562e-06,
+            "mean_abs": 1.5401747077703476e-06,
+            "rmse": 1.9518259098723363e-06,
+            "cosine": 0.9999999999988491,
+            "l2_dist": 5.409058629485182e-05
+          },
+          "feature_512_after_contract": {
+            "max_abs": 3.129243850708008e-07,
+            "mean_abs": 5.059379404315223e-08,
+            "rmse": 6.570746557132207e-08,
+            "cosine": 0.9999999999989015,
+            "l2_dist": 1.4867902233620302e-06
+          }
+        }
+      },
+      {
+        "path": "../edgesync_bringup/data/Market-1501-v15.09.15\\bounding_box_test\\0000_c1s1_000376_03.jpg",
+        "pid": 0,
+        "camid": 1,
+        "cam_label": 0,
+        "agnostic_vs_sie_arm": {
+          "max_abs": 0.030559483915567398,
+          "mean_abs": 0.0037599044566363204,
+          "rmse": 0.005271763117224786,
+          "cosine": 0.9928853795932174,
+          "l2_dist": 0.11928638236796092
+        },
+        "production_extract_embedding_vs_torch_agnostic": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "l2_dist": 0.0
+        },
+        "production_extract_embedding_vs_torch_sie": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0000000000000002,
+          "l2_dist": 0.0
+        },
+        "agnostic": {
+          "feature_768": {
+            "max_abs": 1.239776611328125e-05,
+            "mean_abs": 2.81315078609623e-06,
+            "rmse": 3.563236035040937e-06,
+            "cosine": 0.9999999999960024,
+            "l2_dist": 9.874729363281887e-05
+          },
+          "feature_512_after_contract": {
+            "max_abs": 6.09084963798523e-07,
+            "mean_abs": 9.389114552504907e-08,
+            "rmse": 1.2573549919534225e-07,
+            "cosine": 0.9999999999959533,
+            "l2_dist": 2.84506957174087e-06
+          }
+        },
+        "sie": {
+          "feature_768": {
+            "max_abs": 1.2874603271484375e-05,
+            "mean_abs": 2.9866641853004694e-06,
+            "rmse": 3.7649140324729013e-06,
+            "cosine": 0.9999999999954788,
+            "l2_dist": 0.0001043363582459534
+          },
+          "feature_512_after_contract": {
+            "max_abs": 6.854534149169922e-07,
+            "mean_abs": 9.98481937131146e-08,
+            "rmse": 1.340498343345413e-07,
+            "cosine": 0.9999999999954002,
+            "l2_dist": 3.033201499996398e-06
+          }
+        }
+      },
+      {
+        "path": "../edgesync_bringup/data/Market-1501-v15.09.15\\bounding_box_test\\0000_c1s1_000801_03.jpg",
+        "pid": 0,
+        "camid": 1,
+        "cam_label": 0,
+        "agnostic_vs_sie_arm": {
+          "max_abs": 0.031078599393367767,
+          "mean_abs": 0.0035243502891477707,
+          "rmse": 0.004931967495917661,
+          "cosine": 0.9937729785874937,
+          "l2_dist": 0.11159768515056046
+        },
+        "production_extract_embedding_vs_torch_agnostic": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 0.9999999999999998,
+          "l2_dist": 0.0
+        },
+        "production_extract_embedding_vs_torch_sie": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "l2_dist": 0.0
+        },
+        "agnostic": {
+          "feature_768": {
+            "max_abs": 1.1920928955078125e-05,
+            "mean_abs": 2.311440766789019e-06,
+            "rmse": 2.9448430394224104e-06,
+            "cosine": 0.9999999999973662,
+            "l2_dist": 8.160988423352277e-05
+          },
+          "feature_512_after_contract": {
+            "max_abs": 3.427267074584961e-07,
+            "mean_abs": 7.72725778919181e-08,
+            "rmse": 9.898071905245923e-08,
+            "cosine": 0.9999999999974925,
+            "l2_dist": 2.2396780047588616e-06
+          }
+        },
+        "sie": {
+          "feature_768": {
+            "max_abs": 1.0967254638671875e-05,
+            "mean_abs": 2.214568667113781e-06,
+            "rmse": 2.8358293732959213e-06,
+            "cosine": 0.9999999999975446,
+            "l2_dist": 7.85888088983159e-05
+          },
+          "feature_512_after_contract": {
+            "max_abs": 4.6938657760620117e-07,
+            "mean_abs": 7.417697034384219e-08,
+            "rmse": 9.510641756217503e-08,
+            "cosine": 0.9999999999976861,
+            "l2_dist": 2.1520125693623464e-06
+          }
+        }
+      },
+      {
+        "path": "../edgesync_bringup/data/Market-1501-v15.09.15\\bounding_box_test\\0000_c1s1_001051_02.jpg",
+        "pid": 0,
+        "camid": 1,
+        "cam_label": 0,
+        "agnostic_vs_sie_arm": {
+          "max_abs": 0.028029322624206543,
+          "mean_abs": 0.0031060855527056397,
+          "rmse": 0.004503014476196768,
+          "cosine": 0.9948090523390255,
+          "l2_dist": 0.10189158630079757
+        },
+        "production_extract_embedding_vs_torch_agnostic": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "l2_dist": 0.0
+        },
+        "production_extract_embedding_vs_torch_sie": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "l2_dist": 0.0
+        },
+        "agnostic": {
+          "feature_768": {
+            "max_abs": 1.0013580322265625e-05,
+            "mean_abs": 2.3369818033340075e-06,
+            "rmse": 2.9449842882007218e-06,
+            "cosine": 0.9999999999974994,
+            "l2_dist": 8.161379863449146e-05
+          },
+          "feature_512_after_contract": {
+            "max_abs": 4.6193599700927734e-07,
+            "mean_abs": 7.371146759638236e-08,
+            "rmse": 9.752219464249136e-08,
+            "cosine": 0.999999999997566,
+            "l2_dist": 2.2066753647328012e-06
+          }
+        },
+        "sie": {
+          "feature_768": {
+            "max_abs": 9.417533874511719e-06,
+            "mean_abs": 2.2429449018090963e-06,
+            "rmse": 2.8411118626371583e-06,
+            "cosine": 0.9999999999976633,
+            "l2_dist": 7.873520153718731e-05
+          },
+          "feature_512_after_contract": {
+            "max_abs": 3.501772880554199e-07,
+            "mean_abs": 7.069359142519716e-08,
+            "rmse": 9.316787526561268e-08,
+            "cosine": 0.999999999997778,
+            "l2_dist": 2.1081483644498286e-06
+          }
+        }
+      },
+      {
+        "path": "../edgesync_bringup/data/Market-1501-v15.09.15\\bounding_box_test\\0000_c1s1_001376_04.jpg",
+        "pid": 0,
+        "camid": 1,
+        "cam_label": 0,
+        "agnostic_vs_sie_arm": {
+          "max_abs": 0.03400501608848572,
+          "mean_abs": 0.003947763835476792,
+          "rmse": 0.0056703095785079665,
+          "cosine": 0.9917689828179,
+          "l2_dist": 0.12830445934048054
+        },
+        "production_extract_embedding_vs_torch_agnostic": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "l2_dist": 0.0
+        },
+        "production_extract_embedding_vs_torch_sie": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "l2_dist": 0.0
+        },
+        "agnostic": {
+          "feature_768": {
+            "max_abs": 1.0013580322265625e-05,
+            "mean_abs": 2.2144474011535444e-06,
+            "rmse": 2.790642142208773e-06,
+            "cosine": 0.99999999999724,
+            "l2_dist": 7.733654361677516e-05
+          },
+          "feature_512_after_contract": {
+            "max_abs": 6.034970283508301e-07,
+            "mean_abs": 7.666894674684954e-08,
+            "rmse": 1.0088728812706472e-07,
+            "cosine": 0.9999999999973946,
+            "l2_dist": 2.2828187382453926e-06
+          }
+        },
+        "sie": {
+          "feature_768": {
+            "max_abs": 1.0251998901367188e-05,
+            "mean_abs": 2.2582001596068344e-06,
+            "rmse": 2.8195129777890703e-06,
+            "cosine": 0.9999999999971956,
+            "l2_dist": 7.813663568208783e-05
+          },
+          "feature_512_after_contract": {
+            "max_abs": 5.140900611877441e-07,
+            "mean_abs": 7.892100484241382e-08,
+            "rmse": 1.0185501633493063e-07,
+            "cosine": 0.9999999999973448,
+            "l2_dist": 2.3047159279454726e-06
+          }
+        }
+      },
+      {
+        "path": "../edgesync_bringup/data/Market-1501-v15.09.15\\bounding_box_test\\0000_c1s1_002301_05.jpg",
+        "pid": 0,
+        "camid": 1,
+        "cam_label": 0,
+        "agnostic_vs_sie_arm": {
+          "max_abs": 0.05176754295825958,
+          "mean_abs": 0.004625192050706772,
+          "rmse": 0.006723889569963562,
+          "cosine": 0.9884260631884118,
+          "l2_dist": 0.15214425314786348
+        },
+        "production_extract_embedding_vs_torch_agnostic": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 0.9999999999999998,
+          "l2_dist": 0.0
+        },
+        "production_extract_embedding_vs_torch_sie": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 0.9999999999999999,
+          "l2_dist": 0.0
+        },
+        "agnostic": {
+          "feature_768": {
+            "max_abs": 9.417533874511719e-06,
+            "mean_abs": 1.9127255654893816e-06,
+            "rmse": 2.438874916769847e-06,
+            "cosine": 0.9999999999981282,
+            "l2_dist": 6.758808430641107e-05
+          },
+          "feature_512_after_contract": {
+            "max_abs": 3.650784492492676e-07,
+            "mean_abs": 6.266955310252342e-08,
+            "rmse": 8.248543361368503e-08,
+            "cosine": 0.999999999998259,
+            "l2_dist": 1.8664323026351831e-06
+          }
+        },
+        "sie": {
+          "feature_768": {
+            "max_abs": 9.775161743164062e-06,
+            "mean_abs": 1.8603313947096467e-06,
+            "rmse": 2.3179867284133133e-06,
+            "cosine": 0.9999999999982976,
+            "l2_dist": 6.423793255811552e-05
+          },
+          "feature_512_after_contract": {
+            "max_abs": 3.427267074584961e-07,
+            "mean_abs": 5.987049078726159e-08,
+            "rmse": 7.757657733095113e-08,
+            "cosine": 0.9999999999984603,
+            "l2_dist": 1.7553575645426605e-06
+          }
+        }
+      },
+      {
+        "path": "../edgesync_bringup/data/Market-1501-v15.09.15\\bounding_box_test\\0000_c1s1_004476_02.jpg",
+        "pid": 0,
+        "camid": 1,
+        "cam_label": 0,
+        "agnostic_vs_sie_arm": {
+          "max_abs": 0.0363338328897953,
+          "mean_abs": 0.00424077968833414,
+          "rmse": 0.0060801906319041515,
+          "cosine": 0.9905360078436385,
+          "l2_dist": 0.13757900885524305
+        },
+        "production_extract_embedding_vs_torch_agnostic": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 0.9999999999999999,
+          "l2_dist": 0.0
+        },
+        "production_extract_embedding_vs_torch_sie": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "l2_dist": 0.0
+        },
+        "agnostic": {
+          "feature_768": {
+            "max_abs": 8.821487426757812e-06,
+            "mean_abs": 1.9607881161694727e-06,
+            "rmse": 2.5102870739245504e-06,
+            "cosine": 0.9999999999980799,
+            "l2_dist": 6.95671160579317e-05
+          },
+          "feature_512_after_contract": {
+            "max_abs": 2.868473529815674e-07,
+            "mean_abs": 6.674601760181531e-08,
+            "rmse": 8.58730301923438e-08,
+            "cosine": 0.999999999998113,
+            "l2_dist": 1.9430848630413898e-06
+          }
+        },
+        "sie": {
+          "feature_768": {
+            "max_abs": 1.0967254638671875e-05,
+            "mean_abs": 2.4422576340536275e-06,
+            "rmse": 3.072379888218356e-06,
+            "cosine": 0.9999999999970929,
+            "l2_dist": 8.514428906475169e-05
+          },
+          "feature_512_after_contract": {
+            "max_abs": 3.7997961044311523e-07,
+            "mean_abs": 8.628895642459611e-08,
+            "rmse": 1.0840355268289637e-07,
+            "cosine": 0.9999999999969921,
+            "l2_dist": 2.4528923906172536e-06
+          }
+        }
+      },
+      {
+        "path": "../edgesync_bringup/data/Market-1501-v15.09.15\\bounding_box_test\\0000_c1s1_011501_05.jpg",
+        "pid": 0,
+        "camid": 1,
+        "cam_label": 0,
+        "agnostic_vs_sie_arm": {
+          "max_abs": 0.03133518481627107,
+          "mean_abs": 0.003745319874797204,
+          "rmse": 0.005303109764332439,
+          "cosine": 0.9928005183927264,
+          "l2_dist": 0.11999567602355396
+        },
+        "production_extract_embedding_vs_torch_agnostic": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "l2_dist": 0.0
+        },
+        "production_extract_embedding_vs_torch_sie": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rmse": 0.0,
+          "cosine": 1.0,
+          "l2_dist": 0.0
+        },
+        "agnostic": {
+          "feature_768": {
+            "max_abs": 7.748603820800781e-06,
+            "mean_abs": 1.7421795443321268e-06,
+            "rmse": 2.161638454464702e-06,
+            "cosine": 0.9999999999984089,
+            "l2_dist": 5.990508209164043e-05
+          },
+          "feature_512_after_contract": {
+            "max_abs": 3.3155083656311035e-07,
+            "mean_abs": 6.152102116629976e-08,
+            "rmse": 7.992201148071369e-08,
+            "cosine": 0.9999999999983654,
+            "l2_dist": 1.808428681090616e-06
+          }
+        },
+        "sie": {
+          "feature_768": {
+            "max_abs": 7.867813110351562e-06,
+            "mean_abs": 1.74936819045494e-06,
+            "rmse": 2.203570382858873e-06,
+            "cosine": 0.9999999999983555,
+            "l2_dist": 6.106713377864913e-05
+          },
+          "feature_512_after_contract": {
+            "max_abs": 3.818422555923462e-07,
+            "mean_abs": 5.974436589895049e-08,
+            "rmse": 7.913668417229078e-08,
+            "cosine": 0.9999999999983971,
+            "l2_dist": 1.7906587526030378e-06
+          }
+        }
+      }
+    ],
+    "providers": [
+      "AzureExecutionProvider",
+      "CPUExecutionProvider"
+    ],
+    "reference_device": "cpu",
+    "test_device": "onnxruntime CPUExecutionProvider (fp32)",
+    "n_images_scored": 8,
+    "summary": {
+      "agnostic": {
+        "worst_max_abs_768": 1.239776611328125e-05,
+        "worst_max_abs_512_after_contract": 6.09084963798523e-07,
+        "worst_cosine_768": 0.9999999999960024,
+        "tolerance": 0.002,
+        "cosine_floor": 0.9999,
+        "verdict": "PASS"
+      },
+      "sie": {
+        "worst_max_abs_768": 1.2874603271484375e-05,
+        "worst_max_abs_512_after_contract": 6.854534149169922e-07,
+        "worst_cosine_768": 0.9999999999954788,
+        "tolerance": 0.002,
+        "cosine_floor": 0.9999,
+        "verdict": "PASS"
+      }
+    },
+    "production_api_vs_torch_worst_max_abs_512": {
+      "agnostic": 0.0,
+      "sie": 0.0
+    },
+    "sie_effect_worst_l2_on_512": 0.15214425314786348,
+    "ORT_is_CPU_only": true,
+    "caveat": "fp32 Torch-vs-fp32 ONNXRuntime-on-CPU numerics check. It validates the exported graph and the preprocessing/projection contract; it is not a TensorRT result, an fp16 result, a speedup, or a Jetson measurement.",
+    "arm_note": "feature_512_after_contract and production_extract_embedding_vs_torch_* are each compared against the reference from the SAME arm; the SIE arm legitimately differs from the agnostic arm, and that difference is reported separately as sie_effect_worst_l2_on_512."
+  },
+  "deployment_notes": {
+    "symbolic_output_dims": {
+      "agnostic": {
+        "feature_768": [
+          "batch",
+          "BatchNormalizationfeature_768_dim_1"
+        ]
+      },
+      "sie": {
+        "feature_768": [
+          "batch",
+          "BatchNormalizationfeature_768_dim_1"
+        ]
+      }
+    },
+    "feature_width_observed_at_runtime": {
+      "agnostic": 768,
+      "sie": 768
+    },
+    "reading": "the exported feature width is traced through the final BatchNormalization, so the declared output dim is symbolic rather than the constant 768. ONNXRuntime resolves it to the measured width above. This is recorded, not assumed: the TensorRT parser has to resolve the same dim during the engine build.",
+    "engine_build_requirements": [
+      "an explicit optimization profile pinned to the contract batch/dims (1x3x256x128, cam_label 1) \u2014 no implicit shapes",
+      "a build on the Orin Nano itself with the matching TensorRT major version; engines are not portable across GPU architectures or TRT majors",
+      "if the parser cannot resolve the symbolic width the build must fail; TransReIdTrtExtractor._validate_engine_contract() additionally refuses any engine whose feature output is not 768 wide, so a wrong-width engine cannot silently be loaded and double-projected"
+    ]
+  },
+  "not_claimed": {
+    "tensorrt_engine": "BLOCKED \u2014 Pending Jetson Orin Nano access (no tensorrt, trtexec or JetPack on this host)",
+    "target_latency": "NOT MEASURED \u2014 an ONNX/CPU parity check is not a speedup claim",
+    "accuracy_parity_on_device": "NOT MEASURED \u2014 requires the TensorRT arm on the target",
+    "graph_validation": "all exported graphs passed onnx.checker and the input-contract checks"
+  }
+}

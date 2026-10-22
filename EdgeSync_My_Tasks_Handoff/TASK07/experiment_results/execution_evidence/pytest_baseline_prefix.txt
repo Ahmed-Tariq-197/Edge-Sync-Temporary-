@@ -1,0 +1,25 @@
+
+=================================== ERRORS ====================================
+_______________ ERROR collecting tests/test_identity_service.py _______________
+ImportError while importing test module 'C:\Semester 7\EdgeSync-main (3)Last\EdgeSync-main (3)Last\EdgeSync-main\Implementation Phase\edgesync_ws\src\edgesync_identity\tests\test_identity_service.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Users\PC\AppData\Local\Programs\Python\Python310\lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_identity_service.py:11: in <module>
+    import rclpy
+E   ModuleNotFoundError: No module named 'rclpy'
+=========================== short test summary info ===========================
+ERROR tests/test_identity_service.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 3.10s
+........................................................                 [100%]
+============================== warnings summary ===============================
+tests/test_experiment7_fixes.py::TestOSNetStandaloneBackbone::test_osnet_instantiation_and_parameter_count
+tests/test_experiment7_fixes.py::TestOSNetStandaloneBackbone::test_osnet_forward_output_shape
+tests/test_experiment7_forensic_fixes.py::TestOSNetStandalone::test_osnet_inference
+  C:\Users\PC\AppData\Local\Programs\Python\Python310\lib\site-packages\torch\nn\init.py:511: UserWarning: Initializing zero-element tensors is a no-op
+    warnings.warn("Initializing zero-element tensors is a no-op")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+56 passed, 3 warnings in 12.23s

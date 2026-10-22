@@ -1,0 +1,1696 @@
+{
+  "experiment": "ES-EXP07 Task 7 statistics (TR-08)",
+  "evaluation_type": "retrieval + verification + paired inference on real embeddings",
+  "generated_utc": "2026-10-19T16:06:52Z",
+  "host": {
+    "platform": "win32",
+    "python": "3.10.11",
+    "numpy": "1.26.4"
+  },
+  "inputs": {
+    "embeddings_dir": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory",
+    "manifest": {
+      "path": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory\\task7_embeddings_manifest.json",
+      "sha256": "283c8c782e66869a429a6db4d63cbaa3f19d938fc68a418f2a997ba98dfe990a"
+    },
+    "integrity": {
+      "transreid_768_agnostic": {
+        "path": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory\\task7_transreid_768_agnostic.npz",
+        "exists": true,
+        "manifest_sha256": "459cfbb31236d558636813d59484e626dfc7e631af752e2596599a439d226ac2",
+        "now_sha256": "459cfbb31236d558636813d59484e626dfc7e631af752e2596599a439d226ac2",
+        "match": true
+      },
+      "transreid_512_agnostic": {
+        "path": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory\\task7_transreid_512_agnostic.npz",
+        "exists": true,
+        "manifest_sha256": "cb4c8b8654ff410a12bf379ce14e01bd000efba20408c2ff63dccd6f14e671b0",
+        "now_sha256": "cb4c8b8654ff410a12bf379ce14e01bd000efba20408c2ff63dccd6f14e671b0",
+        "match": true
+      },
+      "transreid_512_sie": {
+        "path": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory\\task7_transreid_512_sie.npz",
+        "exists": true,
+        "manifest_sha256": "d2d50a8ed50fbb54b46b0229241280e8bc9f38c40c53c2a87c1239503f9ef144",
+        "now_sha256": "d2d50a8ed50fbb54b46b0229241280e8bc9f38c40c53c2a87c1239503f9ef144",
+        "match": true
+      }
+    },
+    "extraction_run": {
+      "generated_utc": "2026-10-19T14:47:29Z",
+      "elapsed_s": 956.4,
+      "host": {
+        "platform": "Windows-10-10.0.26300-SP0",
+        "python": "3.10.11",
+        "torch": "2.5.1+cu121",
+        "cuda_available": true,
+        "device_name": "NVIDIA GeForce RTX 3050 Laptop GPU"
+      },
+      "assets": {
+        "transreid_checkpoint": {
+          "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\transreid\\transformer_120.pth",
+          "bytes": 414724314,
+          "sha256": "843055293e160da027d152e1b9cccb75e34c73e0a9714204012c0f2825f9c4e5"
+        },
+        "transreid_projection": {
+          "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\transreid\\svd_projection_768_to_512_real_v2.npz",
+          "bytes": 1466587,
+          "sha256": "9626bea5526df5b0a9d5b4dccec1c552224b5a6da504a0ab3a69f6bbfec1dbfc"
+        },
+        "osnet_checkpoint": {
+          "path": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\models\\osnet\\osnet_x1_0_market1501.pth",
+          "bytes": 10399605,
+          "sha256": "2809d3227f7d078f6045f7feb874a34d0684f0e0057b264b99adccf7d4519154"
+        }
+      }
+    }
+  },
+  "population_rules": {
+    "population": "directory",
+    "rules": {
+      "gallery": "pid >= 0 in bounding_box_test/ \u2014 official test gallery: distractor pid 0 is KEPT as gallery negatives, junk pid -1 is excluded",
+      "query": "pid > 0 in query/ \u2014 official query set"
+    },
+    "provenance": "Reproduces the population the recorded arm actually used (run_real_pipeline.py:488-498 \u2192 gate3_real_results_v2_corrected.json).",
+    "validity": "Valid: this is the published Market-1501 test population, taken from the directory semantics rather than from an identity-number band.",
+    "id_band": null,
+    "gallery_dir": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\data\\Market-1501-v15.09.15\\bounding_box_test",
+    "query_dir": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\data\\Market-1501-v15.09.15\\query",
+    "gallery": {
+      "files_scanned": 19732,
+      "kept": 15913,
+      "excluded": {
+        "junk_identity_-1": 3819
+      },
+      "identities": 751,
+      "distractors_pid_0": 2798,
+      "identity_number_range": [
+        0,
+        1501
+      ]
+    },
+    "query": {
+      "files_scanned": 3368,
+      "kept": 3368,
+      "excluded": {},
+      "identities": 750,
+      "identity_number_range": [
+        1,
+        1501
+      ]
+    },
+    "counts_asserted_from": "this run only \u2014 no standard dataset count is assumed"
+  },
+  "threshold": {
+    "tau": 0.7,
+    "source_file": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\config\\algorithm_thresholds.yaml",
+    "source_key": "algorithm_thresholds.ros__parameters.reid_similarity_threshold",
+    "matches_expected_0.70": true,
+    "applied_by": "identity_verifier.verify_candidate rejects when similarity < tau; this script applies accept iff score >= tau, the same rule"
+  },
+  "metric_source": {
+    "canonical": "run_real_pipeline.compute_cmc_map via evaluate_offline.compute_cmc_map (validated against torchreid 0.2.5)",
+    "per_query_pass": "this script, asserted equal to the canonical aggregates before any number is reported",
+    "similarity": "production_cosine_matrix, cross-checked against IdentityVerifier.compute_cosine_similarity"
+  },
+  "arms": {
+    "transreid_768_agnostic": {
+      "arm": "transreid_768_agnostic",
+      "file": {
+        "path": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory\\task7_transreid_768_agnostic.npz",
+        "bytes": 55193927,
+        "sha256": "459cfbb31236d558636813d59484e626dfc7e631af752e2596599a439d226ac2"
+      },
+      "feature_dim": 768,
+      "inferential_role": "descriptive only: 768-D post-BNNeck features before the fitted projection are not a deployed contract output, so no inference is drawn from this arm",
+      "population": {
+        "gallery": {
+          "rows": 15913,
+          "identities_unique": 751,
+          "identity_number_range": [
+            0,
+            1501
+          ],
+          "junk_pid_minus_1": 0,
+          "distractor_pid_0": 2798,
+          "cameras_present": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "zero_rows": 0,
+          "non_finite_rows": 0,
+          "norm_note": "raw post-BNNeck 768-D features, deliberately not unit-norm; cosine is computed after normalisation",
+          "manifest_agreement": {
+            "rows": true,
+            "identities": true,
+            "distractors_pid_0": true,
+            "identity_number_range": true,
+            "scan_accounting": true
+          },
+          "manifest_counts_claimed": true
+        },
+        "query": {
+          "rows": 3368,
+          "identities_unique": 750,
+          "identity_number_range": [
+            1,
+            1501
+          ],
+          "junk_pid_minus_1": 0,
+          "distractor_pid_0": 0,
+          "cameras_present": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "zero_rows": 0,
+          "non_finite_rows": 0,
+          "norm_note": "raw post-BNNeck 768-D features, deliberately not unit-norm; cosine is computed after normalisation",
+          "manifest_agreement": {
+            "rows": true,
+            "identities": true,
+            "distractors_pid_0": null,
+            "identity_number_range": true,
+            "scan_accounting": true
+          },
+          "manifest_counts_claimed": true
+        },
+        "arm": "transreid_768_agnostic"
+      },
+      "retrieval": {
+        "protocol": "canonical Market-1501 CMC/mAP via evaluate_offline.compute_cmc_map (run_real_pipeline.compute_cmc_map, validated against torchreid 0.2.5)",
+        "max_rank": 50,
+        "queries_total": 3368,
+        "queries_valid": 3368,
+        "queries_invalid_no_gallery_match": 0,
+        "rank1_pct": 88.74703087885986,
+        "rank5_pct": 96.02137767220903,
+        "rank10_pct": 97.92161520190024,
+        "mAP_pct": 77.32735493390587,
+        "Wilson_95_rank1": [
+          0.8763531674340077,
+          0.8977045787189952
+        ],
+        "Wilson_95_rank5": [
+          0.9530713855644761,
+          0.966307546647903
+        ],
+        "Wilson_95_rank10": [
+          0.9738241131531012,
+          0.983516271744176
+        ],
+        "mAP_bootstrap_95": [
+          0.7649130393105973,
+          0.7819716061490397
+        ],
+        "mAP_bootstrap_method": "percentile bootstrap, 2000 resamples of the per-query average-precision values, seed 20261019",
+        "rank_band_counts": {
+          "rank1": 2989,
+          "rank2_5": 245,
+          "rank11_50": 54,
+          "rank6_10": 64,
+          "rank_gt_50": 16
+        },
+        "identity_coverage": {
+          "evaluated_query_identities": 750,
+          "query_identities_total": 750,
+          "mean_genuine_candidates_per_valid_query": 14.741389548693586,
+          "mean_candidates_per_valid_query": 15909.105997624703
+        },
+        "canonical_vs_per_query_max_abs_difference": 0.0,
+        "agreement_detail": {
+          "rank1": 0.0,
+          "rank5": 0.0,
+          "rank10": 0.0,
+          "mAP": 0.0
+        },
+        "distractor_rejection": {
+          "status": "COMPUTED",
+          "rejection_rate": 0.9471050750536097,
+          "rejected": 2650,
+          "distractors": 2798,
+          "tau": 0.7,
+          "definition": "a pid-0 gallery row is rejected when its maximum cosine similarity to any query is below tau",
+          "Wilson_95_rejection": [
+            0.9381817639682077,
+            0.9548023811993427
+          ]
+        },
+        "label": "COMPUTED"
+      },
+      "by_query_camera": {
+        "1": {
+          "queries_valid": 668,
+          "rank1": 0.8862275449101796,
+          "rank10": 0.9790419161676647,
+          "Wilson_95_rank1": [
+            0.8599070694924031,
+            0.9081312723297168
+          ]
+        },
+        "2": {
+          "queries_valid": 530,
+          "rank1": 0.8849056603773585,
+          "rank10": 0.9792452830188679,
+          "Wilson_95_rank1": [
+            0.8549227904751102,
+            0.9093490607619787
+          ]
+        },
+        "3": {
+          "queries_valid": 717,
+          "rank1": 0.9470013947001394,
+          "rank10": 0.99721059972106,
+          "Wilson_95_rank1": [
+            0.9280922474765431,
+            0.9611462836266543
+          ]
+        },
+        "4": {
+          "queries_valid": 248,
+          "rank1": 0.8991935483870968,
+          "rank10": 0.9637096774193549,
+          "Wilson_95_rank1": [
+            0.8554252677823853,
+            0.9307836468545487
+          ]
+        },
+        "5": {
+          "queries_valid": 622,
+          "rank1": 0.909967845659164,
+          "rank10": 0.9839228295819936,
+          "Wilson_95_rank1": [
+            0.8848859271296672,
+            0.9300169413396409
+          ]
+        },
+        "6": {
+          "queries_valid": 583,
+          "rank1": 0.7890222984562607,
+          "rank10": 0.9588336192109777,
+          "Wilson_95_rank1": [
+            0.754065802064912,
+            0.8201949202044876
+          ]
+        }
+      },
+      "verification": {
+        "threshold": {
+          "tau": 0.7,
+          "source_file": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\config\\algorithm_thresholds.yaml",
+          "source_key": "algorithm_thresholds.ros__parameters.reid_similarity_threshold",
+          "matches_expected_0.70": true,
+          "applied_by": "identity_verifier.verify_candidate rejects when similarity < tau; this script applies accept iff score >= tau, the same rule"
+        },
+        "pair_pool": {
+          "genuine_pairs": 49649,
+          "impostor_pairs": 53532220,
+          "duplicate_pairs_excluded": 13115,
+          "junk_gallery_rows": 0,
+          "queries_without_any_impostor_candidate": 0
+        },
+        "at_tau": {
+          "tau": 0.7,
+          "acceptance_rule": "accept iff cosine_similarity >= tau (core/identity_verifier.py rejects when sim < tau)",
+          "scope": "appearance gate only; the Mahalanobis spatial gate is NOT MEASURED offline",
+          "TAR": 0.45336260549054364,
+          "FNMR": 0.5466373945094564,
+          "FMR": 7.892443093150256e-05,
+          "genuine_pairs": 49649,
+          "impostor_pairs": 53532220,
+          "genuine_score_summary": {
+            "n": 49649,
+            "mean": 0.668952226638794,
+            "std": 0.12853474915027618,
+            "min": -0.0931365117430687,
+            "max": 0.9678992033004761,
+            "percentiles": {
+              "0.01": 0.31299313306808474,
+              "0.05": 0.43778347969055176,
+              "0.25": 0.5923463106155396,
+              "0.5": 0.6853140592575073,
+              "0.75": 0.7622982263565063,
+              "0.95": 0.848445188999176,
+              "0.99": 0.8952431201934814
+            }
+          },
+          "impostor_score_summary": {
+            "n": 53532220,
+            "mean": 0.10415582358837128,
+            "std": 0.11057645827531815,
+            "min": -0.3770226240158081,
+            "max": 0.9342625141143799,
+            "percentiles": {
+              "0.01": -0.11730163119733333,
+              "0.05": -0.058788855187594885,
+              "0.25": 0.028333568014204502,
+              "0.5": 0.09426480159163475,
+              "0.75": 0.16896751523017883,
+              "0.95": 0.300861270725727,
+              "0.99": 0.4157621747255327
+            }
+          },
+          "Wilson_95_FNMR": [
+            0.5422550509500236,
+            0.5510125217394607
+          ],
+          "Wilson_95_FMR": [
+            7.658029734057202e-05,
+            8.13403129418929e-05
+          ],
+          "label": "COMPUTED",
+          "threshold_at_TAR_0.90": 0.4969868063926697,
+          "FMR_at_TAR_0.90": 0.0029754603862869877,
+          "EER": {
+            "tau": 0.3670562654733658,
+            "eer": 0.020094907328707834,
+            "interpolated": true,
+            "bracket": [
+              0.3670562505722046,
+              0.367056280374527
+            ]
+          }
+        },
+        "per_query_decisions": {
+          "unit": "query",
+          "denominator_rule": "a query contributes to the genuine rate only if a true match survives the duplicate exclusion, and to the impostor rate only if an impostor candidate exists; -inf maxima are never counted as rejections",
+          "genuine_accept_n": 3368,
+          "genuine_accept_rate": 0.8485748218527316,
+          "false_accept_n": 3368,
+          "false_accept_rate": 0.2648456057007126
+        }
+      },
+      "similarity_cross_check": {
+        "status": "COMPUTED",
+        "pairs_checked": 200,
+        "max_abs_difference_vs_production_function": 1.7328268997474083e-07,
+        "sampling": "queries paired with one of their own gallery matches, seed 11"
+      },
+      "camera_partition_proxy": {
+        "cams_[1, 2, 3]_queries_to_cams_[4, 5, 6]_gallery": {
+          "query_camera_group": [
+            1,
+            2,
+            3
+          ],
+          "gallery_camera_group": [
+            4,
+            5,
+            6
+          ],
+          "queries": 1915,
+          "queries_valid": 1843,
+          "queries_invalid_no_gallery_match": 72,
+          "gallery_rows": 7752,
+          "query_identities": 748,
+          "query_identities_with_a_gallery_match": 720,
+          "rank1": 0.9001627780792186,
+          "rank5": 0.9663591969614759,
+          "rank10": 0.9799240368963646,
+          "mAP": 0.811736748271351,
+          "canonical_agreement_abs": {
+            "rank1": 0.0,
+            "rank5": 0.0,
+            "rank10": 0.0,
+            "mAP": 0.0
+          },
+          "Wilson_95_rank1": [
+            0.8856328688871651,
+            0.9130279977266185
+          ],
+          "Wilson_95_rank10": [
+            0.9724514938768023,
+            0.9854000810654238
+          ],
+          "verification_at_tau": {
+            "tau": 0.7,
+            "acceptance_rule": "accept iff cosine_similarity >= tau (core/identity_verifier.py rejects when sim < tau)",
+            "scope": "appearance gate only; the Mahalanobis spatial gate is NOT MEASURED offline",
+            "TAR": 0.45802267078862824,
+            "FNMR": 0.5419773292113718,
+            "FMR": 6.87186361636847e-05,
+            "genuine_pairs": 16497,
+            "impostor_pairs": 14828583,
+            "genuine_score_summary": {
+              "n": 16497,
+              "mean": 0.6704317927360535,
+              "std": 0.1308239996433258,
+              "min": -0.061749815940856934,
+              "max": 0.9678992033004761,
+              "percentiles": {
+                "0.01": 0.3133277726173401,
+                "0.05": 0.4346729516983032,
+                "0.25": 0.5910289883613586,
+                "0.5": 0.6860450506210327,
+                "0.75": 0.7647790908813477,
+                "0.95": 0.8564810037612915,
+                "0.99": 0.9034867572784422
+              }
+            },
+            "impostor_score_summary": {
+              "n": 14828583,
+              "mean": 0.10037733614444733,
+              "std": 0.10981308668851852,
+              "min": -0.3665235638618469,
+              "max": 0.8650996685028076,
+              "percentiles": {
+                "0.01": -0.12025789439678192,
+                "0.05": -0.061761385947465886,
+                "0.25": 0.025100473314523697,
+                "0.5": 0.09069947898387909,
+                "0.75": 0.1649397313594818,
+                "0.95": 0.2953562498092648,
+                "0.99": 0.40885535657405847
+              }
+            },
+            "Wilson_95_FNMR": [
+              0.5343655289590478,
+              0.5495695844990379
+            ],
+            "Wilson_95_FMR": [
+              6.462705277940418e-05,
+              7.306924159114017e-05
+            ],
+            "label": "COMPUTED",
+            "threshold_at_TAR_0.90": 0.49711132049560547,
+            "FMR_at_TAR_0.90": 0.0026589863643748024,
+            "EER": {
+              "tau": 0.3620443493127823,
+              "eer": 0.019709165737548894,
+              "interpolated": true,
+              "bracket": [
+                0.36204418540000916,
+                0.3620445132255554
+              ]
+            }
+          },
+          "protocol_note": "the same-pid-same-camera duplicate exclusion is inert here because the two camera groups are disjoint by construction"
+        },
+        "cams_[4, 5, 6]_queries_to_cams_[1, 2, 3]_gallery": {
+          "query_camera_group": [
+            4,
+            5,
+            6
+          ],
+          "gallery_camera_group": [
+            1,
+            2,
+            3
+          ],
+          "queries": 1453,
+          "queries_valid": 1449,
+          "queries_invalid_no_gallery_match": 4,
+          "gallery_rows": 8161,
+          "query_identities": 722,
+          "query_identities_with_a_gallery_match": 720,
+          "rank1": 0.9109730848861284,
+          "rank5": 0.9703243616287095,
+          "rank10": 0.9827467218771566,
+          "mAP": 0.830287337675327,
+          "canonical_agreement_abs": {
+            "rank1": 0.0,
+            "rank5": 0.0,
+            "rank10": 0.0,
+            "mAP": 0.0
+          },
+          "Wilson_95_rank1": [
+            0.8952024143358368,
+            0.924570447161909
+          ],
+          "Wilson_95_rank10": [
+            0.9746540169227068,
+            0.9882865651388769
+          ],
+          "verification_at_tau": {
+            "tau": 0.7,
+            "acceptance_rule": "accept iff cosine_similarity >= tau (core/identity_verifier.py rejects when sim < tau)",
+            "scope": "appearance gate only; the Mahalanobis spatial gate is NOT MEASURED offline",
+            "TAR": 0.466191642544348,
+            "FNMR": 0.533808357455652,
+            "FMR": 6.526257845439978e-05,
+            "genuine_pairs": 13473,
+            "impostor_pairs": 11844460,
+            "genuine_score_summary": {
+              "n": 13473,
+              "mean": 0.6737855076789856,
+              "std": 0.12993694841861725,
+              "min": -0.03414023295044899,
+              "max": 0.9661030769348145,
+              "percentiles": {
+                "0.01": 0.32302260160446167,
+                "0.05": 0.44399439692497256,
+                "0.25": 0.594178318977356,
+                "0.5": 0.6895259618759155,
+                "0.75": 0.7693465352058411,
+                "0.95": 0.8564826011657715,
+                "0.99": 0.9015005564689637
+              }
+            },
+            "impostor_score_summary": {
+              "n": 11844460,
+              "mean": 0.10278458148241043,
+              "std": 0.10945349186658859,
+              "min": -0.36937588453292847,
+              "max": 0.9031049013137817,
+              "percentiles": {
+                "0.01": -0.11743662111461163,
+                "0.05": -0.05909119751304387,
+                "0.25": 0.02782308030873537,
+                "0.5": 0.09325794875621796,
+                "0.75": 0.16709689050912857,
+                "0.95": 0.29708040207624425,
+                "0.99": 0.41051083028316504
+              }
+            },
+            "Wilson_95_FNMR": [
+              0.5253764490803443,
+              0.5422209922625412
+            ],
+            "Wilson_95_FMR": [
+              6.082132864189772e-05,
+              7.002811119478197e-05
+            ],
+            "label": "COMPUTED",
+            "threshold_at_TAR_0.90": 0.5010746121406555,
+            "FMR_at_TAR_0.90": 0.0025065726930565005,
+            "EER": {
+              "tau": 0.36735670268535614,
+              "eer": 0.01870407481629921,
+              "interpolated": true,
+              "bracket": [
+                0.3673565983772278,
+                0.3673568069934845
+              ]
+            }
+          },
+          "protocol_note": "the same-pid-same-camera duplicate exclusion is inert here because the two camera groups are disjoint by construction"
+        },
+        "status": "PROXY ONLY \u2014 a camera partition on one fixed dataset. Charter \u00a78: cross-robot handoff success, false-handoff rates and cross-robot performance must NOT be inferred from Market-1501 retrieval metrics; no robot, handoff event or handoff label is involved."
+      }
+    },
+    "transreid_512_agnostic": {
+      "arm": "transreid_512_agnostic",
+      "file": {
+        "path": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory\\task7_transreid_512_agnostic.npz",
+        "bytes": 37094828,
+        "sha256": "cb4c8b8654ff410a12bf379ce14e01bd000efba20408c2ff63dccd6f14e671b0"
+      },
+      "feature_dim": 512,
+      "inferential_role": "deployed 512-D arm (part of the declared hypothesis family)",
+      "population": {
+        "gallery": {
+          "rows": 15913,
+          "identities_unique": 751,
+          "identity_number_range": [
+            0,
+            1501
+          ],
+          "junk_pid_minus_1": 0,
+          "distractor_pid_0": 2798,
+          "cameras_present": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "zero_rows": 0,
+          "non_finite_rows": 0,
+          "unit_norm_max_deviation": 1.3248880670335694e-07,
+          "mean_norm": 1.000000000199223,
+          "manifest_agreement": {
+            "rows": true,
+            "identities": true,
+            "distractors_pid_0": true,
+            "identity_number_range": true,
+            "scan_accounting": true
+          },
+          "manifest_counts_claimed": true
+        },
+        "query": {
+          "rows": 3368,
+          "identities_unique": 750,
+          "identity_number_range": [
+            1,
+            1501
+          ],
+          "junk_pid_minus_1": 0,
+          "distractor_pid_0": 0,
+          "cameras_present": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "zero_rows": 0,
+          "non_finite_rows": 0,
+          "unit_norm_max_deviation": 1.2477772171060053e-07,
+          "mean_norm": 1.0000000000182114,
+          "manifest_agreement": {
+            "rows": true,
+            "identities": true,
+            "distractors_pid_0": null,
+            "identity_number_range": true,
+            "scan_accounting": true
+          },
+          "manifest_counts_claimed": true
+        },
+        "arm": "transreid_512_agnostic"
+      },
+      "retrieval": {
+        "protocol": "canonical Market-1501 CMC/mAP via evaluate_offline.compute_cmc_map (run_real_pipeline.compute_cmc_map, validated against torchreid 0.2.5)",
+        "max_rank": 50,
+        "queries_total": 3368,
+        "queries_valid": 3368,
+        "queries_invalid_no_gallery_match": 0,
+        "rank1_pct": 88.74703087885986,
+        "rank5_pct": 96.14014251781472,
+        "rank10_pct": 97.8622327790974,
+        "mAP_pct": 77.32400426226894,
+        "Wilson_95_rank1": [
+          0.8763531674340077,
+          0.8977045787189952
+        ],
+        "Wilson_95_rank5": [
+          0.954352463993793,
+          0.9673990590113921
+        ],
+        "Wilson_95_rank10": [
+          0.9731646367277388,
+          0.9829894527731354
+        ],
+        "mAP_bootstrap_95": [
+          0.7649125083065337,
+          0.7817895192625784
+        ],
+        "mAP_bootstrap_method": "percentile bootstrap, 2000 resamples of the per-query average-precision values, seed 20261019",
+        "rank_band_counts": {
+          "rank1": 2989,
+          "rank2_5": 249,
+          "rank11_50": 59,
+          "rank6_10": 58,
+          "rank_gt_50": 13
+        },
+        "identity_coverage": {
+          "evaluated_query_identities": 750,
+          "query_identities_total": 750,
+          "mean_genuine_candidates_per_valid_query": 14.741389548693586,
+          "mean_candidates_per_valid_query": 15909.105997624703
+        },
+        "canonical_vs_per_query_max_abs_difference": 0.0,
+        "agreement_detail": {
+          "rank1": 0.0,
+          "rank5": 0.0,
+          "rank10": 0.0,
+          "mAP": 0.0
+        },
+        "distractor_rejection": {
+          "status": "COMPUTED",
+          "rejection_rate": 0.9621157969978557,
+          "rejected": 2692,
+          "distractors": 2798,
+          "tau": 0.7,
+          "definition": "a pid-0 gallery row is rejected when its maximum cosine similarity to any query is below tau",
+          "Wilson_95_rejection": [
+            0.9543846977591935,
+            0.9685797304595457
+          ]
+        },
+        "label": "COMPUTED"
+      },
+      "by_query_camera": {
+        "1": {
+          "queries_valid": 668,
+          "rank1": 0.8877245508982036,
+          "rank10": 0.9820359281437125,
+          "Wilson_95_rank1": [
+            0.8615324926662346,
+            0.9094827419536456
+          ]
+        },
+        "2": {
+          "queries_valid": 530,
+          "rank1": 0.8867924528301887,
+          "rank10": 0.9811320754716981,
+          "Wilson_95_rank1": [
+            0.8569878035885776,
+            0.9110304782918304
+          ]
+        },
+        "3": {
+          "queries_valid": 717,
+          "rank1": 0.9442119944211994,
+          "rank10": 0.99721059972106,
+          "Wilson_95_rank1": [
+            0.9249237467793748,
+            0.9587657139269227
+          ]
+        },
+        "4": {
+          "queries_valid": 248,
+          "rank1": 0.8951612903225806,
+          "rank10": 0.9556451612903226,
+          "Wilson_95_rank1": [
+            0.8508213881271017,
+            0.9274460223215802
+          ]
+        },
+        "5": {
+          "queries_valid": 622,
+          "rank1": 0.909967845659164,
+          "rank10": 0.9839228295819936,
+          "Wilson_95_rank1": [
+            0.8848859271296672,
+            0.9300169413396409
+          ]
+        },
+        "6": {
+          "queries_valid": 583,
+          "rank1": 0.79073756432247,
+          "rank10": 0.9536878216123499,
+          "Wilson_95_rank1": [
+            0.7558677783723147,
+            0.8218010194001675
+          ]
+        }
+      },
+      "verification": {
+        "threshold": {
+          "tau": 0.7,
+          "source_file": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\config\\algorithm_thresholds.yaml",
+          "source_key": "algorithm_thresholds.ros__parameters.reid_similarity_threshold",
+          "matches_expected_0.70": true,
+          "applied_by": "identity_verifier.verify_candidate rejects when similarity < tau; this script applies accept iff score >= tau, the same rule"
+        },
+        "pair_pool": {
+          "genuine_pairs": 49649,
+          "impostor_pairs": 53532220,
+          "duplicate_pairs_excluded": 13115,
+          "junk_gallery_rows": 0,
+          "queries_without_any_impostor_candidate": 0
+        },
+        "at_tau": {
+          "tau": 0.7,
+          "acceptance_rule": "accept iff cosine_similarity >= tau (core/identity_verifier.py rejects when sim < tau)",
+          "scope": "appearance gate only; the Mahalanobis spatial gate is NOT MEASURED offline",
+          "TAR": 0.3926161654816814,
+          "FNMR": 0.6073838345183187,
+          "FMR": 5.206210390676867e-05,
+          "genuine_pairs": 49649,
+          "impostor_pairs": 53532220,
+          "genuine_score_summary": {
+            "n": 49649,
+            "mean": 0.6447243094444275,
+            "std": 0.1422368437051773,
+            "min": -0.21013255417346954,
+            "max": 0.9661982655525208,
+            "percentiles": {
+              "0.01": 0.24194055080413818,
+              "0.05": 0.3882146656513214,
+              "0.25": 0.5612483620643616,
+              "0.5": 0.6638650894165039,
+              "0.75": 0.7475784420967102,
+              "0.95": 0.841523790359497,
+              "0.99": 0.8908731055259704
+            }
+          },
+          "impostor_score_summary": {
+            "n": 53532220,
+            "mean": 0.006389562040567398,
+            "std": 0.12339857965707779,
+            "min": -0.48266100883483887,
+            "max": 0.9309660196304321,
+            "percentiles": {
+              "0.01": -0.2346451225876808,
+              "0.05": -0.17236022651195526,
+              "0.25": -0.07860144227743149,
+              "0.5": -0.00634026387706399,
+              "0.75": 0.07750140875577927,
+              "0.95": 0.22865109220147128,
+              "0.99": 0.35963937073946006
+            }
+          },
+          "Wilson_95_FNMR": [
+            0.6030802360081928,
+            0.6116708172390477
+          ],
+          "Wilson_95_FMR": [
+            5.016483339119892e-05,
+            5.4031126697065774e-05
+          ],
+          "label": "COMPUTED",
+          "threshold_at_TAR_0.90": 0.45528265833854675,
+          "FMR_at_TAR_0.90": 0.0028103822333540437,
+          "EER": {
+            "tau": 0.30580566823482513,
+            "eer": 0.019718423331789192,
+            "interpolated": true,
+            "bracket": [
+              0.30580565333366394,
+              0.30580568313598633
+            ]
+          }
+        },
+        "per_query_decisions": {
+          "unit": "query",
+          "denominator_rule": "a query contributes to the genuine rate only if a true match survives the duplicate exclusion, and to the impostor rate only if an impostor candidate exists; -inf maxima are never counted as rejections",
+          "genuine_accept_n": 3368,
+          "genuine_accept_rate": 0.8108669833729216,
+          "false_accept_n": 3368,
+          "false_accept_rate": 0.19922802850356294
+        }
+      },
+      "similarity_cross_check": {
+        "status": "COMPUTED",
+        "pairs_checked": 200,
+        "max_abs_difference_vs_production_function": 1.7881393432617188e-07,
+        "sampling": "queries paired with one of their own gallery matches, seed 11"
+      },
+      "camera_partition_proxy": {
+        "cams_[1, 2, 3]_queries_to_cams_[4, 5, 6]_gallery": {
+          "query_camera_group": [
+            1,
+            2,
+            3
+          ],
+          "gallery_camera_group": [
+            4,
+            5,
+            6
+          ],
+          "queries": 1915,
+          "queries_valid": 1843,
+          "queries_invalid_no_gallery_match": 72,
+          "gallery_rows": 7752,
+          "query_identities": 748,
+          "query_identities_with_a_gallery_match": 720,
+          "rank1": 0.8990775908844275,
+          "rank5": 0.9669017905588714,
+          "rank10": 0.9799240368963646,
+          "mAP": 0.8127527269246213,
+          "canonical_agreement_abs": {
+            "rank1": 0.0,
+            "rank5": 0.0,
+            "rank10": 0.0,
+            "mAP": 0.0
+          },
+          "Wilson_95_rank1": [
+            0.8844843798041044,
+            0.9120106268324213
+          ],
+          "Wilson_95_rank10": [
+            0.9724514938768023,
+            0.9854000810654238
+          ],
+          "verification_at_tau": {
+            "tau": 0.7,
+            "acceptance_rule": "accept iff cosine_similarity >= tau (core/identity_verifier.py rejects when sim < tau)",
+            "scope": "appearance gate only; the Mahalanobis spatial gate is NOT MEASURED offline",
+            "TAR": 0.3971631205673759,
+            "FNMR": 0.6028368794326241,
+            "FMR": 4.552019569233284e-05,
+            "genuine_pairs": 16497,
+            "impostor_pairs": 14828583,
+            "genuine_score_summary": {
+              "n": 16497,
+              "mean": 0.6464860439300537,
+              "std": 0.14457468688488007,
+              "min": -0.20050156116485596,
+              "max": 0.9661982655525208,
+              "percentiles": {
+                "0.01": 0.24343712329864503,
+                "0.05": 0.387096506357193,
+                "0.25": 0.5601305365562439,
+                "0.5": 0.6642305850982666,
+                "0.75": 0.7510747313499451,
+                "0.95": 0.8504533290863037,
+                "0.99": 0.8992563366889953
+              }
+            },
+            "impostor_score_summary": {
+              "n": 14828583,
+              "mean": 0.0024877663236111403,
+              "std": 0.12239382416009903,
+              "min": -0.48266100883483887,
+              "max": 0.8588054776191711,
+              "percentiles": {
+                "0.01": -0.23742954969406127,
+                "0.05": -0.1752215161919594,
+                "0.25": -0.08174686878919601,
+                "0.5": -0.009922352619469166,
+                "0.75": 0.07320461794734001,
+                "0.95": 0.22240839600563045,
+                "0.99": 0.35198744833469386
+              }
+            },
+            "Wilson_95_FNMR": [
+              0.595347047670102,
+              0.6102788295597065
+            ],
+            "Wilson_95_FMR": [
+              4.22133494317222e-05,
+              4.9086076015585276e-05
+            ],
+            "label": "COMPUTED",
+            "threshold_at_TAR_0.90": 0.4549185037612915,
+            "FMR_at_TAR_0.90": 0.0025214816547204813,
+            "EER": {
+              "tau": 0.2994057387113571,
+              "eer": 0.01953902136165,
+              "interpolated": true,
+              "bracket": [
+                0.29940545558929443,
+                0.2994060218334198
+              ]
+            }
+          },
+          "protocol_note": "the same-pid-same-camera duplicate exclusion is inert here because the two camera groups are disjoint by construction"
+        },
+        "cams_[4, 5, 6]_queries_to_cams_[1, 2, 3]_gallery": {
+          "query_camera_group": [
+            4,
+            5,
+            6
+          ],
+          "gallery_camera_group": [
+            1,
+            2,
+            3
+          ],
+          "queries": 1453,
+          "queries_valid": 1449,
+          "queries_invalid_no_gallery_match": 4,
+          "gallery_rows": 8161,
+          "query_identities": 722,
+          "query_identities_with_a_gallery_match": 720,
+          "rank1": 0.9130434782608695,
+          "rank5": 0.9675638371290545,
+          "rank10": 0.9813664596273292,
+          "mAP": 0.8278217686835891,
+          "canonical_agreement_abs": {
+            "rank1": 0.0,
+            "rank5": 0.0,
+            "rank10": 0.0,
+            "mAP": 0.0
+          },
+          "Wilson_95_rank1": [
+            0.8974213350561866,
+            0.9264813645347467
+          ],
+          "Wilson_95_rank10": [
+            0.9730246705866707,
+            0.9871626860794547
+          ],
+          "verification_at_tau": {
+            "tau": 0.7,
+            "acceptance_rule": "accept iff cosine_similarity >= tau (core/identity_verifier.py rejects when sim < tau)",
+            "scope": "appearance gate only; the Mahalanobis spatial gate is NOT MEASURED offline",
+            "TAR": 0.4088176352705411,
+            "FNMR": 0.591182364729459,
+            "FMR": 4.280482183231654e-05,
+            "genuine_pairs": 13473,
+            "impostor_pairs": 11844460,
+            "genuine_score_summary": {
+              "n": 13473,
+              "mean": 0.6501278877258301,
+              "std": 0.14388401806354523,
+              "min": -0.15199041366577148,
+              "max": 0.965314507484436,
+              "percentiles": {
+                "0.01": 0.25171463131904603,
+                "0.05": 0.39387546181678773,
+                "0.25": 0.5641412734985352,
+                "0.5": 0.6689574718475342,
+                "0.75": 0.7551436424255371,
+                "0.95": 0.8499872565269471,
+                "0.99": 0.8998422002792361
+              }
+            },
+            "impostor_score_summary": {
+              "n": 11844460,
+              "mean": 0.00442168302834034,
+              "std": 0.12222011387348175,
+              "min": -0.4740656018257141,
+              "max": 0.9025691151618958,
+              "percentiles": {
+                "0.01": -0.235341477394104,
+                "0.05": -0.1730827994644642,
+                "0.25": -0.0796783808618784,
+                "0.5": -0.007970730774104595,
+                "0.75": 0.0749698132276535,
+                "0.95": 0.22427227348089201,
+                "0.99": 0.35353135287761694
+              }
+            },
+            "Wilson_95_FNMR": [
+              0.5828563048983824,
+              0.5994564430483464
+            ],
+            "Wilson_95_FMR": [
+              3.923757613019688e-05,
+              4.669636502955188e-05
+            ],
+            "label": "COMPUTED",
+            "threshold_at_TAR_0.90": 0.4587642252445221,
+            "FMR_at_TAR_0.90": 0.0023968167396403043,
+            "EER": {
+              "tau": 0.3068487197160721,
+              "eer": 0.018184517182513127,
+              "interpolated": true,
+              "bracket": [
+                0.3068486154079437,
+                0.30684882402420044
+              ]
+            }
+          },
+          "protocol_note": "the same-pid-same-camera duplicate exclusion is inert here because the two camera groups are disjoint by construction"
+        },
+        "status": "PROXY ONLY \u2014 a camera partition on one fixed dataset. Charter \u00a78: cross-robot handoff success, false-handoff rates and cross-robot performance must NOT be inferred from Market-1501 retrieval metrics; no robot, handoff event or handoff label is involved."
+      }
+    },
+    "transreid_512_sie": {
+      "arm": "transreid_512_sie",
+      "file": {
+        "path": "C:\\Users\\PC\\edgesync_es07_runs\\embeddings_full_directory\\task7_transreid_512_sie.npz",
+        "bytes": 37095723,
+        "sha256": "d2d50a8ed50fbb54b46b0229241280e8bc9f38c40c53c2a87c1239503f9ef144"
+      },
+      "feature_dim": 512,
+      "inferential_role": "deployed 512-D arm (part of the declared hypothesis family)",
+      "population": {
+        "gallery": {
+          "rows": 15913,
+          "identities_unique": 751,
+          "identity_number_range": [
+            0,
+            1501
+          ],
+          "junk_pid_minus_1": 0,
+          "distractor_pid_0": 2798,
+          "cameras_present": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "zero_rows": 0,
+          "non_finite_rows": 0,
+          "unit_norm_max_deviation": 1.3504487839099966e-07,
+          "mean_norm": 1.0000000009672065,
+          "manifest_agreement": {
+            "rows": true,
+            "identities": true,
+            "distractors_pid_0": true,
+            "identity_number_range": true,
+            "scan_accounting": true
+          },
+          "manifest_counts_claimed": true
+        },
+        "query": {
+          "rows": 3368,
+          "identities_unique": 750,
+          "identity_number_range": [
+            1,
+            1501
+          ],
+          "junk_pid_minus_1": 0,
+          "distractor_pid_0": 0,
+          "cameras_present": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "zero_rows": 0,
+          "non_finite_rows": 0,
+          "unit_norm_max_deviation": 1.1966979007738132e-07,
+          "mean_norm": 0.9999999999591991,
+          "manifest_agreement": {
+            "rows": true,
+            "identities": true,
+            "distractors_pid_0": null,
+            "identity_number_range": true,
+            "scan_accounting": true
+          },
+          "manifest_counts_claimed": true
+        },
+        "arm": "transreid_512_sie"
+      },
+      "retrieval": {
+        "protocol": "canonical Market-1501 CMC/mAP via evaluate_offline.compute_cmc_map (run_real_pipeline.compute_cmc_map, validated against torchreid 0.2.5)",
+        "max_rank": 50,
+        "queries_total": 3368,
+        "queries_valid": 3368,
+        "queries_invalid_no_gallery_match": 0,
+        "rank1_pct": 93.37885985748218,
+        "rank5_pct": 97.95130641330167,
+        "rank10_pct": 98.87173396674585,
+        "mAP_pct": 85.12520406508766,
+        "Wilson_95_rank1": [
+          0.9248870881016115,
+          0.941701698970831
+        ],
+        "Wilson_95_rank5": [
+          0.9741542254349896,
+          0.9837793071604891
+        ],
+        "Wilson_95_rank10": [
+          0.9845523639509721,
+          0.9917687472887542
+        ],
+        "mAP_bootstrap_95": [
+          0.8441732163397601,
+          0.8585050826141313
+        ],
+        "mAP_bootstrap_method": "percentile bootstrap, 2000 resamples of the per-query average-precision values, seed 20261019",
+        "rank_band_counts": {
+          "rank1": 3145,
+          "rank2_5": 154,
+          "rank11_50": 29,
+          "rank6_10": 31,
+          "rank_gt_50": 9
+        },
+        "identity_coverage": {
+          "evaluated_query_identities": 750,
+          "query_identities_total": 750,
+          "mean_genuine_candidates_per_valid_query": 14.741389548693586,
+          "mean_candidates_per_valid_query": 15909.105997624703
+        },
+        "canonical_vs_per_query_max_abs_difference": 0.0,
+        "agreement_detail": {
+          "rank1": 0.0,
+          "rank5": 0.0,
+          "rank10": 0.0,
+          "mAP": 0.0
+        },
+        "distractor_rejection": {
+          "status": "COMPUTED",
+          "rejection_rate": 0.9599714081486777,
+          "rejected": 2686,
+          "distractors": 2798,
+          "tau": 0.7,
+          "definition": "a pid-0 gallery row is rejected when its maximum cosine similarity to any query is below tau",
+          "Wilson_95_rejection": [
+            0.9520550249339758,
+            0.9666265057060223
+          ]
+        },
+        "label": "COMPUTED"
+      },
+      "by_query_camera": {
+        "1": {
+          "queries_valid": 668,
+          "rank1": 0.9281437125748503,
+          "rank10": 0.9895209580838323,
+          "Wilson_95_rank1": [
+            0.9060149613355691,
+            0.9453763788238351
+          ]
+        },
+        "2": {
+          "queries_valid": 530,
+          "rank1": 0.9433962264150944,
+          "rank10": 0.9943396226415094,
+          "Wilson_95_rank1": [
+            0.9203451241980689,
+            0.9600660769819109
+          ]
+        },
+        "3": {
+          "queries_valid": 717,
+          "rank1": 0.9637377963737797,
+          "rank10": 1.0,
+          "Wilson_95_rank1": [
+            0.9473975928791698,
+            0.9751353606054265
+          ]
+        },
+        "4": {
+          "queries_valid": 248,
+          "rank1": 0.9112903225806451,
+          "rank10": 0.9596774193548387,
+          "Wilson_95_rank1": [
+            0.8693452449910873,
+            0.940688182210602
+          ]
+        },
+        "5": {
+          "queries_valid": 622,
+          "rank1": 0.927652733118971,
+          "rank10": 0.9887459807073955,
+          "Wilson_95_rank1": [
+            0.9045622974143487,
+            0.9454932438124589
+          ]
+        },
+        "6": {
+          "queries_valid": 583,
+          "rank1": 0.9108061749571184,
+          "rank10": 0.9811320754716981,
+          "Wilson_95_rank1": [
+            0.8849003121860387,
+            0.9313337708022179
+          ]
+        }
+      },
+      "verification": {
+        "threshold": {
+          "tau": 0.7,
+          "source_file": "C:\\Semester 7\\EdgeSync-main (3)Last\\EdgeSync-main (3)Last\\EdgeSync-main\\Implementation Phase\\edgesync_ws\\src\\edgesync_bringup\\config\\algorithm_thresholds.yaml",
+          "source_key": "algorithm_thresholds.ros__parameters.reid_similarity_threshold",
+          "matches_expected_0.70": true,
+          "applied_by": "identity_verifier.verify_candidate rejects when similarity < tau; this script applies accept iff score >= tau, the same rule"
+        },
+        "pair_pool": {
+          "genuine_pairs": 49649,
+          "impostor_pairs": 53532220,
+          "duplicate_pairs_excluded": 13115,
+          "junk_gallery_rows": 0,
+          "queries_without_any_impostor_candidate": 0
+        },
+        "at_tau": {
+          "tau": 0.7,
+          "acceptance_rule": "accept iff cosine_similarity >= tau (core/identity_verifier.py rejects when sim < tau)",
+          "scope": "appearance gate only; the Mahalanobis spatial gate is NOT MEASURED offline",
+          "TAR": 0.5184595862957965,
+          "FNMR": 0.48154041370420353,
+          "FMR": 5.848814041338095e-05,
+          "genuine_pairs": 49649,
+          "impostor_pairs": 53532220,
+          "genuine_score_summary": {
+            "n": 49649,
+            "mean": 0.6838957667350769,
+            "std": 0.13302695751190186,
+            "min": -0.19789107143878937,
+            "max": 0.9677219986915588,
+            "percentiles": {
+              "0.01": 0.27673484206199644,
+              "0.05": 0.4402404010295868,
+              "0.25": 0.6132515668869019,
+              "0.5": 0.7057420611381531,
+              "0.75": 0.7791037559509277,
+              "0.95": 0.8565094947814942,
+              "0.99": 0.8969376611709595
+            }
+          },
+          "impostor_score_summary": {
+            "n": 53532220,
+            "mean": 0.006453799083828926,
+            "std": 0.12334145605564117,
+            "min": -0.47203391790390015,
+            "max": 0.9339093565940857,
+            "percentiles": {
+              "0.01": -0.23341646939516067,
+              "0.05": -0.17165264636278152,
+              "0.25": -0.07846481911838055,
+              "0.5": -0.006532976636663079,
+              "0.75": 0.07722826674580574,
+              "0.95": 0.22892300859093662,
+              "0.99": 0.3611976745724679
+            }
+          },
+          "Wilson_95_FNMR": [
+            0.47714693286748505,
+            0.48593675084233473
+          ],
+          "Wilson_95_FMR": [
+            5.647508082410448e-05,
+            6.057295135512326e-05
+          ],
+          "label": "COMPUTED",
+          "threshold_at_TAR_0.90": 0.5084471106529236,
+          "FMR_at_TAR_0.90": 0.0013773387317021412,
+          "EER": {
+            "tau": 0.32755059003829956,
+            "eer": 0.015242166306572005,
+            "interpolated": true,
+            "bracket": [
+              0.3275505602359772,
+              0.32755061984062195
+            ]
+          }
+        },
+        "per_query_decisions": {
+          "unit": "query",
+          "denominator_rule": "a query contributes to the genuine rate only if a true match survives the duplicate exclusion, and to the impostor rate only if an impostor candidate exists; -inf maxima are never counted as rejections",
+          "genuine_accept_n": 3368,
+          "genuine_accept_rate": 0.8868764845605701,
+          "false_accept_n": 3368,
+          "false_accept_rate": 0.20160332541567696
+        }
+      },
+      "similarity_cross_check": {
+        "status": "COMPUTED",
+        "pairs_checked": 200,
+        "max_abs_difference_vs_production_function": 1.7881393432617188e-07,
+        "sampling": "queries paired with one of their own gallery matches, seed 11"
+      },
+      "camera_partition_proxy": {
+        "cams_[1, 2, 3]_queries_to_cams_[4, 5, 6]_gallery": {
+          "query_camera_group": [
+            1,
+            2,
+            3
+          ],
+          "gallery_camera_group": [
+            4,
+            5,
+            6
+          ],
+          "queries": 1915,
+          "queries_valid": 1843,
+          "queries_invalid_no_gallery_match": 72,
+          "gallery_rows": 7752,
+          "query_identities": 748,
+          "query_identities_with_a_gallery_match": 720,
+          "rank1": 0.9376017362995117,
+          "rank5": 0.9815518176885513,
+          "rank10": 0.9896907216494846,
+          "mAP": 0.8774181085441133,
+          "canonical_agreement_abs": {
+            "rank1": 0.0,
+            "rank5": 0.0,
+            "rank10": 0.0,
+            "mAP": 0.0
+          },
+          "Wilson_95_rank1": [
+            0.9256226778000926,
+            0.9477603580290824
+          ],
+          "Wilson_95_rank10": [
+            0.9839541212145723,
+            0.9933901935229733
+          ],
+          "verification_at_tau": {
+            "tau": 0.7,
+            "acceptance_rule": "accept iff cosine_similarity >= tau (core/identity_verifier.py rejects when sim < tau)",
+            "scope": "appearance gate only; the Mahalanobis spatial gate is NOT MEASURED offline",
+            "TAR": 0.5177911135357944,
+            "FNMR": 0.48220888646420557,
+            "FMR": 5.570323206202508e-05,
+            "genuine_pairs": 16497,
+            "impostor_pairs": 14828583,
+            "genuine_score_summary": {
+              "n": 16497,
+              "mean": 0.6852213144302368,
+              "std": 0.13299040496349335,
+              "min": -0.19702884554862976,
+              "max": 0.9677219986915588,
+              "percentiles": {
+                "0.01": 0.2791330683231354,
+                "0.05": 0.4409480571746826,
+                "0.25": 0.6137695908546448,
+                "0.5": 0.7057422399520874,
+                "0.75": 0.780019998550415,
+                "0.95": 0.8591920733451843,
+                "0.99": 0.9013599348068235
+              }
+            },
+            "impostor_score_summary": {
+              "n": 14828583,
+              "mean": 0.004032275639474392,
+              "std": 0.12299615889787674,
+              "min": -0.46068331599235535,
+              "max": 0.8635717034339905,
+              "percentiles": {
+                "0.01": -0.23544970363378526,
+                "0.05": -0.17373791337013245,
+                "0.25": -0.08065482974052429,
+                "0.5": -0.008808121085166931,
+                "0.75": 0.07471190392971039,
+                "0.95": 0.22569115459918976,
+                "0.99": 0.3571296793222427
+              }
+            },
+            "Wilson_95_FNMR": [
+              0.4745889032618282,
+              0.4898371533447449
+            ],
+            "Wilson_95_FMR": [
+              5.2031915176684845e-05,
+              5.9633577734020214e-05
+            ],
+            "label": "COMPUTED",
+            "threshold_at_TAR_0.90": 0.5130487084388733,
+            "FMR_at_TAR_0.90": 0.0012177832500920689,
+            "EER": {
+              "tau": 0.32438476383686066,
+              "eer": 0.015101982434869198,
+              "interpolated": true,
+              "bracket": [
+                0.32438457012176514,
+                0.3243849575519562
+              ]
+            }
+          },
+          "protocol_note": "the same-pid-same-camera duplicate exclusion is inert here because the two camera groups are disjoint by construction"
+        },
+        "cams_[4, 5, 6]_queries_to_cams_[1, 2, 3]_gallery": {
+          "query_camera_group": [
+            4,
+            5,
+            6
+          ],
+          "gallery_camera_group": [
+            1,
+            2,
+            3
+          ],
+          "queries": 1453,
+          "queries_valid": 1449,
+          "queries_invalid_no_gallery_match": 4,
+          "gallery_rows": 8161,
+          "query_identities": 722,
+          "query_identities_with_a_gallery_match": 720,
+          "rank1": 0.9420289855072463,
+          "rank5": 0.9772256728778468,
+          "rank10": 0.9875776397515528,
+          "mAP": 0.8760147396397886,
+          "canonical_agreement_abs": {
+            "rank1": 0.0,
+            "rank5": 0.0,
+            "rank10": 0.0,
+            "mAP": 0.0
+          },
+          "Wilson_95_rank1": [
+            0.9287870501993302,
+            0.9529333826962302
+          ],
+          "Wilson_95_rank10": [
+            0.9804489156211488,
+            0.9921279553245396
+          ],
+          "verification_at_tau": {
+            "tau": 0.7,
+            "acceptance_rule": "accept iff cosine_similarity >= tau (core/identity_verifier.py rejects when sim < tau)",
+            "scope": "appearance gate only; the Mahalanobis spatial gate is NOT MEASURED offline",
+            "TAR": 0.5195576337860907,
+            "FNMR": 0.48044236621390934,
+            "FMR": 5.0994304510294265e-05,
+            "genuine_pairs": 13473,
+            "impostor_pairs": 11844460,
+            "genuine_score_summary": {
+              "n": 13473,
+              "mean": 0.6847892999649048,
+              "std": 0.13411939144134521,
+              "min": -0.15757514536380768,
+              "max": 0.965053915977478,
+              "percentiles": {
+                "0.01": 0.27694880723953247,
+                "0.05": 0.4398812413215637,
+                "0.25": 0.6143069863319397,
+                "0.5": 0.7060812711715698,
+                "0.75": 0.7810641527175903,
+                "0.95": 0.8582520604133606,
+                "0.99": 0.9006172227859498
+              }
+            },
+            "impostor_score_summary": {
+              "n": 11844460,
+              "mean": 0.0057855029590427876,
+              "std": 0.12269119173288345,
+              "min": -0.47203391790390015,
+              "max": 0.9076228141784668,
+              "percentiles": {
+                "0.01": -0.23355426236987115,
+                "0.05": -0.17173513844609262,
+                "0.25": -0.07865580543875694,
+                "0.5": -0.007025668863207102,
+                "0.75": 0.07627905905246735,
+                "0.95": 0.2269122578203672,
+                "0.99": 0.3580870643258095
+              }
+            },
+            "Wilson_95_FNMR": [
+              0.47201281367563824,
+              0.4888830682258977
+            ],
+            "Wilson_95_FMR": [
+              4.708653794094245e-05,
+              5.522636326264956e-05
+            ],
+            "label": "COMPUTED",
+            "threshold_at_TAR_0.90": 0.5069551467895508,
+            "FMR_at_TAR_0.90": 0.001290645584517994,
+            "EER": {
+              "tau": 0.3260488212108612,
+              "eer": 0.015006340517001197,
+              "interpolated": true,
+              "bracket": [
+                0.32604876160621643,
+                0.326048880815506
+              ]
+            }
+          },
+          "protocol_note": "the same-pid-same-camera duplicate exclusion is inert here because the two camera groups are disjoint by construction"
+        },
+        "status": "PROXY ONLY \u2014 a camera partition on one fixed dataset. Charter \u00a78: cross-robot handoff success, false-handoff rates and cross-robot performance must NOT be inferred from Market-1501 retrieval metrics; no robot, handoff event or handoff label is involved."
+      }
+    }
+  },
+  "paired_tests": {
+    "family_declared_before_analysis": [
+      {
+        "id": "H1",
+        "metric": "rank1_hit",
+        "unit": "query",
+        "arms": [
+          "transreid_512_agnostic",
+          "transreid_512_sie"
+        ],
+        "h0": "the two 512-D arms have the same Rank-1 hit rate"
+      },
+      {
+        "id": "H2",
+        "metric": "genuine_accept_at_tau",
+        "unit": "query",
+        "arms": [
+          "transreid_512_agnostic",
+          "transreid_512_sie"
+        ],
+        "h0": "the two arms accept the same fraction of queries with at least one genuine match at tau"
+      },
+      {
+        "id": "H3",
+        "metric": "false_accept_at_tau",
+        "unit": "query",
+        "arms": [
+          "transreid_512_agnostic",
+          "transreid_512_sie"
+        ],
+        "h0": "the two arms falsely accept the same fraction of queries at tau"
+      }
+    ],
+    "family_size": 3,
+    "correction": "Holm-Boferoni step-down, alpha = 0.05, monotone-adjusted",
+    "tests": [
+      {
+        "id": "H1",
+        "metric": "rank1_hit",
+        "unit": "query",
+        "arms": [
+          "transreid_512_agnostic",
+          "transreid_512_sie"
+        ],
+        "h0": "the two 512-D arms have the same Rank-1 hit rate",
+        "paired_units": 3368,
+        "rate_A": 0.8874703087885986,
+        "rate_B": 0.9337885985748219,
+        "difference_A_minus_B": -0.04631828978622332,
+        "discordant_A_only": 5,
+        "discordant_B_only": 161,
+        "test": "exact McNemar (binomial, two-sided) on the discordant pairs",
+        "p_value": 2.1803905931263096e-41,
+        "status": "COMPUTED",
+        "holm_adjusted": {
+          "p_value": 2.1803905931263096e-41,
+          "adjusted": 4.360781186252619e-41,
+          "decision": "REJECT H0 at alpha=0.05"
+        }
+      },
+      {
+        "id": "H2",
+        "metric": "genuine_accept_at_tau",
+        "unit": "query",
+        "arms": [
+          "transreid_512_agnostic",
+          "transreid_512_sie"
+        ],
+        "h0": "the two arms accept the same fraction of queries with at least one genuine match at tau",
+        "paired_units": 3368,
+        "rate_A": 0.8108669833729216,
+        "rate_B": 0.8868764845605701,
+        "difference_A_minus_B": -0.07600950118764849,
+        "discordant_A_only": 3,
+        "discordant_B_only": 259,
+        "test": "exact McNemar (binomial, two-sided) on the discordant pairs",
+        "p_value": 8.090130605382558e-73,
+        "status": "COMPUTED",
+        "holm_adjusted": {
+          "p_value": 8.090130605382558e-73,
+          "adjusted": 2.4270391816147673e-72,
+          "decision": "REJECT H0 at alpha=0.05"
+        }
+      },
+      {
+        "id": "H3",
+        "metric": "false_accept_at_tau",
+        "unit": "query",
+        "arms": [
+          "transreid_512_agnostic",
+          "transreid_512_sie"
+        ],
+        "h0": "the two arms falsely accept the same fraction of queries at tau",
+        "paired_units": 3368,
+        "rate_A": 0.19922802850356294,
+        "rate_B": 0.20160332541567696,
+        "difference_A_minus_B": -0.002375296912114022,
+        "discordant_A_only": 73,
+        "discordant_B_only": 81,
+        "test": "exact McNemar (binomial, two-sided) on the discordant pairs",
+        "p_value": 0.572845968999707,
+        "status": "COMPUTED",
+        "holm_adjusted": {
+          "p_value": 0.572845968999707,
+          "adjusted": 0.572845968999707,
+          "decision": "FAIL TO REJECT H0 at alpha=0.05"
+        }
+      }
+    ]
+  },
+  "osnet_comparison": {
+    "status": "NOT APPLICABLE on this host",
+    "reason": "FAILED \u2014 recorded, not repaired (charter \u00a73B): RuntimeError: operator torchvision::nms does not exist",
+    "effect_on_comparison": "no OSNet embeddings => no paired per-query outcomes for the OSNet arm => a paired test (e.g. exact McNemar) is NOT APPLICABLE on this host; the TransReID-vs-OSNet comparison must be reported NOT MEASURED here and re-run where torchreid imports",
+    "charter": "\u00a73B forbids altering OSNet to make the comparison possible; \u00a78 forbids a paired test without paired outcomes for both arms"
+  },
+  "camera_partition_disclaimer": "A camera partition on one fixed dataset. It measures whether appearance identity survives a viewpoint change between two camera groups \u2014 the property a handoff depends on \u2014 but involves no robot, no handoff event, no trajectory and no handoff label. Charter \u00a78 explicitly forbids inferring cross-robot handoff success or false-handoff rates from Market-1501 retrieval metrics, so nothing in this section is a handoff measurement.",
+  "not_measured": {
+    "jetson_tensorrt_latency": "BLOCKED \u2014 Pending Jetson Orin Nano access (TR-11)",
+    "osnet_retrieval_on_this_population": "BLOCKED on this host \u2014 the frozen baseline cannot be imported (torchvision::nms); \u00a73B forbids repairing it",
+    "spatial_gate_mahalanobis": "NOT MEASURED \u2014 requires per-robot trajectory and covariance data that do not exist offline",
+    "cross_robot_handoff_success": "NOT MEASURED and NOT INFERABLE \u2014 no robot or handoff dataset exists in this project",
+    "statistical_comparison_against_recorded_gate3_numbers": "NOT APPLICABLE \u2014 the recorded run used the invalid id_band population (TR-07), so its per-query outcomes are not the same population as this one"
+  },
+  "labels_legend": [
+    "COMPUTED",
+    "REPRODUCED",
+    "BLOCKED",
+    "NOT MEASURED",
+    "NOT APPLICABLE"
+  ]
+}

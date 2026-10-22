@@ -1,0 +1,50 @@
+[
+  {
+    "model": "OSNet x1.0 Native 512-D",
+    "genuine_mean": 0.7809563875198364,
+    "genuine_std": 0.09399329125881195,
+    "impostor_mean": 0.4042094051837921,
+    "impostor_std": 0.06087196618318558,
+    "tau": 0.7,
+    "fnmr_pct": 18.703290940081292,
+    "fmr_pct": 0.11399999999999999,
+    "eer_pct": 2.051920807657008,
+    "eer_tau": 0.555
+  },
+  {
+    "model": "TransReID Corrected Native 768-D (With Cam)",
+    "genuine_mean": 0.702650249004364,
+    "genuine_std": 0.12198209017515182,
+    "impostor_mean": 0.10471926629543304,
+    "impostor_std": 0.11286486685276031,
+    "tau": 0.7,
+    "fnmr_pct": 42.84122197456405,
+    "fmr_pct": 0.013999999999999999,
+    "eer_pct": 1.7306935885669332,
+    "eer_tau": 0.387
+  },
+  {
+    "model": "TransReID Corrected Centered SVD 512-D (With Cam)",
+    "genuine_mean": 0.682079017162323,
+    "genuine_std": 0.13463419675827026,
+    "impostor_mean": 0.007322206627577543,
+    "impostor_std": 0.12618353962898254,
+    "tau": 0.7,
+    "fnmr_pct": 48.6626458633801,
+    "fmr_pct": 0.013999999999999999,
+    "eer_pct": 1.678248328307329,
+    "eer_tau": 0.33
+  },
+  {
+    "model": "TransReID Corrected Uncentered SVD 512-D (With Cam)",
+    "genuine_mean": 0.714712381362915,
+    "genuine_std": 0.12105511873960495,
+    "impostor_mean": 0.10813336819410324,
+    "impostor_std": 0.11632680147886276,
+    "tau": 0.7,
+    "fnmr_pct": 38.51448800314671,
+    "fmr_pct": 0.013999999999999999,
+    "eer_pct": 1.7241379310344827,
+    "eer_tau": 0.399
+  }
+]

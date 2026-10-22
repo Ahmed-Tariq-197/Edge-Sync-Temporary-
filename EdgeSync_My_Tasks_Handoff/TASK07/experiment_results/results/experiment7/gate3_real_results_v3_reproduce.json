@@ -1,0 +1,61 @@
+{
+  "experiment": "ES-EXP07",
+  "evaluation_type": "Offline Market-1501 (Real Weights)",
+  "revision": "v3-independent-reproduction",
+  "purpose": "re-measure every accuracy value from raw pixels; no cached features",
+  "pipeline_config": {
+    "transreid_pixel_mean": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "transreid_pixel_std": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "transreid_sie_applied": true,
+    "transreid_sie_xishu": 1.0,
+    "osnet_pixel_mean": [
+      0.48500001430511475,
+      0.4560000002384186,
+      0.4059999883174896
+    ],
+    "osnet_pixel_std": [
+      0.2290000021457672,
+      0.2240000069141388,
+      0.22499999403953552
+    ],
+    "transreid_neck_feat": "after (post-BNNeck)",
+    "osnet_feature": "native 512-D, no projection",
+    "image_size_hw": [
+      256,
+      128
+    ]
+  },
+  "threshold_tau": 0.7,
+  "threshold_tau_note": "tau is not applied anywhere in this script; Rank-1/mAP are threshold-free retrieval metrics.",
+  "svd_variance_retained": 0.9864118099212646,
+  "device": "cuda",
+  "accuracy": {
+    "transreid": {
+      "rank1": 93.37885985748218,
+      "rank5": 97.95130641330167,
+      "rank10": 98.87173396674585,
+      "mAP": 85.12520406484964,
+      "feature_dim": 512,
+      "n_query": 3368,
+      "n_gallery": 15913
+    },
+    "osnet": {
+      "rank1": 94.32897862232778,
+      "rank5": 97.80285035629454,
+      "rank10": 98.60451306413302,
+      "mAP": 83.5692348350484,
+      "feature_dim": 512,
+      "n_query": 3368,
+      "n_gallery": 15913
+    }
+  },
+  "latency": "not measured here -- see out/phase8_latency_*.json (idle GPU, 3 trials)"
+}
